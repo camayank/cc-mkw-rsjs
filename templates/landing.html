@@ -135,6 +135,20 @@ section{position:relative;z-index:1;padding:100px clamp(20px,5vw,80px)}
 .check{color:var(--green)}
 .cross{color:var(--red);opacity:.5}
 
+/* ── TRUST SECTION ── */
+.trust-section{max-width:1000px;margin:0 auto}
+.trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px}
+.trust-card{text-align:center;padding:36px 24px;background:var(--card);border:1px solid var(--border);border-radius:12px;transition:all .4s}
+.trust-card:hover{border-color:rgba(0,229,255,.15);transform:translateY(-4px)}
+.trust-icon{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:24px;margin:0 auto 18px;background:var(--cyan-dim);border:1px solid rgba(0,229,255,.1)}
+.trust-card h4{font-size:16px;font-weight:700;margin-bottom:8px}
+.trust-card p{font-size:13px;color:var(--dim);line-height:1.6}
+.trust-badge{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:5px 12px;border-radius:100px;background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.15);font-family:var(--mono);font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:1px}
+.trust-logos{display:flex;align-items:center;justify-content:center;gap:40px;margin-top:48px;padding:32px;border:1px solid var(--border);border-radius:12px;background:var(--card)}
+.trust-logo-item{text-align:center;font-size:12px;color:var(--muted)}
+.trust-logo-item .fw{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--dim);margin-bottom:4px;display:block}
+@media(max-width:900px){.trust-grid{grid-template-columns:1fr}.trust-logos{flex-wrap:wrap;gap:20px}}
+
 /* ── FINAL CTA ── */
 .final-cta{text-align:center;max-width:700px;margin:0 auto;padding:120px 20px}
 .final-cta h2{font-family:var(--serif);font-size:clamp(36px,5vw,56px);font-weight:800;letter-spacing:-2px;line-height:1.1;margin-bottom:20px}
@@ -344,7 +358,7 @@ footer{border-top:1px solid var(--border);padding:40px clamp(20px,5vw,60px);disp
       <div class="agent-card" style="--agent-color:#448aff">
         <div class="agent-icon" style="background:rgba(68,138,255,.1)">&#128218;</div>
         <div class="agent-name">Chronicle</div>
-        <div class="agent-tagline">Generates audit-ready PDF reports, proposals, and documentation.</div>
+        <div class="agent-tagline">Produces audit-ready PDF reports, proposals, and documentation.</div>
         <div class="agent-status">Active</div>
       </div>
     </div>
@@ -369,13 +383,13 @@ footer{border-top:1px solid var(--border);padding:40px clamp(20px,5vw,60px);disp
         <div class="step-icon">&#128202;</div>
         <h4>Get Your Report</h4>
         <p>Receive a comprehensive 9-page PDF with your security score, every finding ranked by severity, and specific remediation steps.</p>
-        <div class="step-note">AI-generated &bull; Audit-ready</div>
+        <div class="step-note">Expert-reviewed &bull; Audit-ready</div>
       </div>
       <div class="step">
         <div class="step-icon">&#128737;</div>
         <h4>Activate Protection</h4>
-        <p>We generate your security policies, compliance mapping, risk register, and monitoring&mdash;all automated by our 11 AI agents.</p>
-        <div class="step-note">Ongoing &bull; Always watching</div>
+        <p>Your security policies, compliance mapping, risk register, and ongoing monitoring&mdash;professionally crafted, specific to your business.</p>
+        <div class="step-note">CISSP-backed &bull; Always watching</div>
       </div>
     </div>
   </div>
@@ -402,7 +416,7 @@ footer{border-top:1px solid var(--border);padding:40px clamp(20px,5vw,60px);disp
       <div class="compare-row">
         <div class="compare-cell">Policy Generation</div>
         <div class="compare-cell">$5K&ndash;$15K</div>
-        <div class="compare-cell">Automated (9 policies)</div>
+        <div class="compare-cell">9 policies, expert-reviewed</div>
       </div>
       <div class="compare-row">
         <div class="compare-cell">Compliance Mapping</div>
@@ -427,8 +441,46 @@ footer{border-top:1px solid var(--border);padding:40px clamp(20px,5vw,60px);disp
       <div class="compare-row">
         <div class="compare-cell">Incident Response Plans</div>
         <div class="compare-cell">$3K&ndash;$8K</div>
-        <div class="compare-cell"><span class="check">&#10003;</span> Auto-generated</div>
+        <div class="compare-cell"><span class="check">&#10003;</span> Included</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TRUST & EXPERTISE ─── -->
+<section id="trust">
+  <div class="trust-section reveal">
+    <div class="section-tag" style="justify-content:center">Built on Expertise</div>
+    <h2 class="section-title" style="text-align:center">Technology Meets<br>Human Judgment</h2>
+    <p class="section-sub" style="text-align:center;margin:0 auto">Our AI agents handle the heavy lifting. Certified professionals validate every deliverable. You get speed without sacrificing accuracy.</p>
+
+    <div class="trust-grid">
+      <div class="trust-card">
+        <div class="trust-icon">&#128737;</div>
+        <h4>Expert-Reviewed Policies</h4>
+        <p>Every security policy and WISP is reviewed by a certified security professional before it reaches your desk. No unvetted output. Ever.</p>
+        <div class="trust-badge">CISSP Validated</div>
+      </div>
+      <div class="trust-card">
+        <div class="trust-icon">&#128203;</div>
+        <h4>Tailored to Your Business</h4>
+        <p>Your deliverables reference your real findings, your technology stack, and your regulatory requirements. Not a template with your name pasted in.</p>
+        <div class="trust-badge">Evidence-based</div>
+      </div>
+      <div class="trust-card">
+        <div class="trust-icon">&#128272;</div>
+        <h4>Audit-Ready Documentation</h4>
+        <p>Designed to satisfy IRS auditors, insurance underwriters, and enterprise security questionnaires. Built on frameworks your regulators recognize.</p>
+        <div class="trust-badge">Compliance-mapped</div>
+      </div>
+    </div>
+
+    <div class="trust-logos">
+      <div class="trust-logo-item"><span class="fw">NIST CSF 2.0</span>Cybersecurity Framework</div>
+      <div class="trust-logo-item"><span class="fw">IRS 4557</span>Tax Preparer Security</div>
+      <div class="trust-logo-item"><span class="fw">FTC Safeguards</span>Financial Data Protection</div>
+      <div class="trust-logo-item"><span class="fw">SOC 2</span>Service Organization Controls</div>
+      <div class="trust-logo-item"><span class="fw">HIPAA</span>Healthcare Compliance</div>
     </div>
   </div>
 </section>
