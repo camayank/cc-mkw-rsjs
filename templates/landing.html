@@ -40,7 +40,7 @@ nav.scrolled{background:rgba(9,9,11,.88);backdrop-filter:blur(20px) saturate(1.2
 .hero-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:100px;background:var(--lime-dim);border:1px solid rgba(200,255,0,.12);margin-bottom:36px;font-family:var(--mono);font-size:11px;color:var(--lime);letter-spacing:2px;text-transform:uppercase}
 .hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 10px var(--lime);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
-.hero h1{font-family:var(--head);font-size:clamp(44px,6vw,80px);font-weight:800;line-height:1.05;letter-spacing:-2px;margin-bottom:24px}
+.hero h1{font-family:var(--head);font-size:clamp(36px,5.5vw,76px);font-weight:800;line-height:1.05;letter-spacing:-2px;margin-bottom:24px}
 .hero h1 .accent{color:var(--lime);display:block}
 .hero-sub{font-size:clamp(16px,1.6vw,19px);color:var(--muted);line-height:1.7;margin-bottom:40px;max-width:480px;font-weight:400}
 .scan-form{display:flex;gap:0;margin-bottom:24px;max-width:500px}
@@ -167,12 +167,16 @@ footer{border-top:1px solid var(--border);padding:40px clamp(24px,5vw,64px);disp
 @media(max-width:1024px){
 .hero{grid-template-columns:1fr;text-align:center;justify-items:center}
 .hero-content{display:flex;flex-direction:column;align-items:center}
+.hero h1{font-size:clamp(32px,8vw,56px);letter-spacing:-1px}
 .hero-sub{max-width:520px}.scan-form{max-width:440px;width:100%}
 .hero-trust{justify-content:center}
-.radar-container{width:220px;height:220px;margin-top:20px}
+.radar-container{width:200px;height:200px;margin-top:12px}
 }
 @media(max-width:768px){
 .nav-links{display:none}
+.hero h1{font-size:clamp(28px,7vw,44px)}
+.hero-visual{display:none}
+.hero{min-height:auto;padding-top:100px;padding-bottom:60px}
 .bento{grid-template-columns:1fr 1fr}
 .agents-grid{grid-template-columns:1fr 1fr}
 .steps{grid-template-columns:1fr;gap:40px}.steps::before{display:none}
@@ -181,7 +185,9 @@ footer{border-top:1px solid var(--border);padding:40px clamp(24px,5vw,64px);disp
 .frameworks{gap:20px}
 }
 @media(max-width:480px){
-.bento{grid-template-columns:1fr}
+.hero h1{font-size:clamp(26px,7vw,36px)}
+.bento{grid-template-columns:1fr 1fr}
+.bento-num{font-size:clamp(28px,8vw,40px)}
 .agents-grid{grid-template-columns:1fr}
 .scan-form,.final-cta .scan-form{flex-direction:column}
 .scan-input{border-radius:12px!important;border-right:1px solid var(--border2)!important}
