@@ -25,9 +25,9 @@ body::after{content:'';position:fixed;inset:0;background:url("data:image/svg+xml
 
 nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(24px,5vw,64px);transition:all .4s}
 nav.scrolled{background:rgba(9,9,11,.88);backdrop-filter:blur(20px) saturate(1.2);border-bottom:1px solid var(--border)}
-.logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--txt)}
-.logo-icon{width:34px;height:34px;border-radius:8px;background:var(--lime);display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:16px;color:var(--bg);transition:transform .3s}
-.logo:hover .logo-icon{transform:rotate(-8deg) scale(1.05)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt)}
+.logo svg{transition:transform .3s;filter:drop-shadow(0 0 8px rgba(200,255,0,.3))}
+.logo:hover svg{transform:rotate(-6deg) scale(1.08)}
 .logo-text{font-family:var(--mono);font-weight:600;font-size:14px;letter-spacing:1.5px}
 .nav-links{display:flex;align-items:center;gap:36px}
 .nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:color .3s}
@@ -96,16 +96,33 @@ section{position:relative;z-index:1}
 .bento-num.cr{color:var(--red)}.bento-num.co{color:var(--orange)}.bento-num.ca{color:var(--amber)}.bento-num.cl{color:var(--lime)}
 .bento-label{font-size:14px;color:var(--muted);line-height:1.5}
 
+/* ── AGENT SPOTLIGHT ── */
 .agents-wrap{padding:100px clamp(24px,5vw,64px);max-width:1200px;margin:0 auto}
-.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:48px}
-.agent-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 24px;transition:all .4s;cursor:default;border-left:3px solid var(--ac,var(--lime))}
-.agent-card:hover{border-color:var(--ac,var(--lime));transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
-.agent-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.agent-name{font-family:var(--mono);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:var(--ac,var(--lime))}
-.agent-status{display:flex;align-items:center;gap:4px;font-size:10px;font-family:var(--mono);color:var(--emerald);text-transform:uppercase;letter-spacing:1px}
-.agent-status::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--emerald);box-shadow:0 0 6px var(--emerald)}
-.agent-status.standby{color:var(--amber)}.agent-status.standby::before{background:var(--amber);box-shadow:0 0 6px var(--amber)}
-.agent-desc{font-size:14px;color:var(--muted);line-height:1.5}
+.agent-spotlight{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px;align-items:start}
+.agent-display{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:48px 40px;position:relative;overflow:hidden;min-height:340px;transition:all .5s}
+.agent-display::before{content:'';position:absolute;top:-80px;right:-80px;width:280px;height:280px;border-radius:50%;background:var(--ac,var(--lime));opacity:.04;filter:blur(60px);transition:all .5s}
+.agent-display-icon{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;margin-bottom:20px;background:rgba(255,255,255,.04);border:1px solid var(--border2)}
+.agent-display-icon svg{width:28px;height:28px;stroke:var(--ac,var(--lime));fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.agent-display-name{font-family:var(--head);font-size:28px;font-weight:800;margin-bottom:4px;letter-spacing:-.5px}
+.agent-display-role{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--ac,var(--lime));margin-bottom:20px;display:flex;align-items:center;gap:6px}
+.agent-display-role::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald)}
+.agent-display-desc{font-size:16px;color:var(--txt2);line-height:1.7;margin-bottom:24px}
+.agent-display-powers{list-style:none;display:flex;flex-direction:column;gap:8px}
+.agent-display-powers li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.agent-display-powers li::before{content:'';width:16px;height:1px;background:var(--ac,var(--lime));opacity:.5}
+.agent-tabs{display:flex;flex-direction:column;gap:6px}
+.agent-tab{display:flex;align-items:center;gap:14px;padding:16px 20px;border-radius:12px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+.agent-tab::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tc,var(--lime));opacity:0;transition:opacity .3s}
+.agent-tab:hover{border-color:var(--border2);background:var(--surface2)}
+.agent-tab.active{border-color:var(--tc,var(--lime));background:var(--surface2)}
+.agent-tab.active::before{opacity:1}
+.agent-tab-icon{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;background:rgba(255,255,255,.03);border:1px solid var(--border);flex-shrink:0}
+.agent-tab-icon svg{width:18px;height:18px;stroke:var(--tc,var(--lime));fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.agent-tab-info{flex:1;min-width:0}
+.agent-tab-name{font-family:var(--mono);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--tc,var(--lime))}
+.agent-tab-desc{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent-tab-status{width:6px;height:6px;border-radius:50%;background:var(--emerald);box-shadow:0 0 6px var(--emerald);flex-shrink:0}
+.agent-tab-status.standby{background:var(--amber);box-shadow:0 0 6px var(--amber)}
 
 .how-section{padding:100px clamp(24px,5vw,64px);max-width:1000px;margin:0 auto}
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:56px;position:relative}
@@ -173,6 +190,11 @@ footer{border-top:1px solid var(--border);padding:40px clamp(24px,5vw,64px);disp
 .scan-form{max-width:420px;width:100%}
 .hero-trust{justify-content:center}
 .radar-container{width:180px;height:180px;margin-top:8px}
+.agent-spotlight{grid-template-columns:1fr}
+.agent-display{min-height:auto;padding:32px 28px}
+.agent-tabs{flex-direction:row;flex-wrap:wrap;gap:6px}
+.agent-tab{padding:10px 14px;flex:0 0 auto}
+.agent-tab-desc{display:none}
 }
 @media(max-width:768px){
 .nav-links{display:none}
@@ -180,17 +202,18 @@ footer{border-top:1px solid var(--border);padding:40px clamp(24px,5vw,64px);disp
 .hero-visual{display:none}
 .hero{padding-top:88px;padding-bottom:40px}
 .bento{grid-template-columns:1fr 1fr}
-.agents-grid{grid-template-columns:1fr 1fr}
 .steps{grid-template-columns:1fr;gap:40px}.steps::before{display:none}
 .compare-grid{grid-template-columns:1fr}
 .trust-grid{grid-template-columns:1fr}
 .frameworks{gap:20px}
+.agent-tab-info{display:none}
+.agent-tab{padding:10px 12px}
+.agent-tab-icon{width:32px;height:32px}
 }
 @media(max-width:480px){
 .hero h1{font-size:clamp(24px,6.5vw,32px)}
 .bento{grid-template-columns:1fr 1fr}
 .bento-num{font-size:clamp(28px,8vw,40px)}
-.agents-grid{grid-template-columns:1fr}
 .scan-form,.final-cta .scan-form{flex-direction:column}
 .scan-input{border-radius:12px!important;border-right:1px solid var(--border2)!important}
 .scan-btn{border-radius:12px!important;justify-content:center}
@@ -203,7 +226,14 @@ footer{flex-direction:column;gap:16px;text-align:center}
 <body>
 
 <nav id="nav">
-<a href="/" class="logo"><span class="logo-icon">C</span><span class="logo-text">CYBERCOMPLY</span></a>
+<a href="/" class="logo">
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 3L5 9.5v9c0 9 5.5 17 13 19 7.5-2 13-10 13-19v-9L18 3z" fill="#c8ff00" opacity=".15" stroke="#c8ff00" stroke-width="1.5"/>
+<path d="M18 8L9 12.5v6c0 6 3.8 11.5 9 13 5.2-1.5 9-7 9-13v-6L18 8z" fill="#c8ff00" opacity=".08"/>
+<text x="18" y="23.5" text-anchor="middle" font-family="Syne,sans-serif" font-weight="800" font-size="15" fill="#c8ff00">C</text>
+</svg>
+<span class="logo-text">CYBERCOMPLY</span>
+</a>
 <div class="nav-links">
 <a href="#agents">Agents</a>
 <a href="#how">How It Works</a>
@@ -291,20 +321,37 @@ footer{flex-direction:column;gap:16px;text-align:center}
 <div class="reveal">
 <div class="tag">Your AI Security Team</div>
 <h2 class="stitle">11 Agents. Zero Downtime.</h2>
-<p class="ssub">Each agent is a specialist. Together, they deliver the coverage of a full CISO team.</p>
+<p class="ssub">Click any agent to see what it does. Together, they deliver the coverage of a full CISO team.</p>
 </div>
-<div class="agents-grid">
-<div class="agent-card" style="--ac:#c8ff00"><div class="agent-header"><span class="agent-name">Recon</span><span class="agent-status">Active</span></div><p class="agent-desc">Scans your perimeter &mdash; SSL, DNS, ports, headers, email security.</p></div>
-<div class="agent-card" style="--ac:#a78bfa"><div class="agent-header"><span class="agent-name">Shadow</span><span class="agent-status">Active</span></div><p class="agent-desc">Hunts the dark web for your leaked credentials and exposed data.</p></div>
-<div class="agent-card" style="--ac:#34d399"><div class="agent-header"><span class="agent-name">Guardian</span><span class="agent-status">Active</span></div><p class="agent-desc">Builds security policies, WISP, risk register, and compliance posture.</p></div>
-<div class="agent-card" style="--ac:#fb923c"><div class="agent-header"><span class="agent-name">Phantom</span><span class="agent-status">Active</span></div><p class="agent-desc">Simulates phishing attacks to test employee security awareness.</p></div>
-<div class="agent-card" style="--ac:#f87171"><div class="agent-header"><span class="agent-name">Breach</span><span class="agent-status">Active</span></div><p class="agent-desc">Runs penetration test scoping and vulnerability assessments.</p></div>
-<div class="agent-card" style="--ac:#fbbf24"><div class="agent-header"><span class="agent-name">Comply</span><span class="agent-status">Active</span></div><p class="agent-desc">Maps controls across NIST, IRS 4557, SOC 2, HIPAA, and FTC.</p></div>
-<div class="agent-card" style="--ac:#e879f9"><div class="agent-header"><span class="agent-name">Dispatch</span><span class="agent-status standby">Standby</span></div><p class="agent-desc">Incident response playbooks and coordination when things go wrong.</p></div>
-<div class="agent-card" style="--ac:#22d3ee"><div class="agent-header"><span class="agent-name">Vigil</span><span class="agent-status">Active</span></div><p class="agent-desc">Continuous configuration auditing and 24/7 security monitoring.</p></div>
-<div class="agent-card" style="--ac:#ff6b35"><div class="agent-header"><span class="agent-name">Falcon</span><span class="agent-status">Active</span></div><p class="agent-desc">Live threat intel from CISA KEV and national security advisories.</p></div>
-<div class="agent-card" style="--ac:#a3e635"><div class="agent-header"><span class="agent-name">Vanguard</span><span class="agent-status">Active</span></div><p class="agent-desc">Orchestrates multi-agent workflows for end-to-end automation.</p></div>
-<div class="agent-card" style="--ac:#60a5fa"><div class="agent-header"><span class="agent-name">Chronicle</span><span class="agent-status">Active</span></div><p class="agent-desc">Produces audit-ready PDF reports, proposals, and documentation.</p></div>
+<div class="agent-spotlight reveal" id="agentSpotlight">
+<div class="agent-display" id="agentDisplay" style="--ac:#c8ff00">
+<div class="agent-display-icon" id="adIcon">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+</div>
+<div class="agent-display-name" id="adName">Recon</div>
+<div class="agent-display-role" id="adRole">Perimeter Scanner</div>
+<p class="agent-display-desc" id="adDesc">Scans your entire external attack surface in seconds. Identifies misconfigurations, expired certificates, missing email authentication, open ports, and weak DNS settings before attackers find them.</p>
+<ul class="agent-display-powers" id="adPowers">
+<li>SSL/TLS certificate analysis</li>
+<li>SPF, DKIM, DMARC email auth</li>
+<li>Open port detection</li>
+<li>HTTP security headers</li>
+<li>DNS configuration audit</li>
+</ul>
+</div>
+<div class="agent-tabs" id="agentTabs">
+<div class="agent-tab active" style="--tc:#c8ff00" data-i="0"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Recon</div><div class="agent-tab-desc">Perimeter scanning</div></div><div class="agent-tab-status"></div></div>
+<div class="agent-tab" style="--tc:#a78bfa" data-i="1"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Shadow</div><div class="agent-tab-desc">Dark web intelligence</div></div><div class="agent-tab-status"></div></div>
+<div class="agent-tab" style="--tc:#34d399" data-i="2"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Guardian</div><div class="agent-tab-desc">Policy generation</div></div><div class="agent-tab-status"></div></div>
+<div class="agent-tab" style="--tc:#fb923c" data-i="3"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8 2 5 5 5 9v6l2-2 2.5 2.5L12 13l2.5 2.5L17 13l2 2V9c0-4-3-7-7-7z"/><circle cx="9" cy="8" r="1" fill="currentColor"/><circle cx="15" cy="8" r="1" fill="currentColor"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Phantom</div><div class="agent-tab-desc">Phishing simulation</div></div><div class="agent-tab-status"></div></div>
+<div class="agent-tab" style="--tc:#f87171" data-i="4"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Breach</div><div class="agent-tab-desc">Vulnerability testing</div></div><div class="agent-tab-status"></div></div>
+<div class="agent-tab" style="--tc:#fbbf24" data-i="5"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 12l2 2 4-4"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Comply</div><div class="agent-tab-desc">Compliance mapping</div></div><div class="agent-tab-status"></div></div>
+<div class="agent-tab" style="--tc:#e879f9" data-i="6"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Dispatch</div><div class="agent-tab-desc">Incident response</div></div><div class="agent-tab-status standby"></div></div>
+<div class="agent-tab" style="--tc:#22d3ee" data-i="7"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><path d="M2 12h4l3-9 4 18 3-9h6"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Vigil</div><div class="agent-tab-desc">24/7 monitoring</div></div><div class="agent-tab-status"></div></div>
+<div class="agent-tab" style="--tc:#ff6b35" data-i="8"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Falcon</div><div class="agent-tab-desc">Threat intelligence</div></div><div class="agent-tab-status"></div></div>
+<div class="agent-tab" style="--tc:#a3e635" data-i="9"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Vanguard</div><div class="agent-tab-desc">Orchestration</div></div><div class="agent-tab-status"></div></div>
+<div class="agent-tab" style="--tc:#60a5fa" data-i="10"><div class="agent-tab-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg></div><div class="agent-tab-info"><div class="agent-tab-name">Chronicle</div><div class="agent-tab-desc">Report generation</div></div><div class="agent-tab-status"></div></div>
+</div>
 </div>
 </div>
 </section>
@@ -405,10 +452,6 @@ window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>50)
 const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('vis');obs.unobserve(x.target)}})},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
 document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 
-document.querySelectorAll('.agent-card').forEach((c,i)=>{c.style.opacity='0';c.style.transform='translateY(16px)';c.style.transition=`all .5s cubic-bezier(.16,1,.3,1) ${i*.05}s`});
-const ao=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.querySelectorAll('.agent-card').forEach(c=>{c.style.opacity='1';c.style.transform='translateY(0)'});ao.unobserve(x.target)}})},{threshold:.08});
-const ag=document.querySelector('.agents-grid');if(ag)ao.observe(ag);
-
 document.querySelectorAll('[data-count]').forEach(el=>{
 const co=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){
 const t=+el.dataset.count,s=el.dataset.suffix||'',d=1800,st=performance.now();
@@ -416,6 +459,46 @@ const t=+el.dataset.count,s=el.dataset.suffix||'',d=1800,st=performance.now();
 co.unobserve(el)}})},{threshold:.5});co.observe(el)});
 
 document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();const t=document.querySelector(a.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
+
+// Agent spotlight data
+const agents=[
+{name:'Recon',role:'Perimeter Scanner',color:'#c8ff00',icon:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',desc:'Scans your entire external attack surface in seconds. Identifies misconfigurations, expired certificates, missing email authentication, open ports, and weak DNS settings before attackers find them.',powers:['SSL/TLS certificate analysis','SPF, DKIM, DMARC email auth','Open port detection','HTTP security headers','DNS configuration audit']},
+{name:'Shadow',role:'Dark Web Intelligence',color:'#a78bfa',icon:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>',desc:'Continuously monitors dark web marketplaces, paste sites, and breach databases for your organization\'s leaked credentials, exposed data, and compromised accounts.',powers:['Credential leak detection','Dark web marketplace scanning','Breach database monitoring','Executive exposure alerts','Domain impersonation tracking']},
+{name:'Guardian',role:'Policy Architect',color:'#34d399',icon:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',desc:'Generates comprehensive, audit-ready security policies tailored to your industry, size, and regulatory requirements. Every policy is evidence-based, referencing your actual scan findings.',powers:['Written Information Security Plan','Acceptable Use Policy','Incident Response Plan','Business Continuity Policy','9 policies total, CISSP-reviewed']},
+{name:'Phantom',role:'Social Engineer',color:'#fb923c',icon:'<path d="M12 2C8 2 5 5 5 9v6l2-2 2.5 2.5L12 13l2.5 2.5L17 13l2 2V9c0-4-3-7-7-7z"/><circle cx="9" cy="8" r="1" fill="currentColor"/><circle cx="15" cy="8" r="1" fill="currentColor"/>',desc:'Runs realistic phishing simulations against your employees to measure security awareness. Tracks who clicks, who reports, and provides targeted training recommendations.',powers:['Realistic phishing campaigns','Employee click-rate tracking','Security awareness scoring','Targeted training reports','GoPhish integration']},
+{name:'Breach',role:'Vulnerability Tester',color:'#f87171',icon:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 019.9-1"/>',desc:'Performs penetration test scoping and vulnerability assessments. Identifies exploitable weaknesses in your infrastructure before real attackers can leverage them.',powers:['Vulnerability scanning','Penetration test scoping','CVE identification','Risk prioritization','Remediation guidance']},
+{name:'Comply',role:'Compliance Engine',color:'#fbbf24',icon:'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 12l2 2 4-4"/>',desc:'Automatically maps your security controls to multiple compliance frameworks simultaneously. Identifies gaps and generates evidence for auditors and regulators.',powers:['NIST CSF 2.0 mapping','IRS Publication 4557','FTC Safeguards Rule','SOC 2 control mapping','HIPAA compliance tracking']},
+{name:'Dispatch',role:'Incident Commander',color:'#e879f9',icon:'<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>',desc:'Activates when incidents occur. Provides step-by-step playbooks for breach response, regulatory notification timelines, evidence preservation, and stakeholder communication.',powers:['Incident response playbooks','Regulatory notification timelines','Evidence preservation guidance','Stakeholder communication templates','Post-incident review process']},
+{name:'Vigil',role:'Continuous Monitor',color:'#22d3ee',icon:'<path d="M2 12h4l3-9 4 18 3-9h6"/>',desc:'Runs continuous configuration audits and monitors your security posture 24/7. Alerts you immediately when something changes — new vulnerabilities, expired certificates, or configuration drift.',powers:['24/7 security monitoring','Configuration drift detection','Certificate expiry alerts','Automated re-scanning','Change detection notifications']},
+{name:'Falcon',role:'Threat Hunter',color:'#ff6b35',icon:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',desc:'Pulls live threat intelligence from CISA Known Exploited Vulnerabilities catalog and national security advisories. Correlates threats with your specific technology stack.',powers:['CISA KEV live feed','National advisory tracking','Technology-specific alerts','Threat correlation analysis','Priority threat briefings']},
+{name:'Vanguard',role:'Orchestrator',color:'#a3e635',icon:'<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',desc:'The conductor of the orchestra. Coordinates all 11 agents into seamless workflows — from initial scan through policy generation, compliance mapping, and report delivery.',powers:['Multi-agent orchestration','End-to-end automation','Workflow sequencing','Cross-agent data sharing','Delivery pipeline management']},
+{name:'Chronicle',role:'Report Writer',color:'#60a5fa',icon:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/>',desc:'Produces professional, audit-ready PDF reports, client proposals, and board-level security presentations. Every document is branded, formatted, and ready for delivery.',powers:['9-page security assessment PDF','Client proposals with pricing','Board presentation decks','Executive summaries','Branded deliverable formatting']}
+];
+
+// Agent tab switching
+const tabs=document.querySelectorAll('.agent-tab');
+const display=document.getElementById('agentDisplay');
+const adIcon=document.getElementById('adIcon');
+const adName=document.getElementById('adName');
+const adRole=document.getElementById('adRole');
+const adDesc=document.getElementById('adDesc');
+const adPowers=document.getElementById('adPowers');
+
+tabs.forEach(tab=>{
+tab.addEventListener('click',()=>{
+const i=+tab.dataset.i;
+const a=agents[i];
+tabs.forEach(t=>t.classList.remove('active'));
+tab.classList.add('active');
+display.style.setProperty('--ac',a.color);
+adIcon.querySelector('svg').innerHTML=a.icon;
+adIcon.querySelector('svg').style.stroke=a.color;
+adName.textContent=a.name;
+adRole.textContent=a.role;
+adDesc.textContent=a.desc;
+adPowers.innerHTML=a.powers.map(p=>'<li>'+p+'</li>').join('');
+});
+});
 </script>
 </body>
 </html>
