@@ -1,0 +1,120 @@
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+  <!-- Left: Score & Findings -->
+  <div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="width:60px;height:60px;border-radius:50%;border:3px solid {% if scan.score >= 80 %}var(--green){% elif scan.score >= 60 %}var(--yellow){% elif scan.score >= 40 %}var(--orange){% else %}var(--red){% endif %};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:900;font-size:20px;color:{% if scan.score >= 80 %}var(--green){% elif scan.score >= 60 %}var(--yellow){% elif scan.score >= 40 %}var(--orange){% else %}var(--red){% endif %}">
+        {{ scan.score }}
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:16px">{{ scan.company_name }}</div>
+        <div style="color:var(--dim);font-size:12px;font-family:'JetBrains Mono',monospace">{{ scan.domain }} &mdash; Grade {{ scan.grade }}</div>
+      </div>
+    </div>
+
+    <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">SCORE BREAKDOWN</div>
+    {% if scan.archer and scan.archer.score and scan.archer.score.breakdown %}
+    {% for cat, info in scan.archer.score.breakdown.items() %}
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px">
+      <span style="width:140px;color:var(--dim)">{{ cat | replace('_', ' ') | title }}</span>
+      <div style="flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:{{ (info.score / info.max * 100) if info.max else 0 }}%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px"></div>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace;color:var(--txt);width:40px;text-align:right">{{ info.score }}/{{ info.max }}</span>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:1px">ALL FINDINGS</div>
+    {% if scan.archer and scan.archer.findings %}
+    {% for f in scan.archer.findings %}
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:8px;color:#fff;font-weight:700;flex-shrink:0;background:{% if f.severity == 'CRITICAL' %}var(--red){% elif f.severity == 'HIGH' %}var(--orange){% elif f.severity == 'MEDIUM' %}var(--yellow){% else %}var(--muted){% endif %}">!</span>
+      <div>
+        <span style="font-weight:600">{{ f.title }}</span>
+        <div style="color:var(--dim);font-size:11px;margin-top:2px">{{ f.description[:120] if f.description else '' }}</div>
+        {% if f.fix %}<div style="color:var(--accent);font-size:11px;margin-top:2px">Fix: {{ f.fix[:100] }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="color:var(--muted);font-size:12px;padding:8px 0">No findings data available.</div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Compliance & Deliverables -->
+  <div>
+    {% if forge and forge.profile %}
+    <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">COMPLIANCE PROFILE</div>
+    <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px">
+      <div style="margin-bottom:6px"><span style="color:var(--dim)">Industry:</span> {{ forge.profile.industry or 'N/A' }}</div>
+      <div style="margin-bottom:6px"><span style="color:var(--dim)">Risk Score:</span> <span style="color:{% if forge.profile.risk_score == 'HIGH' %}var(--red){% elif forge.profile.risk_score == 'MEDIUM' %}var(--orange){% else %}var(--green){% endif %};font-weight:600">{{ forge.profile.risk_score or 'N/A' }}</span></div>
+      <div style="margin-bottom:6px"><span style="color:var(--dim)">Frameworks:</span> {{ forge.profile.applicable_frameworks | join(', ') if forge.profile.applicable_frameworks else 'N/A' }}</div>
+      {% if forge.profile.gaps %}
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">GAPS ({{ forge.profile.gaps | length }}):</div>
+      {% for gap in forge.profile.gaps[:5] %}
+      <div style="font-size:11px;color:var(--orange);padding:2px 0">- {{ gap }}</div>
+      {% endfor %}
+      {% if forge.profile.gaps | length > 5 %}
+      <div style="font-size:11px;color:var(--dim)">... and {{ forge.profile.gaps | length - 5 }} more</div>
+      {% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">DELIVERABLES</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      {% if has_pdf %}
+      <a href="/api/clients/{{ dir_name }}/download/pdf" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;text-decoration:none">
+        PDF &mdash; Security Assessment Report
+      </a>
+      {% endif %}
+      {% if has_proposal %}
+      <a href="/api/clients/{{ dir_name }}/download/proposal" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;text-decoration:none">
+        TXT &mdash; Proposal Email
+      </a>
+      {% endif %}
+      <a href="/api/clients/{{ dir_name }}/download/scan_data" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;text-decoration:none">
+        JSON &mdash; Raw Scan Data
+      </a>
+      {% if has_policies %}
+      <a href="/api/clients/{{ dir_name }}/download/policies" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;text-decoration:none">
+        ZIP &mdash; Policy Documents
+      </a>
+      {% endif %}
+    </div>
+
+    <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:1px">ACTIONS</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      {% if not has_policies %}
+      <button onclick="triggerAction(this, '/api/clients/{{ dir_name }}/generate-policies')" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;cursor:pointer;border:1px solid var(--accent2);color:var(--accent2);background:transparent">
+        Generate 9 Core Policies (AI)
+      </button>
+      {% endif %}
+      <button onclick="triggerAction(this, '/api/clients/{{ dir_name }}/generate-emails')" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;cursor:pointer;border:1px solid var(--accent2);color:var(--accent2);background:transparent">
+        Generate Email Sequence (AI)
+      </button>
+    </div>
+
+    <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:1px">SCAN DATE</div>
+    <div style="font-size:12px;color:var(--dim)">{{ scan.scan_date or 'Unknown' }}</div>
+  </div>
+</div>
+
+<script>
+function triggerAction(btn, url) {
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  btn.textContent = 'Working...';
+  fetch(url, {method:'POST'}).then(r=>r.json()).then(data => {
+    btn.textContent = data.message || 'Started!';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+  }).catch(() => {
+    btn.textContent = 'Failed — check API key';
+    btn.style.color = 'var(--red)';
+    btn.style.borderColor = 'var(--red)';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  });
+}
+</script>

@@ -1,0 +1,49 @@
+# Environment
+.env
+
+# AI prompt cache and logs
+.prompt_cache/
+prompt_log.jsonl
+industry_cache.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deliverables (contain client data)
+client-deliverables/
+outreach_emails/
+leads.json
+outreach_schedule.json
+
+# Old files / archives
+*.tar.gz
+*.pdf
+*.docx
+*.jsx
+digicomply-*.md
+digicomply-*.html
+digicomply-*.txt
+cybersecurity-mvp-build-plan.md
+CLAUDE_POLICY_PROMPTS.md
+PROPOSAL_EMAIL.txt
+Smith_*.pdf
+test_audit_output/
+docs/
+.claude/
+CYBERCOMPLY-CURSOR-MASTER-PROMPT.py
+.env.template

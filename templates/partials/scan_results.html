@@ -1,0 +1,23 @@
+<div class="score-display">
+  <div class="score-circle" style="border-color:{% if score.total >= 80 %}var(--green){% elif score.total >= 60 %}var(--yellow){% elif score.total >= 40 %}var(--orange){% else %}var(--red){% endif %}">
+    <span class="num" style="color:{% if score.total >= 80 %}var(--green){% elif score.total >= 60 %}var(--yellow){% elif score.total >= 40 %}var(--orange){% else %}var(--red){% endif %}">{{ score.total }}</span>
+    <span class="of">/100</span>
+  </div>
+  <div class="score-info">
+    <h4>Security Score: {{ score.total }}/100 &mdash; {{ score.label }}</h4>
+    <p>{{ domain }} scored {{ score.grade }}.</p>
+    <div class="grade-badge" style="background:rgba({% if score.total >= 80 %}0,230,118{% elif score.total >= 60 %}255,214,0{% elif score.total >= 40 %}255,145,0{% else %}255,23,68{% endif %},.15);color:{% if score.total >= 80 %}var(--green){% elif score.total >= 60 %}var(--yellow){% elif score.total >= 40 %}var(--orange){% else %}var(--red){% endif %}">
+      Grade: {{ score.grade }}
+    </div>
+  </div>
+</div>
+
+{% for f in findings[:5] %}
+<div class="finding">
+  <div class="sev-icon sev-{{ f.severity }}">!</div>
+  <div class="finding-text">
+    <div class="finding-title">{{ f.title }}</div>
+    <div class="finding-desc">{{ f.description or '' }}</div>
+  </div>
+</div>
+{% endfor %}

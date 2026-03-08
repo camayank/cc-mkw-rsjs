@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberComply Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0f;--card:#13131d;--border:#222238;--accent:#00e5ff;--accent2:#7c4dff;--green:#00e676;--red:#ff1744;--orange:#ff9100;--yellow:#ffd600;--txt:#e0e0ee;--dim:#8888a8;--muted:#55556e}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;z-index:1}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:40px;max-width:400px;width:100%;text-align:center;position:relative;overflow:hidden}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent)}
+.login-card h2{font-size:24px;font-weight:800;margin-bottom:8px}
+.login-card p{color:var(--dim);font-size:13px;margin-bottom:24px}
+.login-card input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:13px 16px;color:var(--txt);font-size:14px;outline:none;margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+.login-card input:focus{border-color:var(--accent)}
+.login-card button{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:13px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s}
+.login-card button:hover{box-shadow:0 8px 30px rgba(0,229,255,.25)}
+
+/* Dashboard layout */
+.dash{display:none;position:relative;z-index:1}
+.dash.on{display:block}
+.topbar{background:rgba(10,10,15,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.topbar .brand{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:var(--accent);display:flex;align-items:center;gap:8px}
+.topbar .brand i{width:28px;height:28px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:6px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:13px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.cost-badge{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);background:var(--card);border:1px solid var(--border);border-radius:6px;padding:5px 10px}
+.new-scan-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:8px 16px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .3s}
+.new-scan-btn:hover{box-shadow:0 4px 20px rgba(0,229,255,.25)}
+
+.main{max-width:1200px;margin:0 auto;padding:24px 28px}
+
+/* Pipeline cards */
+.pipeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:28px}
+.pipe-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;transition:border-color .3s}
+.pipe-card:hover{border-color:var(--accent)}
+.pipe-num{font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--accent);line-height:1}
+.pipe-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.pipe-card.revenue .pipe-num{color:var(--green)}
+
+/* Client table */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
+.section-subtitle{font-size:12px;color:var(--muted)}
+.client-table{width:100%;border-collapse:collapse;margin-bottom:28px}
+.client-table th{text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border);font-weight:600}
+.client-table td{padding:12px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle}
+.client-row{cursor:pointer;transition:background .2s}
+.client-row:hover{background:rgba(0,229,255,.03)}
+.client-company{font-weight:600}
+.client-domain{color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:12px}
+.client-score{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px}
+.client-grade{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;margin-left:6px}
+.client-date{font-size:12px;color:var(--dim)}
+.status-dots{display:flex;gap:4px}
+.status-dot{width:8px;height:8px;border-radius:2px}
+.status-dot.on{background:var(--green)}
+.status-dot.off{background:var(--border)}
+.action-btns{display:flex;gap:6px}
+.action-btn{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;color:var(--dim);transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.action-btn:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+
+/* Client detail panel */
+.detail-panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin:4px 0 12px;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Leads section */
+.leads-section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:28px}
+.lead-row{display:flex;align-items:center;gap:16px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:13px}
+.lead-row:last-child{border-bottom:none}
+.lead-email{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent)}
+.lead-domain{color:var(--dim);font-size:12px}
+.lead-score{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px}
+.lead-date{color:var(--muted);font-size:11px;margin-left:auto}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+
+/* New scan modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:440px;width:90%;position:relative}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:16px}
+.modal input,.modal select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--txt);font-size:13px;margin-bottom:10px;outline:none;font-family:'Outfit',sans-serif}
+.modal select{appearance:none;cursor:pointer}
+.modal input:focus,.modal select:focus{border-color:var(--accent)}
+.modal-btns{display:flex;gap:10px;margin-top:8px}
+.modal-btns button{flex:1;padding:11px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;transition:all .3s;border:none}
+.modal-btns .cancel{background:var(--bg);color:var(--dim);border:1px solid var(--border)}
+.modal-btns .submit{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+
+/* Loading indicator */
+.htmx-indicator{display:none}
+.htmx-request .htmx-indicator{display:inline-block}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:768px){.topbar{padding:10px 16px;flex-wrap:wrap;gap:8px}.main{padding:16px}.pipeline{grid-template-columns:repeat(2,1fr)}.client-table{display:block;overflow-x:auto}}
+</style>
+</head>
+<body>
+
+{% if not authenticated %}
+<!-- Login Screen -->
+<div class="login-wrap">
+  <div class="login-card">
+    <h2>CyberComply</h2>
+    <p>Internal Dashboard &mdash; Enter password to continue</p>
+    <form id="loginForm" onsubmit="doLogin(event)">
+      <input type="password" id="loginPassword" placeholder="Dashboard Password" autofocus>
+      <button type="submit">ACCESS DASHBOARD</button>
+    </form>
+  </div>
+</div>
+<script>
+function doLogin(e) {
+  e.preventDefault();
+  const pw = document.getElementById('loginPassword').value;
+  window.location.href = '/dashboard?password=' + encodeURIComponent(pw);
+}
+</script>
+
+{% else %}
+<!-- Dashboard -->
+<div class="dash on">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="brand"><i>C</i>CYBERCOMPLY</div>
+      <span style="color:var(--muted);font-size:12px">Dashboard</span>
+    </div>
+    <div class="topbar-right">
+      <div class="cost-badge" id="aiCost">AI: $0.00</div>
+      <div class="cost-badge" id="clientCount">Clients: -</div>
+      <button class="new-scan-btn" onclick="openNewScan()">+ New Scan</button>
+      <a href="/scan" class="action-btn" style="font-size:12px">Free Scan Page</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Pipeline Cards -->
+    <div class="pipeline" id="pipeline">
+      <div class="pipe-card"><div class="pipe-num" id="pLeads">-</div><div class="pipe-label">Leads</div></div>
+      <div class="pipe-card"><div class="pipe-num" id="pScanned">-</div><div class="pipe-label">Scanned</div></div>
+      <div class="pipe-card"><div class="pipe-num" id="pProposed">-</div><div class="pipe-label">Proposed</div></div>
+      <div class="pipe-card revenue"><div class="pipe-num" id="pValue">-</div><div class="pipe-label">Pipeline</div></div>
+    </div>
+
+    <!-- Client Table -->
+    <div class="section-header">
+      <div>
+        <div class="section-title">CLIENTS</div>
+        <div class="section-subtitle">All scanned clients and deliverables</div>
+      </div>
+      <div class="spinner htmx-indicator" id="clientsSpinner"></div>
+    </div>
+    <table class="client-table">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Domain</th>
+          <th>Score</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="clientTableBody">
+        <tr><td colspan="6" class="empty-state">Loading clients...</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Recent Leads -->
+    <div class="section-header">
+      <div>
+        <div class="section-title">RECENT LEADS</div>
+        <div class="section-subtitle">From free scan page</div>
+      </div>
+    </div>
+    <div class="leads-section" id="leadsSection">
+      <div class="empty-state">Loading leads...</div>
+    </div>
+  </div>
+</div>
+
+<!-- New Scan Modal -->
+<div class="modal-overlay" id="newScanModal">
+  <div class="modal">
+    <h3>New Client Scan</h3>
+    <input type="text" id="nsDomain" placeholder="client-domain.com">
+    <input type="text" id="nsCompany" placeholder="Company Name">
+    <select id="nsIndustry">
+      <option value="cpa">CPA / Accounting</option>
+      <option value="healthcare">Healthcare</option>
+      <option value="legal">Legal / Law Firm</option>
+      <option value="financial">Financial Services</option>
+      <option value="saas">Technology / SaaS</option>
+      <option value="govcon">Government Contractor</option>
+      <option value="general">General / Other</option>
+    </select>
+    <input type="number" id="nsEmployees" placeholder="Employee Count" value="15" min="1">
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin:4px 0 8px;cursor:pointer">
+      <input type="checkbox" id="nsEnableAI" style="accent-color:var(--accent);width:16px;height:16px">
+      Enable AI narratives, executive summary &amp; cold email (uses API credits)
+    </label>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeNewScan()">Cancel</button>
+      <button class="submit" onclick="submitNewScan()">Start Scan</button>
+    </div>
+    <p id="nsStatus" style="font-size:12px;color:var(--dim);margin-top:10px;text-align:center;display:none"></p>
+  </div>
+</div>
+
+<script>
+// Load data on page load
+document.addEventListener('DOMContentLoaded', () => {
+  loadPipeline();
+  loadClients();
+  loadLeads();
+});
+
+function loadPipeline() {
+  fetch('/api/pipeline').then(r => r.json()).then(data => {
+    document.getElementById('pLeads').textContent = data.leads;
+    document.getElementById('pScanned').textContent = data.scanned;
+    document.getElementById('pProposed').textContent = data.proposed;
+    document.getElementById('pValue').textContent = '$' + data.total_value.toLocaleString();
+    document.getElementById('aiCost').textContent = 'AI: $' + data.ai_cost.toFixed(2);
+    document.getElementById('clientCount').textContent = 'Clients: ' + data.scanned;
+  });
+}
+
+function loadClients() {
+  fetch('/api/clients').then(r => r.json()).then(data => {
+    const tbody = document.getElementById('clientTableBody');
+    if (!data.clients || data.clients.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No clients yet. Run your first scan!</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '';
+    data.clients.forEach(c => {
+      const scoreColor = c.score >= 80 ? 'var(--green)' : c.score >= 60 ? 'var(--yellow)' : c.score >= 40 ? 'var(--orange)' : 'var(--red)';
+      const gradeColor = scoreColor;
+      const scanDate = c.scan_date ? new Date(c.scan_date).toLocaleDateString('en-US', {month:'short', day:'numeric'}) : '-';
+
+      const row = document.createElement('tr');
+      row.className = 'client-row';
+      row.innerHTML =
+        '<td><span class="client-company">' + esc(c.company) + '</span></td>' +
+        '<td><span class="client-domain">' + esc(c.domain) + '</span></td>' +
+        '<td><span class="client-score" style="color:' + scoreColor + '">' + c.score + '</span>' +
+          '<span class="client-grade" style="background:' + scoreColor.replace('var(', 'rgba(').replace('--green', '0,230,118').replace('--yellow', '255,214,0').replace('--orange', '255,145,0').replace('--red', '255,23,68').replace(')', ',.15)') + ';color:' + gradeColor + '">' + c.grade + '</span></td>' +
+        '<td><span class="client-date">' + scanDate + '</span></td>' +
+        '<td><div class="status-dots">' +
+          '<div class="status-dot ' + (c.has_pdf ? 'on' : 'off') + '" title="PDF"></div>' +
+          '<div class="status-dot ' + (c.has_proposal ? 'on' : 'off') + '" title="Proposal"></div>' +
+          '<div class="status-dot ' + (c.has_policies ? 'on' : 'off') + '" title="Policies"></div>' +
+          '<div class="status-dot ' + (c.has_emails ? 'on' : 'off') + '" title="Emails"></div>' +
+        '</div></td>' +
+        '<td><div class="action-btns">' +
+          (c.has_pdf ? '<a href="/api/clients/' + esc(c.dir_name) + '/download/pdf" class="action-btn" title="Download PDF">PDF</a>' : '') +
+          (c.has_proposal ? '<a href="/api/clients/' + esc(c.dir_name) + '/download/proposal" class="action-btn" title="View Proposal">Proposal</a>' : '') +
+          '<a href="/api/clients/' + esc(c.dir_name) + '/download/scan_data" class="action-btn" title="Download Scan Data">JSON</a>' +
+        '</div></td>';
+
+      row.addEventListener('click', function(e) {
+        if (e.target.closest('.action-btn')) return;
+        toggleDetail(c.dir_name, this);
+      });
+      tbody.appendChild(row);
+    });
+  });
+}
+
+function toggleDetail(dirName, row) {
+  const existing = row.nextElementSibling;
+  if (existing && existing.classList.contains('detail-row')) {
+    existing.remove();
+    return;
+  }
+  // Remove any other open detail rows
+  document.querySelectorAll('.detail-row').forEach(r => r.remove());
+
+  const detailRow = document.createElement('tr');
+  detailRow.className = 'detail-row';
+  const td = document.createElement('td');
+  td.colSpan = 6;
+  td.innerHTML = '<div class="detail-panel"><div class="spinner"></div> Loading...</div>';
+  detailRow.appendChild(td);
+  row.after(detailRow);
+
+  fetch('/api/clients/' + encodeURIComponent(dirName) + '/detail')
+    .then(r => r.text())
+    .then(html => { td.innerHTML = '<div class="detail-panel">' + html + '</div>'; })
+    .catch(() => { td.innerHTML = '<div class="detail-panel">Failed to load details.</div>'; });
+}
+
+function loadLeads() {
+  fetch('/api/leads').then(r => r.json()).then(data => {
+    const section = document.getElementById('leadsSection');
+    if (!data.leads || data.leads.length === 0) {
+      section.innerHTML = '<div class="empty-state">No leads captured yet. Share your <a href="/scan">free scan page</a>!</div>';
+      return;
+    }
+    section.innerHTML = '';
+    data.leads.slice(-10).reverse().forEach(l => {
+      const dateStr = l.captured_at ? new Date(l.captured_at).toLocaleDateString('en-US', {month:'short', day:'numeric'}) : '-';
+      const scoreColor = (l.score||0) >= 60 ? 'var(--green)' : (l.score||0) >= 40 ? 'var(--orange)' : 'var(--red)';
+      section.innerHTML +=
+        '<div class="lead-row">' +
+        '<span class="lead-email">' + esc(l.email || l.name || 'Unknown') + '</span>' +
+        '<span class="lead-domain">' + esc(l.domain || '') + '</span>' +
+        '<span class="lead-score" style="color:' + scoreColor + '">Score: ' + (l.score || '-') + '</span>' +
+        '<span class="lead-date">' + dateStr + '</span>' +
+        '</div>';
+    });
+  });
+}
+
+function openNewScan() { document.getElementById('newScanModal').classList.add('on'); }
+function closeNewScan() { document.getElementById('newScanModal').classList.remove('on'); document.getElementById('nsStatus').style.display = 'none'; }
+
+function submitNewScan() {
+  const domain = document.getElementById('nsDomain').value.trim();
+  if (!domain || !domain.includes('.')) {
+    document.getElementById('nsDomain').style.borderColor = 'var(--red)';
+    return;
+  }
+  const status = document.getElementById('nsStatus');
+  status.style.display = 'block';
+  status.textContent = 'Starting scan...';
+  status.style.color = 'var(--accent)';
+
+  fetch('/api/clients/new-scan', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      domain: domain,
+      company_name: document.getElementById('nsCompany').value.trim() || null,
+      industry: document.getElementById('nsIndustry').value,
+      employee_count: parseInt(document.getElementById('nsEmployees').value) || 15,
+      enable_ai: document.getElementById('nsEnableAI').checked
+    })
+  }).then(r => r.json()).then(data => {
+    status.textContent = 'Scan started! Dir: ' + data.dir_name + '. Refresh in ~2 minutes.';
+    status.style.color = 'var(--green)';
+    setTimeout(() => { closeNewScan(); loadClients(); loadPipeline(); }, 3000);
+  }).catch(() => {
+    status.textContent = 'Failed to start scan.';
+    status.style.color = 'var(--red)';
+  });
+}
+
+function esc(text) {
+  const d = document.createElement('div');
+  d.textContent = text || '';
+  return d.innerHTML;
+}
+</script>
+{% endif %}
+</body>
+</html>
