@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberComply — 11 AI Agents Defending Your Business</title>
+<meta name="description" content="Enterprise-grade cybersecurity powered by 11 AI agents. Free security scan. Compliance automation. Get the protection of a $100K CISO team at a fraction of the cost.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --void:#050508;--bg:#0a0a0f;--card:#0f0f18;--card2:#12121e;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+  --cyan:#00e5ff;--cyan-dim:rgba(0,229,255,.08);--cyan-glow:rgba(0,229,255,.3);
+  --purple:#7c4dff;--purple-dim:rgba(124,77,255,.08);
+  --green:#00e676;--red:#ff1744;--orange:#ff9100;--amber:#ffd600;
+  --txt:#e8e8f0;--txt2:#c0c0d4;--dim:#7a7a96;--muted:#4a4a62;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'Instrument Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--void);color:var(--txt);overflow-x:hidden;line-height:1.6}
+
+/* ── NOISE TEXTURE ── */
+body::after{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+
+/* ── GRID OVERLAY ── */
+body::before{content:'';position:fixed;inset:0;background:
+  linear-gradient(rgba(0,229,255,.015) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,229,255,.015) 1px,transparent 1px);
+  background-size:80px 80px;pointer-events:none;z-index:0}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,4vw,60px);transition:all .4s}
+nav.scrolled{background:rgba(5,5,8,.92);backdrop-filter:blur(24px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--cyan);font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:1px}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--cyan),var(--purple));border-radius:7px;display:grid;place-items:center;font-style:normal;font-size:16px;font-weight:700;color:#fff;box-shadow:0 0 20px var(--cyan-glow)}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-links a{color:var(--dim);text-decoration:none;font-size:13px;font-weight:500;letter-spacing:.5px;transition:color .3s}
+.nav-links a:hover{color:var(--txt)}
+.nav-cta{background:transparent;border:1px solid var(--cyan);color:var(--cyan);padding:8px 20px;border-radius:6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;text-decoration:none;transition:all .3s;cursor:pointer}
+.nav-cta:hover{background:var(--cyan);color:var(--void);box-shadow:0 0 30px var(--cyan-glow)}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px clamp(20px,5vw,80px) 80px;position:relative;z-index:1}
+.hero-orb{position:absolute;border-radius:50%;filter:blur(160px);pointer-events:none}
+.hero-orb-1{width:700px;height:700px;background:rgba(0,229,255,.06);top:-300px;right:-200px}
+.hero-orb-2{width:500px;height:500px;background:rgba(124,77,255,.05);bottom:-100px;left:-250px}
+.hero-orb-3{width:300px;height:300px;background:rgba(0,230,118,.03);top:40%;left:50%;transform:translate(-50%,-50%)}
+
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:100px;background:var(--cyan-dim);border:1px solid rgba(0,229,255,.15);margin-bottom:32px;font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;animation:fadeDown .8s ease both;animation-delay:.1s}
+.hero-badge .pulse{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.hero h1{font-family:var(--serif);font-size:clamp(42px,6.5vw,86px);font-weight:900;line-height:1;letter-spacing:-3px;max-width:900px;margin-bottom:28px;animation:fadeDown .8s ease both;animation-delay:.2s}
+.hero h1 .line2{display:block;background:linear-gradient(135deg,var(--cyan) 0%,var(--purple) 50%,var(--cyan) 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:gradient 6s ease infinite}
+@keyframes gradient{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+.hero-sub{font-size:clamp(16px,1.8vw,20px);color:var(--dim);max-width:600px;line-height:1.7;margin-bottom:44px;font-weight:400;animation:fadeDown .8s ease both;animation-delay:.35s}
+
+.hero-actions{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;animation:fadeDown .8s ease both;animation-delay:.5s}
+.btn-primary{display:inline-flex;align-items:center;gap:10px;padding:16px 36px;background:var(--cyan);color:var(--void);font-weight:700;font-size:14px;text-decoration:none;border-radius:8px;letter-spacing:.5px;transition:all .4s;border:none;cursor:pointer;position:relative;overflow:hidden}
+.btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.2) 50%,transparent 60%);transform:translateX(-100%);transition:transform .6s}
+.btn-primary:hover::after{transform:translateX(100%)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px var(--cyan-glow)}
+.btn-ghost{display:inline-flex;align-items:center;gap:10px;padding:16px 36px;background:transparent;border:1px solid var(--border2);color:var(--txt);font-weight:600;font-size:14px;text-decoration:none;border-radius:8px;transition:all .3s;cursor:pointer}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+
+.hero-proof{display:flex;align-items:center;gap:24px;margin-top:48px;padding-top:48px;border-top:1px solid var(--border);animation:fadeDown .8s ease both;animation-delay:.65s}
+.proof-item{text-align:center}
+.proof-num{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--cyan)}
+.proof-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.proof-sep{width:1px;height:36px;background:var(--border)}
+
+@keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SECTION COMMONS ── */
+section{position:relative;z-index:1;padding:100px clamp(20px,5vw,80px)}
+.section-tag{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:3px;color:var(--cyan);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-tag::before{content:'';width:24px;height:1px;background:var(--cyan)}
+.section-title{font-family:var(--serif);font-size:clamp(32px,4vw,52px);font-weight:800;letter-spacing:-2px;line-height:1.1;margin-bottom:20px}
+.section-sub{font-size:17px;color:var(--dim);max-width:560px;line-height:1.7}
+
+/* ── PROBLEM SECTION ── */
+.problem{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;max-width:1200px;margin:0 auto}
+.problem-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;transition:all .3s}
+.stat-card:hover{border-color:rgba(0,229,255,.2);transform:translateY(-4px)}
+.stat-num{font-family:var(--mono);font-size:32px;font-weight:700;margin-bottom:6px}
+.stat-num.red{color:var(--red)}
+.stat-num.orange{color:var(--orange)}
+.stat-num.amber{color:var(--amber)}
+.stat-num.cyan{color:var(--cyan)}
+.stat-label{font-size:13px;color:var(--dim);line-height:1.5}
+
+/* ── AGENTS GRID ── */
+.agents-section{max-width:1200px;margin:0 auto;text-align:center}
+.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:48px}
+.agent-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px 20px;text-align:left;transition:all .4s;cursor:default;position:relative;overflow:hidden}
+.agent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--agent-color,var(--cyan));opacity:0;transition:opacity .3s}
+.agent-card:hover{border-color:var(--agent-color,rgba(0,229,255,.3));transform:translateY(-4px)}
+.agent-card:hover::before{opacity:1}
+.agent-icon{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-size:16px;margin-bottom:14px;background:var(--agent-color,var(--cyan-dim));color:var(--agent-color,var(--cyan));border:1px solid rgba(255,255,255,.06)}
+.agent-name{font-family:var(--mono);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;color:var(--agent-color,var(--cyan))}
+.agent-tagline{font-size:13px;color:var(--dim);line-height:1.5}
+.agent-status{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--green);font-family:var(--mono);margin-top:10px;text-transform:uppercase;letter-spacing:1px}
+.agent-status::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green)}
+
+/* ── HOW IT WORKS ── */
+.how-section{max-width:1000px;margin:0 auto}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:48px;counter-reset:step}
+.step{position:relative;padding:32px 28px;background:var(--card);border:1px solid var(--border);border-radius:12px;transition:all .4s}
+.step:hover{border-color:rgba(0,229,255,.2);transform:translateY(-4px)}
+.step::before{counter-increment:step;content:counter(step,decimal-leading-zero);font-family:var(--mono);font-size:48px;font-weight:700;color:rgba(0,229,255,.08);position:absolute;top:16px;right:20px;line-height:1}
+.step-icon{width:44px;height:44px;border-radius:10px;background:var(--cyan-dim);border:1px solid rgba(0,229,255,.15);display:grid;place-items:center;font-size:20px;margin-bottom:18px}
+.step h4{font-size:17px;font-weight:700;margin-bottom:8px}
+.step p{font-size:13px;color:var(--dim);line-height:1.6}
+.step-note{font-family:var(--mono);font-size:11px;color:var(--cyan);margin-top:10px;opacity:.7}
+
+/* ── COMPARISON ── */
+.compare-section{max-width:900px;margin:0 auto}
+.compare-table{margin-top:48px;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.compare-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border)}
+.compare-row:last-child{border-bottom:none}
+.compare-row.header{background:var(--card2)}
+.compare-cell{padding:18px 24px;font-size:14px}
+.compare-cell:first-child{color:var(--dim);font-size:13px;border-right:1px solid var(--border)}
+.compare-cell:nth-child(2){border-right:1px solid var(--border);color:var(--muted);text-align:center}
+.compare-cell:nth-child(3){text-align:center;color:var(--cyan)}
+.compare-row.header .compare-cell{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);font-family:var(--mono)}
+.compare-row.header .compare-cell:nth-child(3){color:var(--cyan)}
+.check{color:var(--green)}
+.cross{color:var(--red);opacity:.5}
+
+/* ── FINAL CTA ── */
+.final-cta{text-align:center;max-width:700px;margin:0 auto;padding:120px 20px}
+.final-cta h2{font-family:var(--serif);font-size:clamp(36px,5vw,56px);font-weight:800;letter-spacing:-2px;line-height:1.1;margin-bottom:20px}
+.final-cta p{font-size:18px;color:var(--dim);margin-bottom:40px;line-height:1.7}
+.cta-glow{position:relative}
+.cta-glow::before{content:'';position:absolute;inset:-60px;background:radial-gradient(ellipse at center,rgba(0,229,255,.06) 0%,transparent 70%);pointer-events:none}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:40px clamp(20px,5vw,60px);display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.footer-left{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.footer-right{display:flex;gap:24px}
+.footer-right a{font-size:12px;color:var(--muted);text-decoration:none;transition:color .3s}
+.footer-right a:hover{color:var(--cyan)}
+
+/* ── ANIMATIONS ── */
+.reveal{opacity:0;transform:translateY(30px);transition:all .8s cubic-bezier(.16,1,.3,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.1s}
+.reveal-delay-2{transition-delay:.2s}
+.reveal-delay-3{transition-delay:.3s}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .problem{grid-template-columns:1fr;gap:40px}
+  .steps{grid-template-columns:1fr}
+  .compare-cell{padding:12px 16px;font-size:12px}
+  .agents-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+  .hero-proof{flex-wrap:wrap;justify-content:center;gap:16px}
+  .proof-sep{display:none}
+}
+@media(max-width:640px){
+  .nav-links{display:none}
+  .hero h1{letter-spacing:-1.5px}
+  .hero-actions{flex-direction:column;width:100%;max-width:340px}
+  .btn-primary,.btn-ghost{justify-content:center;width:100%}
+  footer{flex-direction:column;gap:16px;text-align:center}
+  .compare-row{grid-template-columns:1fr 1fr 1fr}
+  .compare-cell{padding:10px 8px;font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav id="nav">
+  <a href="/" class="logo"><i class="logo-mark">C</i>CYBERCOMPLY</a>
+  <div class="nav-links">
+    <a href="#agents">Agents</a>
+    <a href="#how">How It Works</a>
+    <a href="#compare">Compare</a>
+    <a href="/scan" class="nav-cta">Free Scan</a>
+  </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-orb hero-orb-3"></div>
+
+  <div class="hero-badge"><span class="pulse"></span> 11 AI Agents Online</div>
+
+  <h1>
+    Your Business Deserves<br>
+    <span class="line2">A Security Team</span>
+  </h1>
+
+  <p class="hero-sub">
+    11 autonomous AI agents scan, monitor, and protect your business around the clock.
+    Enterprise-grade cybersecurity&mdash;without the enterprise price tag.
+  </p>
+
+  <div class="hero-actions">
+    <a href="/scan" class="btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Free Security Scan
+    </a>
+    <a href="#how" class="btn-ghost">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      See How It Works
+    </a>
+  </div>
+
+  <div class="hero-proof">
+    <div class="proof-item">
+      <div class="proof-num">11</div>
+      <div class="proof-label">AI Agents</div>
+    </div>
+    <div class="proof-sep"></div>
+    <div class="proof-item">
+      <div class="proof-num">30s</div>
+      <div class="proof-label">Scan Time</div>
+    </div>
+    <div class="proof-sep"></div>
+    <div class="proof-item">
+      <div class="proof-num">9</div>
+      <div class="proof-label">Auto Policies</div>
+    </div>
+    <div class="proof-sep"></div>
+    <div class="proof-item">
+      <div class="proof-num">24/7</div>
+      <div class="proof-label">Monitoring</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── THE PROBLEM ─── -->
+<section id="problem">
+  <div class="problem">
+    <div class="reveal">
+      <div class="section-tag">The Problem</div>
+      <h2 class="section-title">Small Businesses Are<br>The #1 Target</h2>
+      <p class="section-sub">
+        Cybercriminals know small and mid-sized businesses can't afford a full security team.
+        So they target the 99% who are unprotected. CyberComply closes that gap with AI.
+      </p>
+    </div>
+    <div class="problem-stats reveal reveal-delay-2">
+      <div class="stat-card">
+        <div class="stat-num red">43%</div>
+        <div class="stat-label">of cyberattacks target small businesses</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num orange">$4.5M</div>
+        <div class="stat-label">average cost of a data breach in 2025</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num amber">60%</div>
+        <div class="stat-label">of small businesses close within 6 months of an attack</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num cyan">$0</div>
+        <div class="stat-label">cost to scan your domain with CyberComply right now</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── AGENTS ─── -->
+<section id="agents">
+  <div class="agents-section reveal">
+    <div class="section-tag" style="justify-content:center">Your AI Security Team</div>
+    <h2 class="section-title">11 Agents. Zero&nbsp;Downtime.</h2>
+    <p class="section-sub" style="margin:0 auto 8px">Each agent is a specialist. Together, they deliver the coverage of a full CISO team&mdash;scanning, monitoring, and responding around the clock.</p>
+
+    <div class="agents-grid">
+      <div class="agent-card" style="--agent-color:#00e5ff">
+        <div class="agent-icon" style="background:rgba(0,229,255,.1)">&#128269;</div>
+        <div class="agent-name">Recon</div>
+        <div class="agent-tagline">Scans your perimeter&mdash;SSL, DNS, ports, headers, email security.</div>
+        <div class="agent-status">Active</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#7c4dff">
+        <div class="agent-icon" style="background:rgba(124,77,255,.1)">&#128065;</div>
+        <div class="agent-name">Shadow</div>
+        <div class="agent-tagline">Hunts the dark web for your leaked credentials and data.</div>
+        <div class="agent-status">Active</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#00e676">
+        <div class="agent-icon" style="background:rgba(0,230,118,.1)">&#128737;</div>
+        <div class="agent-name">Guardian</div>
+        <div class="agent-tagline">Builds your security policies, risk register, and compliance posture.</div>
+        <div class="agent-status">Active</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#ff9100">
+        <div class="agent-icon" style="background:rgba(255,145,0,.1)">&#127907;</div>
+        <div class="agent-name">Phantom</div>
+        <div class="agent-tagline">Simulates phishing attacks to test your employees' awareness.</div>
+        <div class="agent-status">Active</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#ff1744">
+        <div class="agent-icon" style="background:rgba(255,23,68,.1)">&#128296;</div>
+        <div class="agent-name">Breach</div>
+        <div class="agent-tagline">Runs penetration test scoping and vulnerability assessments.</div>
+        <div class="agent-status">Active</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#ffd600">
+        <div class="agent-icon" style="background:rgba(255,214,0,.1)">&#128220;</div>
+        <div class="agent-name">Comply</div>
+        <div class="agent-tagline">Maps controls across NIST, IRS 4557, SOC 2, HIPAA, and more.</div>
+        <div class="agent-status">Active</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#e040fb">
+        <div class="agent-icon" style="background:rgba(224,64,251,.1)">&#128225;</div>
+        <div class="agent-name">Dispatch</div>
+        <div class="agent-tagline">Provides incident response playbooks when things go wrong.</div>
+        <div class="agent-status">Standby</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#18ffff">
+        <div class="agent-icon" style="background:rgba(24,255,255,.1)">&#128504;</div>
+        <div class="agent-name">Vigil</div>
+        <div class="agent-tagline">Continuous configuration auditing and security monitoring.</div>
+        <div class="agent-status">Active</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#ff6e40">
+        <div class="agent-icon" style="background:rgba(255,110,64,.1)">&#129413;</div>
+        <div class="agent-name">Falcon</div>
+        <div class="agent-tagline">Pulls live threat intel from CISA KEV and national advisories.</div>
+        <div class="agent-status">Active</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#76ff03">
+        <div class="agent-icon" style="background:rgba(118,255,3,.1)">&#9889;</div>
+        <div class="agent-name">Vanguard</div>
+        <div class="agent-tagline">Orchestrates multi-agent workflows for end-to-end automation.</div>
+        <div class="agent-status">Active</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#448aff">
+        <div class="agent-icon" style="background:rgba(68,138,255,.1)">&#128218;</div>
+        <div class="agent-name">Chronicle</div>
+        <div class="agent-tagline">Generates audit-ready PDF reports, proposals, and documentation.</div>
+        <div class="agent-status">Active</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── HOW IT WORKS ─── -->
+<section id="how">
+  <div class="how-section reveal">
+    <div class="section-tag" style="justify-content:center">How It Works</div>
+    <h2 class="section-title" style="text-align:center">Three Steps to<br>Full Protection</h2>
+    <p class="section-sub" style="text-align:center;margin:0 auto">No installations. No complicated setup. Just enter your domain and let the agents work.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">&#128269;</div>
+        <h4>Scan Your Domain</h4>
+        <p>Enter your domain and our AI agents run a real security assessment in 30 seconds. SSL, email security, open ports, DNS, headers&mdash;everything.</p>
+        <div class="step-note">Free &bull; No signup</div>
+      </div>
+      <div class="step">
+        <div class="step-icon">&#128202;</div>
+        <h4>Get Your Report</h4>
+        <p>Receive a comprehensive 9-page PDF with your security score, every finding ranked by severity, and specific remediation steps.</p>
+        <div class="step-note">AI-generated &bull; Audit-ready</div>
+      </div>
+      <div class="step">
+        <div class="step-icon">&#128737;</div>
+        <h4>Activate Protection</h4>
+        <p>We generate your security policies, compliance mapping, risk register, and monitoring&mdash;all automated by our 11 AI agents.</p>
+        <div class="step-note">Ongoing &bull; Always watching</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── COMPARISON ─── -->
+<section id="compare">
+  <div class="compare-section reveal">
+    <div class="section-tag" style="justify-content:center">Why CyberComply</div>
+    <h2 class="section-title" style="text-align:center">Traditional vs. AI-Powered</h2>
+    <p class="section-sub" style="text-align:center;margin:0 auto">The same deliverables. A fraction of the time and cost.</p>
+
+    <div class="compare-table">
+      <div class="compare-row header">
+        <div class="compare-cell"></div>
+        <div class="compare-cell">Traditional MSSP</div>
+        <div class="compare-cell">CyberComply AI</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">Security Assessment</div>
+        <div class="compare-cell">2&ndash;4 weeks</div>
+        <div class="compare-cell">30 seconds</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">Policy Generation</div>
+        <div class="compare-cell">$5K&ndash;$15K</div>
+        <div class="compare-cell">Automated (9 policies)</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">Compliance Mapping</div>
+        <div class="compare-cell">Manual spreadsheets</div>
+        <div class="compare-cell">Multi-framework auto-map</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">Threat Intelligence</div>
+        <div class="compare-cell">Optional add-on</div>
+        <div class="compare-cell"><span class="check">&#10003;</span> CISA KEV live feed</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">Phishing Simulation</div>
+        <div class="compare-cell">$2K&ndash;$5K per campaign</div>
+        <div class="compare-cell"><span class="check">&#10003;</span> Built-in</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">Dark Web Monitoring</div>
+        <div class="compare-cell">$500&ndash;$2K/month</div>
+        <div class="compare-cell"><span class="check">&#10003;</span> Included</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell">Incident Response Plans</div>
+        <div class="compare-cell">$3K&ndash;$8K</div>
+        <div class="compare-cell"><span class="check">&#10003;</span> Auto-generated</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FINAL CTA ─── -->
+<section class="final-cta cta-glow">
+  <div class="reveal">
+    <div class="section-tag" style="justify-content:center">Get Started</div>
+    <h2>Stop Hoping.<br>Start <span style="background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent">Knowing.</span></h2>
+    <p>Find out exactly where your business stands in 30 seconds. No credit card. No sales call. Just your score.</p>
+    <a href="/scan" class="btn-primary" style="font-size:16px;padding:18px 44px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Scan My Domain Free
+    </a>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-left">&copy; 2026 CyberComply &mdash; 11 AI Agents. Always On.</div>
+  <div class="footer-right">
+    <a href="/scan">Free Scan</a>
+    <a href="{{ calendly_link }}" target="_blank">Book a Call</a>
+  </div>
+</footer>
+
+<script>
+// Nav scroll effect
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+reveals.forEach(el => observer.observe(el));
+
+// Stagger agent cards
+document.querySelectorAll('.agent-card').forEach((card, i) => {
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(20px)';
+  card.style.transition = `all .5s cubic-bezier(.16,1,.3,1) ${i * .06}s`;
+});
+const agentObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.agent-card').forEach(card => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      });
+      agentObserver.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+const agentGrid = document.querySelector('.agents-grid');
+if (agentGrid) agentObserver.observe(agentGrid);
+
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+</script>
+</body>
+</html>

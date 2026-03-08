@@ -102,8 +102,13 @@ class IncidentRequest(BaseModel):
 
 # ─── HEALTH CHECK ─────────────────────────────────────────────
 
-@app.get("/")
-async def root():
+@app.get("/", response_class=HTMLResponse)
+async def landing_page():
+    tmpl = templates.get_template("landing.html")
+    return HTMLResponse(tmpl.render(calendly_link=CALENDLY_LINK))
+
+@app.get("/api/health")
+async def health_check():
     return {
         "name": "CyberComply",
         "version": "2.0.0",
