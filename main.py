@@ -357,6 +357,201 @@ async def dashboard_page(request: Request):
     resp.set_cookie("dashboard_auth", DASHBOARD_PASSWORD, max_age=86400)
     return resp
 
+# ─── DIAGNOSTIC REPORT ──────────────────────────────────
+
+@app.get("/report/{client_dir}", response_class=HTMLResponse)
+async def diagnostic_report(client_dir: str, request: Request):
+    """Full 7-section diagnostic report for a client."""
+    client_path = OUTPUT_DIR / client_dir
+    scan_file = client_path / "scan_data.json"
+    if not scan_file.exists():
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    with open(scan_file) as f:
+        data = json.load(f)
+
+    scan = data.get("scan", {})
+    forge = data.get("forge", {})
+    archer = scan.get("archer", {})
+    profile = forge.get("profile", {})
+    compliance_data = forge.get("compliance", {})
+    score_data = archer.get("score", {})
+    findings_raw = archer.get("findings", [])
+    breakdown = score_data.get("breakdown", {})
+
+    total_score = score_data.get("total", 0)
+
+    # Score color
+    if total_score >= 80: score_color, score_color_dim = "#34d399", "rgba(52,211,153,0.12)"
+    elif total_score >= 60: score_color, score_color_dim = "#a3e635", "rgba(163,230,53,0.12)"
+    elif total_score >= 40: score_color, score_color_dim = "#fbbf24", "rgba(251,191,36,0.12)"
+    elif total_score >= 20: score_color, score_color_dim = "#f97316", "rgba(249,115,22,0.12)"
+    else: score_color, score_color_dim = "#ef4444", "rgba(239,68,68,0.12)"
+
+    # Arc math (semicircle, r=85 → circumference/2 ≈ 267)
+    arc_total = 267
+    arc_offset = arc_total * (1 - total_score / 100)
+
+    # Scan categories
+    cat_map = {
+        "email_security": ("Email Security", "SPF, DKIM, DMARC verification"),
+        "ssl_tls": ("SSL / TLS", "Certificate validity, protocol strength"),
+        "security_headers": ("Security Headers", "HSTS, CSP, X-Frame-Options, and more"),
+        "network_exposure": ("Network Exposure", "Open ports and services"),
+        "technology": ("Technology Stack", "Server, CDN, CMS detection"),
+        "dns_security": ("DNS Security", "DNSSEC, CAA records"),
+    }
+    scan_categories = []
+    for key, (name, desc) in cat_map.items():
+        bd = breakdown.get(key, {})
+        s, mx = bd.get("score", 0), bd.get("max", 1)
+        pct = round(s / mx * 100) if mx > 0 else 0
+        if pct >= 80: color, status, scls = "#34d399", "PASS", "status-pass"
+        elif pct >= 40: color, status, scls = "#fbbf24", "PARTIAL", "status-partial"
+        else: color, status, scls = "#ef4444", "FAIL", "status-fail"
+        scan_categories.append(dict(name=name, description=desc, score=s, max=mx, pct=pct, color=color, status=status, status_class=scls))
+
+    # Findings
+    findings = []
+    critical_count = high_count = 0
+    for f in findings_raw:
+        sev = f.get("severity", "INFO").upper()
+        if sev == "CRITICAL": critical_count += 1
+        elif sev == "HIGH": high_count += 1
+        findings.append(dict(
+            severity=sev, title=f.get("title", ""),
+            description=f.get("description", ""), fix=f.get("fix", ""),
+            effort=f.get("effort", "—"), cost=f.get("cost", "—"),
+            category=f.get("category", "General"),
+        ))
+
+    # Compliance frameworks
+    compliance_frameworks = []
+    avg_compliance = 0
+    for fw_key, fw_data in compliance_data.items():
+        met = fw_data.get("met", 0)
+        partial = fw_data.get("partial", 0)
+        not_met = fw_data.get("not_met", 0)
+        total = fw_data.get("total_controls", met + partial + not_met)
+        pct = fw_data.get("compliance_percentage", 0)
+        controls = []
+        for c in fw_data.get("controls", []):
+            controls.append(dict(id=c.get("id", ""), name=c.get("name", ""), category=c.get("category", ""), status=c.get("status", "not_met")))
+        compliance_frameworks.append(dict(
+            key=fw_key, name=fw_data.get("framework_name", fw_key),
+            met=met, partial=partial, not_met=not_met, total=total, pct=pct, controls=controls,
+        ))
+    if compliance_frameworks:
+        avg_compliance = round(sum(f["pct"] for f in compliance_frameworks) / len(compliance_frameworks))
+
+    # Risk items from questionnaire
+    risk_items = []
+    risk_score = profile.get("risk_score", {})
+    for finding in risk_score.get("findings", []):
+        # Classify severity based on keywords
+        fl = finding.lower()
+        if any(k in fl for k in ["no backup", "no wisp", "no incident", "no endpoint"]): sev = "CRITICAL"
+        elif any(k in fl for k in ["mfa not", "no firewall", "no cyber insurance", "no recent"]): sev = "HIGH"
+        elif any(k in fl for k in ["no training", "not properly"]): sev = "MEDIUM"
+        else: sev = "LOW"
+        risk_items.append(dict(finding=finding, severity=sev))
+
+    # Policies status
+    policy_dir = client_path / "policies"
+    all_policies = [
+        ("WISP", "Written Information Security Plan"),
+        ("IRP", "Incident Response Plan"),
+        ("AUP", "Acceptable Use Policy"),
+        ("ENCRYPTION", "Encryption & Data Protection"),
+        ("REMOTE_WORK", "Remote Work Security"),
+        ("VENDOR_MGMT", "Vendor Management"),
+        ("DATA_CLASS", "Data Classification & Handling"),
+        ("PASSWORD", "Password & Authentication"),
+        ("TRAINING", "Security Awareness Training"),
+        ("CHANGE_MGMT", "Change Management"),
+        ("BCP", "Business Continuity Plan"),
+        ("PHYSICAL", "Physical Security"),
+        ("MDM", "Mobile Device Management"),
+        ("CLOUD", "Cloud Security"),
+        ("RETENTION", "Data Retention & Destruction"),
+        ("SOCIAL_MEDIA", "Social Media & Communications"),
+    ]
+    policies = []
+    policies_generated = 0
+    for key, name in all_policies:
+        exists = (policy_dir / f"{key}.txt").exists() if policy_dir.exists() else False
+        if exists: policies_generated += 1
+        policies.append(dict(key=key, name=name, generated=exists))
+
+    # Deliverables
+    deliverables = [
+        dict(name="Security Assessment PDF", file=f"{client_dir.split('_2')[0]}_Security_Assessment_*.pdf", ready=(len(list(client_path.glob("*.pdf"))) > 0)),
+        dict(name="Proposal Email", file="PROPOSAL_EMAIL.txt", ready=(client_path / "PROPOSAL_EMAIL.txt").exists()),
+        dict(name="Policy Documents", file=f"policies/ ({policies_generated} files)", ready=policies_generated > 0),
+        dict(name="Raw Scan Data", file="scan_data.json", ready=True),
+        dict(name="AI Finding Narratives", file="cold_email_1.txt", ready=(client_path / "cold_email_1.txt").exists()),
+        dict(name="Dark Web Breach Report", file="shadow_alerts/", ready=(client_path / "shadow_alerts").exists()),
+    ]
+
+    # Upsells based on profile
+    upsells = []
+    if profile.get("cyber_insurance") == "No":
+        upsells.append(dict(name="Cyber Insurance Readiness", why="No current coverage — handles sensitive FTI/PII", price="$1,500"))
+    if profile.get("training") == "No":
+        upsells.append(dict(name="Security Training Program", why="No awareness training — #1 breach cause", price="$1,000"))
+    upsells.append(dict(name="Vendor Risk Assessment", why="FTC/IRS requires vendor oversight", price="$500/vendor"))
+    if total_score < 70:
+        upsells.append(dict(name="Penetration Test Coordination", why=f"Score {total_score}/100 — validate external findings", price="$2,500"))
+
+    # Client info
+    scan_date = archer.get("scan_date", "")
+    if scan_date:
+        try:
+            dt = datetime.fromisoformat(scan_date.replace("Z", "+00:00"))
+            scan_date = dt.strftime("%B %d, %Y")
+        except Exception:
+            pass
+
+    client_info = dict(
+        company_name=scan.get("company_name", client_dir),
+        domain=scan.get("domain", ""),
+        industry=profile.get("industry", "General"),
+        size=profile.get("employee_count", "Unknown"),
+        email_platform=profile.get("email_provider", "Unknown"),
+        scan_date=scan_date,
+        report_date=date.today().strftime("%B %d, %Y"),
+        frameworks=[fw["name"] for fw in compliance_frameworks],
+        data_types=profile.get("data_types", []),
+    )
+
+    tmpl = templates.get_template("report.html")
+    return HTMLResponse(tmpl.render(
+        client=client_info,
+        score=score_data,
+        score_color=score_color,
+        score_color_dim=score_color_dim,
+        arc_total=round(arc_total),
+        arc_offset=round(arc_offset),
+        scan_categories=scan_categories,
+        findings=findings,
+        findings_count=len(findings),
+        critical_count=critical_count,
+        high_count=high_count,
+        shadow_status="not_run",
+        shadow_data={},
+        compliance_frameworks=compliance_frameworks,
+        avg_compliance=avg_compliance,
+        risk_items=risk_items,
+        risk_findings=len(risk_items),
+        policies=policies,
+        policies_generated=policies_generated,
+        deliverables=deliverables,
+        upsells=upsells,
+        calendly_link=CALENDLY_LINK,
+        current_year=date.today().year,
+    ))
+
+
 # ─── SSE SCAN ENDPOINT ──────────────────────────────────
 
 @app.get("/api/scan/free/stream")

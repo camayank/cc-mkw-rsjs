@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ client.company_name }} — Security Diagnostic Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── VARIABLES ───────────────────────────────── */
+:root {
+  --bg: #0a0b10;
+  --surface: #111219;
+  --surface-2: #191a24;
+  --surface-3: #21222f;
+  --border: #2a2c3e;
+  --border-light: #353750;
+  --text: #e2e8f0;
+  --text-muted: #7c8599;
+  --text-dim: #505672;
+  --emerald: #34d399;
+  --emerald-dim: rgba(52,211,153,0.12);
+  --lime: #a3e635;
+  --amber: #fbbf24;
+  --amber-dim: rgba(251,191,36,0.12);
+  --orange: #f97316;
+  --orange-dim: rgba(249,115,22,0.12);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.12);
+  --blue: #60a5fa;
+  --blue-dim: rgba(96,165,250,0.12);
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --max-w: 1140px;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+/* ─── RESET ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* ─── NOISE OVERLAY ──────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+/* ─── STICKY NAV ─────────────────────────────── */
+.report-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,11,16,0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+.report-nav-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  display: flex; align-items: center; gap: 8px;
+  height: 52px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.report-nav-inner::-webkit-scrollbar { display: none; }
+.nav-brand {
+  font-family: var(--mono);
+  font-weight: 700; font-size: 13px;
+  color: var(--emerald);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  margin-right: 16px;
+  padding-right: 16px;
+  border-right: 1px solid var(--border);
+}
+.nav-link {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+.nav-link:hover { color: var(--text); background: var(--surface-2); }
+.nav-link.active { color: var(--emerald); background: var(--emerald-dim); }
+.nav-actions { margin-left: auto; display: flex; gap: 8px; }
+.btn-print {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  color: var(--bg); background: var(--emerald);
+  border: none; padding: 6px 14px; border-radius: 4px;
+  cursor: pointer; letter-spacing: 0.03em;
+  transition: opacity 0.2s;
+}
+.btn-print:hover { opacity: 0.85; }
+
+/* ─── LAYOUT ─────────────────────────────────── */
+.report-container {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative; z-index: 1;
+}
+
+/* ─── SECTION SYSTEM ─────────────────────────── */
+.report-section {
+  padding: 64px 0 48px;
+  border-top: 1px solid var(--border);
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.report-section.visible { opacity: 1; transform: translateY(0); }
+.report-section:first-of-type { border-top: none; }
+.section-label {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  color: var(--text-dim); letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.section-num {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  color: var(--emerald);
+  background: var(--emerald-dim);
+  padding: 3px 8px; border-radius: 4px;
+}
+.section-title {
+  font-family: var(--serif);
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+.section-subtitle {
+  font-size: 15px;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin-bottom: 36px;
+}
+
+/* ─── COVER / HEADER ─────────────────────────── */
+.report-cover {
+  padding: 80px 0 48px;
+  position: relative; z-index: 1;
+  opacity: 0; transform: translateY(20px);
+  animation: fadeUp 0.8s ease 0.2s forwards;
+}
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+.cover-eyebrow {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--emerald);
+  margin-bottom: 16px;
+}
+.cover-title {
+  font-family: var(--serif);
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.cover-title em { font-style: italic; color: var(--emerald); }
+.cover-domain {
+  font-family: var(--mono); font-size: 16px;
+  color: var(--text-muted); margin-bottom: 32px;
+}
+.cover-meta {
+  display: flex; flex-wrap: wrap; gap: 24px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.meta-item {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.meta-label {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.meta-value { font-size: 14px; font-weight: 500; color: var(--text); }
+
+/* ─── EXECUTIVE SUMMARY ──────────────────────── */
+.exec-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .exec-grid { grid-template-columns: 1fr; gap: 32px; }
+}
+
+/* Score Gauge */
+.score-gauge-wrap {
+  display: flex; flex-direction: column;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 24px 24px;
+}
+.score-gauge-svg { width: 220px; height: 130px; }
+.gauge-bg { fill: none; stroke: var(--surface-3); stroke-width: 14; stroke-linecap: round; }
+.gauge-fill {
+  fill: none; stroke-width: 14; stroke-linecap: round;
+  transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.gauge-score {
+  font-family: var(--mono); font-weight: 700; font-size: 48px;
+  fill: var(--text);
+}
+.gauge-max {
+  font-family: var(--mono); font-weight: 400; font-size: 16px;
+  fill: var(--text-dim);
+}
+.gauge-label {
+  font-family: var(--mono); font-weight: 600; font-size: 12px;
+  letter-spacing: 0.15em;
+}
+.score-grade {
+  font-family: var(--mono); font-weight: 700; font-size: 14px;
+  letter-spacing: 0.1em;
+  padding: 4px 14px; border-radius: 4px;
+  margin-top: 16px;
+}
+
+/* KPI Cards */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+.kpi-num {
+  font-family: var(--mono); font-weight: 700;
+  font-size: 28px; line-height: 1;
+  margin-bottom: 4px;
+}
+.kpi-label {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.kpi-num.critical { color: var(--red); }
+.kpi-num.warning { color: var(--amber); }
+.kpi-num.good { color: var(--emerald); }
+.kpi-num.neutral { color: var(--text); }
+
+/* Executive Paragraph */
+.exec-brief {
+  background: var(--surface);
+  border-left: 3px solid var(--emerald);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 20px 24px;
+  margin-top: 24px;
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.exec-brief strong { color: var(--text); }
+
+/* ─── SCAN BREAKDOWN ─────────────────────────── */
+.scan-categories { display: flex; flex-direction: column; gap: 12px; }
+.scan-cat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr 80px 60px;
+  align-items: center;
+  gap: 16px;
+}
+@media (max-width: 600px) {
+  .scan-cat { grid-template-columns: 1fr; gap: 8px; }
+}
+.cat-info { display: flex; flex-direction: column; gap: 4px; }
+.cat-name { font-weight: 600; font-size: 14px; }
+.cat-desc { font-size: 12px; color: var(--text-muted); }
+.cat-bar-wrap {
+  height: 6px; background: var(--surface-3);
+  border-radius: 3px; overflow: hidden;
+  grid-column: 1 / -1;
+}
+.cat-bar {
+  height: 100%; border-radius: 3px;
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 0;
+}
+.cat-score {
+  font-family: var(--mono); font-weight: 700; font-size: 14px;
+  text-align: right;
+}
+.cat-status {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 8px; border-radius: 3px;
+  text-align: center;
+}
+.status-pass { background: var(--emerald-dim); color: var(--emerald); }
+.status-partial { background: var(--amber-dim); color: var(--amber); }
+.status-fail { background: var(--red-dim); color: var(--red); }
+
+/* ─── FINDINGS ───────────────────────────────── */
+.findings-list { display: flex; flex-direction: column; gap: 12px; }
+.finding-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  border-left: 4px solid var(--blue);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+}
+.finding-card.sev-critical { border-left-color: var(--red); }
+.finding-card.sev-high { border-left-color: var(--orange); }
+.finding-card.sev-medium { border-left-color: var(--amber); }
+.finding-card.sev-low { border-left-color: var(--blue); }
+.finding-card.sev-info { border-left-color: var(--text-dim); }
+.finding-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+.finding-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+.finding-fix {
+  font-size: 13px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+.finding-fix strong { color: var(--emerald); font-weight: 600; }
+.sev-badge {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 4px 10px; border-radius: 3px;
+  align-self: start;
+  white-space: nowrap;
+}
+.sev-badge.critical { background: var(--red-dim); color: var(--red); }
+.sev-badge.high { background: var(--orange-dim); color: var(--orange); }
+.sev-badge.medium { background: var(--amber-dim); color: var(--amber); }
+.sev-badge.low { background: var(--blue-dim); color: var(--blue); }
+.sev-badge.info { background: var(--surface-3); color: var(--text-dim); }
+.finding-meta {
+  display: flex; gap: 16px; margin-top: 10px;
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+}
+.finding-meta span { display: flex; align-items: center; gap: 4px; }
+
+/* ─── SHADOW / DARK WEB ──────────────────────── */
+.shadow-not-run {
+  background: var(--surface);
+  border: 1px dashed var(--border-light);
+  border-radius: var(--radius);
+  padding: 40px;
+  text-align: center;
+}
+.shadow-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+.shadow-title { font-weight: 600; font-size: 18px; margin-bottom: 8px; color: var(--text-muted); }
+.shadow-desc { font-size: 14px; color: var(--text-dim); max-width: 480px; margin: 0 auto; }
+
+/* ─── COMPLIANCE ─────────────────────────────── */
+.framework-cards { display: flex; flex-direction: column; gap: 16px; }
+.fw-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.fw-header {
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.fw-header:hover { background: var(--surface-2); }
+.fw-name { font-weight: 600; font-size: 16px; }
+.fw-counts {
+  display: flex; gap: 12px;
+  font-family: var(--mono); font-size: 12px;
+  margin-top: 6px;
+}
+.fw-count { display: flex; align-items: center; gap: 4px; }
+.fw-count .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+.dot.met { background: var(--emerald); }
+.dot.partial { background: var(--amber); }
+.dot.not-met { background: var(--red); }
+.fw-pct-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.fw-pct {
+  font-family: var(--mono); font-weight: 700; font-size: 28px;
+}
+.fw-pct-label {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  color: var(--text-dim); letter-spacing: 0.08em;
+}
+.fw-bar-full {
+  height: 4px; background: var(--surface-3);
+  margin: 0 24px;
+}
+.fw-bar-fill { height: 100%; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); width: 0; }
+.fw-controls {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+.fw-controls.open { max-height: 2000px; }
+.fw-controls-inner { padding: 12px 24px 20px; }
+.ctrl-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 100px 80px;
+  gap: 8px; align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.ctrl-row:last-child { border-bottom: none; }
+.ctrl-id { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.ctrl-name { color: var(--text-muted); }
+.ctrl-cat { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+.ctrl-status {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 8px; border-radius: 3px;
+  text-align: center;
+}
+.ctrl-met { background: var(--emerald-dim); color: var(--emerald); }
+.ctrl-partial { background: var(--amber-dim); color: var(--amber); }
+.ctrl-not-met { background: var(--red-dim); color: var(--red); }
+.fw-toggle {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text-dim); cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  margin-top: 4px;
+}
+.fw-toggle::after { content: '▸'; transition: transform 0.3s; }
+.fw-toggle.open::after { transform: rotate(90deg); }
+
+/* ─── RISK REGISTER ──────────────────────────── */
+.risk-table { width: 100%; border-collapse: collapse; }
+.risk-table th {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  background: var(--surface);
+}
+.risk-table td {
+  padding: 12px 16px; font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  vertical-align: top;
+}
+.risk-table tr:hover td { background: var(--surface); }
+.risk-num {
+  font-family: var(--mono); font-weight: 700; font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* ─── POLICIES ───────────────────────────────── */
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.policy-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  display: flex; align-items: center; gap: 12px;
+}
+.policy-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.policy-icon.generated { background: var(--emerald-dim); color: var(--emerald); }
+.policy-icon.pending { background: var(--surface-3); color: var(--text-dim); }
+.policy-name { font-weight: 500; font-size: 13px; }
+.policy-status {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  color: var(--text-dim); margin-top: 2px;
+}
+.policy-status.ready { color: var(--emerald); }
+
+/* ─── ENGAGEMENT / PRICING ───────────────────── */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 768px) {
+  .pricing-grid { grid-template-columns: 1fr; }
+}
+.price-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  display: flex; flex-direction: column;
+  transition: border-color 0.3s, transform 0.3s;
+}
+.price-card:hover { transform: translateY(-2px); }
+.price-card.featured {
+  border-color: var(--emerald);
+  box-shadow: 0 0 40px rgba(52,211,153,0.08);
+}
+.price-tier {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.price-card.featured .price-tier { color: var(--emerald); }
+.price-name { font-weight: 700; font-size: 18px; margin-bottom: 4px; }
+.price-amount {
+  font-family: var(--mono); font-weight: 700; font-size: 32px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.price-period {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 20px;
+}
+.price-features {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 8px;
+  flex: 1;
+  margin-bottom: 24px;
+}
+.price-features li {
+  font-size: 13px; color: var(--text-muted);
+  padding-left: 20px;
+  position: relative;
+}
+.price-features li::before {
+  content: '✓';
+  position: absolute; left: 0;
+  color: var(--emerald);
+  font-weight: 700; font-size: 12px;
+}
+.price-cta {
+  display: block; width: 100%;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.price-cta:hover { background: var(--surface-2); border-color: var(--border-light); }
+.price-card.featured .price-cta {
+  background: var(--emerald); color: var(--bg); border-color: var(--emerald);
+}
+.price-card.featured .price-cta:hover { opacity: 0.9; }
+
+/* ─── FOOTER ─────────────────────────────────── */
+.report-footer {
+  padding: 40px 0 60px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  position: relative; z-index: 1;
+}
+.footer-disclaimer {
+  font-size: 12px; color: var(--text-dim);
+  max-width: 640px; margin: 0 auto;
+  line-height: 1.7;
+}
+.footer-brand {
+  font-family: var(--mono); font-weight: 700; font-size: 13px;
+  color: var(--emerald);
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+/* ─── DELIVERABLES ───────────────────────────── */
+.deliverables-list { display: flex; flex-direction: column; gap: 8px; }
+.deliv-row {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 12px; align-items: center;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+.deliv-check { font-size: 14px; }
+.deliv-check.done { color: var(--emerald); }
+.deliv-check.pending { color: var(--text-dim); }
+.deliv-label { color: var(--text-muted); }
+.deliv-label.done { color: var(--text); }
+.deliv-file {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ─── UPSELL ─────────────────────────────────── */
+.upsell-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+.upsell-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+}
+.upsell-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.upsell-why { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+.upsell-price {
+  font-family: var(--mono); font-weight: 700; font-size: 16px;
+  color: var(--emerald);
+}
+
+/* ─── UTILITY ────────────────────────────────── */
+.empty-state {
+  text-align: center; padding: 40px;
+  color: var(--text-dim); font-size: 14px;
+}
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ─── PRINT ──────────────────────────────────── */
+@media print {
+  body { background: #fff; color: #111; font-size: 12px; }
+  body::before { display: none; }
+  .report-nav, .btn-print, .nav-actions { display: none !important; }
+  .report-section { opacity: 1 !important; transform: none !important; break-inside: avoid; page-break-inside: avoid; padding: 24px 0; }
+  .report-cover { padding: 24px 0; }
+  .score-gauge-wrap, .kpi-card, .scan-cat, .finding-card, .fw-card, .policy-card, .price-card, .deliv-row, .upsell-card {
+    background: #f8f9fa; border-color: #ddd; box-shadow: none;
+  }
+  .kpi-num, .fw-pct, .cat-score, .price-amount { color: #111; }
+  .section-title { color: #111; }
+  .cover-title { color: #111; }
+  .cover-title em { color: #0d7347; }
+  .section-num { background: #e6f7ef; color: #0d7347; }
+  .fw-controls { max-height: none !important; }
+  .cat-bar, .fw-bar-fill { transition: none; }
+  :root {
+    --emerald: #0d7347; --red: #c0392b; --amber: #d4930d; --orange: #bf6516; --blue: #2563eb;
+    --emerald-dim: #e6f7ef; --red-dim: #fce4e4; --amber-dim: #fef3cd; --blue-dim: #dbeafe;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── STICKY NAV ──────────────────────────── -->
+<nav class="report-nav">
+  <div class="report-nav-inner">
+    <span class="nav-brand">CYBERCOMPLY</span>
+    <a href="#exec" class="nav-link active" data-section="exec">Executive</a>
+    <a href="#archer" class="nav-link" data-section="archer">Attack Surface</a>
+    <a href="#shadow" class="nav-link" data-section="shadow">Dark Web</a>
+    <a href="#compliance" class="nav-link" data-section="compliance">Compliance</a>
+    <a href="#risk" class="nav-link" data-section="risk">Risk Register</a>
+    <a href="#policies" class="nav-link" data-section="policies">Policies</a>
+    <a href="#engage" class="nav-link" data-section="engage">Engagement</a>
+    <div class="nav-actions">
+      <button class="btn-print" onclick="window.print()">⎙ Export PDF</button>
+    </div>
+  </div>
+</nav>
+
+<div class="report-container">
+
+<!-- ─── COVER ────────────────────────────────── -->
+<div class="report-cover">
+  <div class="cover-eyebrow">Security Diagnostic Report</div>
+  <h1 class="cover-title">{{ client.company_name }}</h1>
+  <div class="cover-domain">{{ client.domain }}</div>
+  <div class="cover-meta">
+    <div class="meta-item">
+      <span class="meta-label">Industry</span>
+      <span class="meta-value">{{ client.industry }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Size</span>
+      <span class="meta-value">{{ client.size }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Email Platform</span>
+      <span class="meta-value">{{ client.email_platform }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Scan Date</span>
+      <span class="meta-value">{{ client.scan_date }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Report Date</span>
+      <span class="meta-value">{{ client.report_date }}</span>
+    </div>
+    {% if client.frameworks %}
+    <div class="meta-item">
+      <span class="meta-label">Frameworks</span>
+      <span class="meta-value">{{ client.frameworks | join(', ') }}</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ─── 01 EXECUTIVE SUMMARY ─────────────────── -->
+<section class="report-section" id="exec">
+  <div class="section-label"><span class="section-num">01</span> Executive Summary</div>
+  <h2 class="section-title">Security Posture Overview</h2>
+  <div class="section-subtitle">High-level assessment of {{ client.company_name }}'s external security posture and compliance readiness.</div>
+
+  <div class="exec-grid">
+    <div class="score-gauge-wrap">
+      <svg class="score-gauge-svg" viewBox="0 0 220 130">
+        <path class="gauge-bg" d="M 25 110 A 85 85 0 0 1 195 110" />
+        <path class="gauge-fill" d="M 25 110 A 85 85 0 0 1 195 110"
+              stroke="{{ score_color }}"
+              stroke-dasharray="{{ arc_total }}"
+              stroke-dashoffset="{{ arc_total }}"
+              data-target="{{ arc_offset }}" />
+        <text x="110" y="88" text-anchor="middle" class="gauge-score" data-count="{{ score.total }}">0</text>
+        <text x="140" y="88" text-anchor="start" class="gauge-max">/100</text>
+        <text x="110" y="115" text-anchor="middle" class="gauge-label" fill="{{ score_color }}">{{ score.label }}</text>
+      </svg>
+      <div class="score-grade" style="background: {{ score_color_dim }}; color: {{ score_color }};">GRADE {{ score.grade }}</div>
+    </div>
+
+    <div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-num neutral" data-count="{{ score.total }}">0</div>
+          <div class="kpi-label">Security Score</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num {% if findings_count > 5 %}warning{% elif findings_count > 0 %}neutral{% else %}good{% endif %}" data-count="{{ findings_count }}">0</div>
+          <div class="kpi-label">Findings</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num {% if critical_count > 0 %}critical{% else %}good{% endif %}" data-count="{{ critical_count }}">0</div>
+          <div class="kpi-label">Critical Issues</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num {% if avg_compliance < 30 %}critical{% elif avg_compliance < 60 %}warning{% else %}good{% endif %}" data-count="{{ avg_compliance }}">0</div>
+          <div class="kpi-label">Compliance %</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num good" data-count="{{ policies_generated }}">0</div>
+          <div class="kpi-label">Policies Ready</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num {% if risk_findings > 7 %}critical{% elif risk_findings > 4 %}warning{% else %}neutral{% endif %}" data-count="{{ risk_findings }}">0</div>
+          <div class="kpi-label">Risk Items</div>
+        </div>
+      </div>
+      <div class="exec-brief">
+        <strong>{{ client.company_name }}</strong> scored <strong>{{ score.total }}/100 (Grade {{ score.grade }})</strong> on external attack surface analysis.
+        {% if avg_compliance < 20 %}
+        Compliance posture is <strong>critical</strong> — the organization meets less than 20% of applicable regulatory requirements across {{ compliance_frameworks | length }} frameworks.
+        {% elif avg_compliance < 50 %}
+        Compliance posture requires <strong>significant improvement</strong> — the organization meets approximately {{ avg_compliance }}% of applicable regulatory requirements.
+        {% else %}
+        Compliance posture is <strong>developing</strong> — the organization meets approximately {{ avg_compliance }}% of applicable regulatory requirements.
+        {% endif %}
+        {{ findings_count }} security finding(s) were identified, including {{ critical_count }} critical and {{ high_count }} high-severity issues requiring immediate attention.
+        {% if policies_generated > 0 %}{{ policies_generated }} compliance policies have been generated and are ready for CISSP review.{% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 02 ATTACK SURFACE ────────────────────── -->
+<section class="report-section" id="archer">
+  <div class="section-label"><span class="section-num">02</span> External Attack Surface</div>
+  <h2 class="section-title">ARCHER Scan Results</h2>
+  <div class="section-subtitle">Automated reconnaissance of {{ client.domain }} — testing email security, SSL/TLS, HTTP headers, open ports, technology stack, and DNS configuration.</div>
+
+  <div class="scan-categories">
+    {% for cat in scan_categories %}
+    <div class="scan-cat">
+      <div class="cat-info">
+        <div class="cat-name">{{ cat.name }}</div>
+        <div class="cat-desc">{{ cat.description }}</div>
+      </div>
+      <div class="cat-score" style="color: {{ cat.color }};">{{ cat.score }}/{{ cat.max }}</div>
+      <div class="cat-status {{ cat.status_class }}">{{ cat.status }}</div>
+      <div class="cat-bar-wrap">
+        <div class="cat-bar" style="background: {{ cat.color }};" data-width="{{ cat.pct }}%"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ─── 03 FINDINGS ──────────────────────────── -->
+{% if findings %}
+<section class="report-section" id="findings">
+  <div class="section-label"><span class="section-num">02b</span> Detailed Findings</div>
+  <h2 class="section-title">Security Findings</h2>
+  <div class="section-subtitle">{{ findings | length }} issue(s) identified during the external assessment.</div>
+
+  <div class="findings-list">
+    {% for f in findings %}
+    <div class="finding-card sev-{{ f.severity | lower }}">
+      <div>
+        <div class="finding-title">{{ f.title }}</div>
+        <div class="finding-desc">{{ f.description }}</div>
+        <div class="finding-fix"><strong>Remediation:</strong> {{ f.fix }}</div>
+        <div class="finding-meta">
+          <span>⏱ {{ f.effort }}</span>
+          <span>💰 {{ f.cost }}</span>
+          <span>📂 {{ f.category }}</span>
+        </div>
+      </div>
+      <span class="sev-badge {{ f.severity | lower }}">{{ f.severity }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ─── 03 DARK WEB ──────────────────────────── -->
+<section class="report-section" id="shadow">
+  <div class="section-label"><span class="section-num">03</span> Dark Web Exposure</div>
+  <h2 class="section-title">SHADOW Breach Intelligence</h2>
+  <div class="section-subtitle">Checking employee credential exposure across known data breaches and dark web sources.</div>
+
+  {% if shadow_status == 'complete' %}
+  <div class="kpi-grid" style="margin-bottom: 24px;">
+    <div class="kpi-card">
+      <div class="kpi-num {% if shadow_data.total_breaches > 0 %}critical{% else %}good{% endif %}" data-count="{{ shadow_data.total_breaches }}">0</div>
+      <div class="kpi-label">Breaches Found</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-num {% if shadow_data.exposed_emails > 0 %}warning{% else %}good{% endif %}" data-count="{{ shadow_data.exposed_emails }}">0</div>
+      <div class="kpi-label">Exposed Emails</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-num {% if shadow_data.passwords_exposed > 0 %}critical{% else %}good{% endif %}" data-count="{{ shadow_data.passwords_exposed }}">0</div>
+      <div class="kpi-label">Passwords Exposed</div>
+    </div>
+  </div>
+  {% if shadow_data.breaches %}
+  <div class="findings-list">
+    {% for b in shadow_data.breaches %}
+    <div class="finding-card sev-{{ b.severity | lower }}">
+      <div>
+        <div class="finding-title">{{ b.email }} — {{ b.breach_name }}</div>
+        <div class="finding-desc">{{ b.description }}</div>
+        <div class="finding-meta">
+          <span>📅 {{ b.date }}</span>
+          <span>📊 {{ b.data_exposed }}</span>
+        </div>
+      </div>
+      <span class="sev-badge {{ b.severity | lower }}">{{ b.severity }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="shadow-not-run">
+    <div class="shadow-icon">👁‍🗨</div>
+    <div class="shadow-title">Dark Web Scan Not Yet Executed</div>
+    <div class="shadow-desc">
+      Employee credential breach monitoring requires the HIBP API integration.
+      This scan checks employee emails against all known data breaches and dark web credential dumps.
+      <br><br>
+      <strong>Data types at risk for {{ client.company_name }}:</strong><br>
+      {% for dt in client.data_types %}{{ dt }}{% if not loop.last %}, {% endif %}{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ─── 04 COMPLIANCE ────────────────────────── -->
+<section class="report-section" id="compliance">
+  <div class="section-label"><span class="section-num">04</span> Compliance Posture</div>
+  <h2 class="section-title">Regulatory Framework Assessment</h2>
+  <div class="section-subtitle">Gap analysis against {{ compliance_frameworks | length }} applicable compliance framework(s).</div>
+
+  <div class="framework-cards">
+    {% for fw in compliance_frameworks %}
+    <div class="fw-card">
+      <div class="fw-header" onclick="toggleFw(this)">
+        <div>
+          <div class="fw-name">{{ fw.name }}</div>
+          <div class="fw-counts">
+            <span class="fw-count"><span class="dot met"></span> {{ fw.met }} met</span>
+            <span class="fw-count"><span class="dot partial"></span> {{ fw.partial }} partial</span>
+            <span class="fw-count"><span class="dot not-met"></span> {{ fw.not_met }} not met</span>
+          </div>
+          <span class="fw-toggle">View {{ fw.total }} controls</span>
+        </div>
+        <div class="fw-pct-wrap">
+          <div class="fw-pct" style="color: {% if fw.pct < 30 %}var(--red){% elif fw.pct < 60 %}var(--amber){% else %}var(--emerald){% endif %};" data-count="{{ fw.pct }}">0</div>
+          <div class="fw-pct-label">COMPLIANT</div>
+        </div>
+      </div>
+      <div class="fw-bar-full">
+        <div class="fw-bar-fill" style="background: {% if fw.pct < 30 %}var(--red){% elif fw.pct < 60 %}var(--amber){% else %}var(--emerald){% endif %};" data-width="{{ fw.pct }}%"></div>
+      </div>
+      <div class="fw-controls" id="fw-{{ loop.index }}">
+        <div class="fw-controls-inner">
+          {% for ctrl in fw.controls %}
+          <div class="ctrl-row">
+            <span class="ctrl-id">{{ ctrl.id }}</span>
+            <span class="ctrl-name">{{ ctrl.name }}</span>
+            <span class="ctrl-cat">{{ ctrl.category }}</span>
+            <span class="ctrl-status ctrl-{{ ctrl.status | replace('_', '-') }}">{{ ctrl.status | upper | replace('_', ' ') }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ─── 05 RISK REGISTER ─────────────────────── -->
+<section class="report-section" id="risk">
+  <div class="section-label"><span class="section-num">05</span> Risk Register</div>
+  <h2 class="section-title">Identified Risk Items</h2>
+  <div class="section-subtitle">{{ risk_items | length }} risk items identified from security questionnaire and scan analysis.</div>
+
+  <div style="overflow-x: auto;">
+    <table class="risk-table">
+      <thead>
+        <tr>
+          <th style="width:40px;">#</th>
+          <th>Risk Finding</th>
+          <th style="width:100px;">Severity</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for risk in risk_items %}
+        <tr>
+          <td class="risk-num">{{ loop.index }}</td>
+          <td>{{ risk.finding }}</td>
+          <td><span class="sev-badge {{ risk.severity | lower }}">{{ risk.severity }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ─── 06 POLICIES & DELIVERABLES ────────────── -->
+<section class="report-section" id="policies">
+  <div class="section-label"><span class="section-num">06</span> Security Policies</div>
+  <h2 class="section-title">Policy & Deliverable Status</h2>
+  <div class="section-subtitle">Compliance documents generated for {{ client.company_name }}.</div>
+
+  <div class="two-col">
+    <div>
+      <h3 style="font-size:14px; font-family:var(--mono); color:var(--text-dim); letter-spacing:0.08em; margin-bottom:12px;">POLICIES</h3>
+      <div class="policy-grid" style="grid-template-columns:1fr;">
+        {% for p in policies %}
+        <div class="policy-card">
+          <div class="policy-icon {{ 'generated' if p.generated else 'pending' }}">{{ '✓' if p.generated else '○' }}</div>
+          <div>
+            <div class="policy-name">{{ p.name }}</div>
+            <div class="policy-status {{ 'ready' if p.generated else '' }}">{{ 'Generated' if p.generated else 'Not yet generated' }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:14px; font-family:var(--mono); color:var(--text-dim); letter-spacing:0.08em; margin-bottom:12px;">DELIVERABLES</h3>
+      <div class="deliverables-list">
+        {% for d in deliverables %}
+        <div class="deliv-row">
+          <span class="deliv-check {{ 'done' if d.ready else 'pending' }}">{{ '✓' if d.ready else '○' }}</span>
+          <span class="deliv-label {{ 'done' if d.ready else '' }}">{{ d.name }}</span>
+          <span class="deliv-file">{{ d.file if d.ready else '—' }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 07 ENGAGEMENT ────────────────────────── -->
+<section class="report-section" id="engage">
+  <div class="section-label"><span class="section-num">07</span> Recommended Engagement</div>
+  <h2 class="section-title">How We Fix This</h2>
+  <div class="section-subtitle">Recommended service packages based on {{ client.company_name }}'s risk profile and compliance requirements.</div>
+
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-tier">Option A</div>
+      <div class="price-name">Security Assessment</div>
+      <div class="price-amount">$2,500</div>
+      <div class="price-period">One-time engagement</div>
+      <ul class="price-features">
+        <li>Full security assessment report</li>
+        <li>Risk register & prioritization</li>
+        <li>90-day remediation roadmap</li>
+        <li>Executive summary presentation</li>
+        <li>Dark web breach scan</li>
+      </ul>
+      <a href="{{ calendly_link }}" class="price-cta" target="_blank">Schedule Call</a>
+    </div>
+    <div class="price-card featured">
+      <div class="price-tier">Option B — Recommended</div>
+      <div class="price-name">Assessment + Policies</div>
+      <div class="price-amount">$5,000</div>
+      <div class="price-period">One-time engagement</div>
+      <ul class="price-features">
+        <li>Everything in Option A</li>
+        <li>WISP + 8 policy documents</li>
+        <li>Compliance framework mapping</li>
+        <li>CISSP advisor review</li>
+        <li>Cyber insurance readiness letter</li>
+      </ul>
+      <a href="{{ calendly_link }}" class="price-cta" target="_blank">Schedule Call</a>
+    </div>
+    <div class="price-card">
+      <div class="price-tier">Option C</div>
+      <div class="price-name">vCISO Retainer</div>
+      <div class="price-amount">$3,000</div>
+      <div class="price-period">Per month</div>
+      <ul class="price-features">
+        <li>Everything in Option B</li>
+        <li>Monthly security re-scanning</li>
+        <li>Quarterly phishing tests</li>
+        <li>Policy updates & compliance tracking</li>
+        <li>Named vCISO + executive reporting</li>
+        <li>Incident response coordination</li>
+      </ul>
+      <a href="{{ calendly_link }}" class="price-cta" target="_blank">Schedule Call</a>
+    </div>
+  </div>
+
+  <h3 style="font-size:14px; font-family:var(--mono); color:var(--text-dim); letter-spacing:0.08em; margin-top:36px; margin-bottom:12px;">APPLICABLE UPSELLS</h3>
+  <div class="upsell-grid">
+    {% for u in upsells %}
+    <div class="upsell-card">
+      <div class="upsell-name">{{ u.name }}</div>
+      <div class="upsell-why">{{ u.why }}</div>
+      <div class="upsell-price">{{ u.price }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+</div><!-- /report-container -->
+
+<!-- ─── FOOTER ───────────────────────────────── -->
+<div class="report-container">
+  <div class="report-footer">
+    <div class="footer-brand">CYBERCOMPLY</div>
+    <div class="footer-disclaimer">
+      This report was generated by CyberComply's automated security assessment platform.
+      Findings are based on external reconnaissance and self-reported questionnaire data.
+      AI-generated policy documents require review by a qualified CISSP before client delivery.
+      This report does not constitute legal advice or guarantee regulatory compliance.
+      <br><br>
+      © {{ current_year }} CyberComply. All rights reserved.
+    </div>
+  </div>
+</div>
+
+<!-- ─── JAVASCRIPT ───────────────────────────── -->
+<script>
+// Intersection Observer for scroll animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      // Animate bars
+      entry.target.querySelectorAll('[data-width]').forEach(bar => {
+        setTimeout(() => { bar.style.width = bar.dataset.width; }, 200);
+      });
+      // Animate counters
+      entry.target.querySelectorAll('[data-count]').forEach(el => {
+        animateCount(el, parseInt(el.dataset.count));
+      });
+      // Animate gauge
+      entry.target.querySelectorAll('.gauge-fill').forEach(path => {
+        setTimeout(() => {
+          path.style.strokeDashoffset = path.dataset.target;
+        }, 300);
+      });
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.report-section, .report-cover').forEach(s => observer.observe(s));
+
+function animateCount(el, target) {
+  if (el._animated) return;
+  el._animated = true;
+  const duration = 1200;
+  const start = performance.now();
+  function update(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(eased * target);
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+// Framework toggle
+function toggleFw(header) {
+  const card = header.closest('.fw-card');
+  const controls = card.querySelector('.fw-controls');
+  const toggle = header.querySelector('.fw-toggle');
+  controls.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+// Sticky nav active state
+const sections = document.querySelectorAll('.report-section[id]');
+const navLinks = document.querySelectorAll('.nav-link[data-section]');
+const navObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector(`.nav-link[data-section="${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { threshold: 0.3, rootMargin: '-80px 0px -60% 0px' });
+sections.forEach(s => navObserver.observe(s));
+</script>
+</body>
+</html>
