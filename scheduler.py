@@ -26,13 +26,39 @@ def run_falcon_check():
                 threats = falcon.filter_for_client(threats, tech_stack)
 
             if threats:
-                client_manager.save_alert(client["client_id"], {
+                narrative = ""
+                try:
+                    from prompt_engine import call_prompt
+                    narrative = call_prompt(
+                        "P56_THREAT_BRIEF",
+                        client_name=client.get("company_name", ""),
+                        threats=json.dumps(threats[:3], indent=2, default=str),
+                        tech_stack=", ".join(client.get("tech_stack", ["general infrastructure"])),
+                    )
+                except Exception:
+                    narrative = f"{len(threats)} new vulnerabilities identified by CISA that may affect your infrastructure."
+
+                has_critical = any(t.get("severity", "").upper() == "CRITICAL" for t in threats)
+                severity = "CRITICAL" if has_critical else "HIGH" if len(threats) > 2 else "MEDIUM"
+
+                alert_data = {
                     "type": "threat",
+                    "severity": severity,
                     "date": datetime.utcnow().isoformat(),
+                    "title": f"{len(threats)} relevant CISA vulnerabilities detected",
+                    "summary": f"Filtered from CISA KEV catalog for your technology stack",
+                    "narrative": narrative,
                     "source": "CISA KEV",
                     "count": len(threats),
                     "threats": threats[:5],
-                })
+                    "actions": [f"Patch {t.get('cve_id', 'vulnerability')}: {t.get('name', 'Update required')}" for t in threats[:3]],
+                    "status": "new",
+                    "emailed": False,
+                }
+                client_manager.save_alert(client["client_id"], alert_data)
+
+                if severity == "CRITICAL":
+                    _send_alert_email(client, alert_data)
 
             _update_agent_timestamp(client["client_id"], "FALCON", "Threat Intelligence")
             logger.info(f"FALCON: {client['client_id']} — {len(threats)} threats")
@@ -61,15 +87,46 @@ def run_shadow_check():
             if emails_to_check:
                 result = shadow.scan(domain, emails_to_check)
                 if hasattr(result, 'total_exposed') and result.total_exposed > 0:
+                    # Generate AI narrative for the alert
+                    narrative = ""
+                    try:
+                        from prompt_engine import call_prompt
+                        narrative = call_prompt(
+                            "P54_DARK_WEB_ALERT",
+                            client_name=client.get("company_name", ""),
+                            domain=domain,
+                            exposed_count=str(result.total_exposed),
+                            critical_count=str(result.critical),
+                            breaches=str([b.__dict__ if hasattr(b, '__dict__') else str(b) for b in (result.breaches if hasattr(result, 'breaches') else [])][:3]),
+                        )
+                    except Exception:
+                        narrative = f"{result.total_exposed} credential(s) found exposed on the dark web for {domain}."
+
+                    severity = "CRITICAL" if result.critical > 0 else "HIGH" if result.high > 0 else "MEDIUM"
                     alert_data = {
                         "type": "darkweb",
+                        "severity": severity,
                         "date": datetime.utcnow().isoformat(),
+                        "title": f"{result.total_exposed} credential(s) exposed for {domain}",
+                        "summary": f"Found in breach databases: {result.critical} critical, {result.high} high severity",
+                        "narrative": narrative,
                         "domain": domain,
                         "exposed_count": result.total_exposed,
                         "critical": result.critical,
                         "high": result.high,
+                        "actions": [
+                            "Force password reset for all exposed accounts",
+                            "Enable MFA on all affected accounts",
+                            "Check for unauthorized sign-ins in the last 30 days",
+                        ],
+                        "status": "new",
+                        "emailed": False,
                     }
-                    client_manager.save_alert(client["client_id"], alert_data)
+                    alert_id = client_manager.save_alert(client["client_id"], alert_data)
+
+                    # Email alert if CRITICAL or HIGH
+                    if severity in ("CRITICAL", "HIGH"):
+                        _send_alert_email(client, alert_data)
 
             _update_agent_timestamp(client["client_id"], "SHADOW", "Dark Web Monitor")
             logger.info(f"SHADOW: {client['client_id']} — checked")
@@ -238,6 +295,66 @@ def _update_agent_timestamp(client_id: str, agent_name: str, agent_label: str):
         })
 
     status_file.write_text(json.dumps(statuses, indent=2))
+
+
+def _send_alert_email(client: dict, alert: dict):
+    """Send alert email to client contact for CRITICAL/HIGH alerts."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    contact_email = client.get("contact_email", "")
+    if not contact_email:
+        return
+
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    from_email = os.getenv("SMTP_FROM", "security@cybercomply.io")
+
+    if not smtp_host or not smtp_user or not smtp_pass:
+        logger.info(f"SMTP not configured — alert email skipped for {contact_email}")
+        return
+
+    severity_icon = {"CRITICAL": "\U0001f534", "HIGH": "\U0001f7e0"}.get(alert.get("severity", ""), "\u26a0\ufe0f")
+    subject = f"{severity_icon} Security Alert — {alert.get('title', 'New Finding')} | {client.get('company_name', '')}"
+
+    actions_text = "\n".join(f"  {i+1}. {a}" for i, a in enumerate(alert.get("actions", [])))
+    base_url = os.getenv("BASE_URL", "https://www.cybercomply.io")
+    client_id = client.get("client_id", "")
+
+    body = f"""Security Alert for {client.get('company_name', '')}
+
+{alert.get('severity', 'HIGH')} — {alert.get('title', '')}
+
+{alert.get('narrative', alert.get('summary', ''))}
+
+Recommended Actions:
+{actions_text}
+
+View full details in your Security Command Center:
+{base_url}/portal/{client_id}
+
+— CyberComply Security Team
+11 AI Agents. Always On. Always Watching.
+"""
+
+    msg = MIMEMultipart()
+    msg["From"] = f"CyberComply Security <{from_email}>"
+    msg["To"] = contact_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        alert["emailed"] = True
+        logger.info(f"Alert email sent to {contact_email}: {alert.get('title', '')}")
+    except Exception as e:
+        logger.error(f"Alert email failed for {contact_email}: {e}")
 
 
 def init_scheduler(app=None):

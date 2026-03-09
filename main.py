@@ -1039,8 +1039,21 @@ async def portal_page(client_id: str, request: Request):
     in_progress_tasks = [t for t in tasks if t["status"] == "in_progress"]
     resolved_tasks = [t for t in tasks if t["status"] in ("resolved", "verified")]
 
+    # Calculate real compliance from GUARDIAN data
     compliance_pct = 0
     frameworks = client.get("frameworks", [])
+    try:
+        if frameworks:
+            from agents.guardian_agent import GuardianAgent
+            guardian = GuardianAgent()
+            guardian_profile = {"applicable_frameworks": frameworks}
+            guardian_profile.update({k: client.get(k, "") for k in ("mfa_status", "backup_frequency", "encryption_status", "training_frequency", "industry")})
+            compliance_data = guardian.get_compliance_status(guardian_profile)
+            if compliance_data:
+                percentages = [fw.get("compliance_percentage", 0) for fw in compliance_data.values() if isinstance(fw, dict)]
+                compliance_pct = sum(percentages) // max(len(percentages), 1) if percentages else 0
+    except Exception:
+        compliance_pct = 0
 
     agent_status = _get_agent_status(client_id)
     threats_blocked = sum(1 for a in alerts if a.get("type") == "threat")
@@ -1095,6 +1108,97 @@ async def portal_download(client_id: str, doc_type: str, filename: str, request:
         raise HTTPException(status_code=404)
     from starlette.responses import FileResponse
     return FileResponse(str(file_path), filename=filename)
+
+
+# ─── PORTAL: ALERT DETAIL ENDPOINTS (HTMX partials) ────────
+
+@app.get("/portal/{client_id}/alerts/darkweb", response_class=HTMLResponse)
+async def portal_darkweb_alerts(client_id: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return HTMLResponse("", status_code=401)
+    alerts = client_manager.get_alerts(client_id, limit=20)
+    darkweb = [a for a in alerts if a.get("type") == "darkweb"]
+    rows = ""
+    for a in darkweb[:10]:
+        sev = a.get("severity", "MEDIUM").lower()
+        sev_colors = {"critical": "var(--red)", "high": "var(--orange)", "medium": "var(--yellow)", "low": "var(--green)"}
+        color = sev_colors.get(sev, "var(--muted)")
+        actions_html = "".join(f'<li style="margin:4px 0">{act}</li>' for act in a.get("actions", []))
+        status_badge = '<span style="color:var(--green);font-size:.75rem">&#x2713; Resolved</span>' if a.get("status") == "resolved" else ""
+        rows += f'''<div style="padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="background:{color};color:#fff;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600">{a.get("severity", "MEDIUM")}</span>
+            <span style="color:var(--muted);font-size:.75rem">{a.get("date", "")[:10]}</span>
+            {status_badge}
+          </div>
+          <div style="font-weight:600;margin:8px 0">{a.get("title", "Alert")}</div>
+          <div style="color:var(--muted);font-size:.85rem;line-height:1.5">{a.get("narrative", a.get("summary", ""))}</div>
+          {"<ul style='margin:12px 0 0 16px;color:var(--accent);font-size:.85rem'>" + actions_html + "</ul>" if actions_html else ""}
+        </div>'''
+    if not rows:
+        rows = '<p style="color:var(--muted);padding:16px 0">No dark web alerts detected. Your credentials are clean.</p>'
+    return HTMLResponse(rows)
+
+
+@app.get("/portal/{client_id}/alerts/threats", response_class=HTMLResponse)
+async def portal_threat_alerts(client_id: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return HTMLResponse("", status_code=401)
+    alerts = client_manager.get_alerts(client_id, limit=20)
+    threats = [a for a in alerts if a.get("type") == "threat"]
+    rows = ""
+    for a in threats[:10]:
+        sev = a.get("severity", "MEDIUM").lower()
+        sev_colors = {"critical": "var(--red)", "high": "var(--orange)", "medium": "var(--yellow)", "low": "var(--green)"}
+        color = sev_colors.get(sev, "var(--muted)")
+        actions_html = "".join(f'<li style="margin:4px 0">{act}</li>' for act in a.get("actions", []))
+        threat_list = ""
+        for t in a.get("threats", [])[:3]:
+            cve = t.get("cve_id", t.get("cveID", ""))
+            name = t.get("name", t.get("vulnerabilityName", ""))
+            threat_list += f'<div style="font-size:.8rem;color:var(--muted);margin:2px 0">&#x2022; {cve}: {name}</div>'
+        rows += f'''<div style="padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="background:{color};color:#fff;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600">{a.get("severity", "MEDIUM")}</span>
+            <span style="color:var(--muted);font-size:.75rem">{a.get("date", "")[:10]}</span>
+          </div>
+          <div style="font-weight:600;margin:8px 0">{a.get("title", "Threat Alert")}</div>
+          <div style="color:var(--muted);font-size:.85rem;line-height:1.5">{a.get("narrative", a.get("summary", ""))}</div>
+          {threat_list}
+          {"<ul style='margin:12px 0 0 16px;color:var(--accent);font-size:.85rem'>" + actions_html + "</ul>" if actions_html else ""}
+        </div>'''
+    if not rows:
+        rows = '<p style="color:var(--muted);padding:16px 0">No relevant threats detected for your technology stack.</p>'
+    return HTMLResponse(rows)
+
+
+@app.get("/portal/{client_id}/alerts/report", response_class=HTMLResponse)
+async def portal_latest_report(client_id: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return HTMLResponse("", status_code=401)
+    reports_dir = client_manager._client_dir(client_id) / "reports"
+    report_files = sorted(reports_dir.glob("*monthly*"), reverse=True) if reports_dir.exists() else []
+    if not report_files:
+        return HTMLResponse('<p style="color:var(--muted);padding:16px 0">No monthly reports yet. First report will generate on the 1st of next month.</p>')
+    latest = report_files[0]
+    try:
+        data = json.loads(latest.read_text())
+        narrative = data.get("narrative", "Report available.")
+        score = data.get("score", 0)
+        grade = data.get("grade", "N/A")
+        delta = data.get("score_delta", 0)
+        findings = data.get("findings_summary", {})
+        delta_html = f'<span style="color:var(--green)">&#x25b2; +{delta}</span>' if delta > 0 else f'<span style="color:var(--red)">&#x25bc; {delta}</span>' if delta < 0 else '&#x2192; No change'
+        return HTMLResponse(f'''
+          <div style="padding:16px 0">
+            <div style="display:flex;gap:24px;margin-bottom:16px">
+              <div><span style="font-size:2rem;font-weight:700;color:var(--accent)">{score}</span><span style="color:var(--muted)">/{grade}</span> {delta_html}</div>
+              <div style="color:var(--muted);font-size:.85rem">Findings: {findings.get("total", 0)} total | {findings.get("resolved", 0)} resolved</div>
+            </div>
+            <div style="color:var(--text);font-size:.9rem;line-height:1.6;white-space:pre-wrap">{narrative[:1500]}</div>
+          </div>''')
+    except Exception:
+        return HTMLResponse('<p style="color:var(--muted);padding:16px 0">Report loading...</p>')
 
 
 # ─── OPERATOR: CLIENT MANAGEMENT ────────────────────────────

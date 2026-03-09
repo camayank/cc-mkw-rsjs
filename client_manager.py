@@ -225,8 +225,13 @@ def get_alerts(client_id: str, limit: int = 10) -> list:
 def save_alert(client_id: str, alert: dict):
     alerts_dir = _client_dir(client_id) / "alerts"
     alerts_dir.mkdir(exist_ok=True)
-    filename = f"{date.today().isoformat()}-{alert.get('type', 'alert')}.json"
+    alert_id = alert.get("id", f"{alert.get('type', 'alert')}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}")
+    alert["id"] = alert_id
+    alert.setdefault("status", "new")
+    alert.setdefault("emailed", False)
+    filename = f"{alert_id}.json"
     (alerts_dir / filename).write_text(json.dumps(alert, indent=2, default=str))
+    return alert_id
 
 
 def get_reports(client_id: str) -> list:
