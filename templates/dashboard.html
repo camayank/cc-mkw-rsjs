@@ -186,6 +186,29 @@ function doLogin(e) {
     <div class="leads-section" id="leadsSection">
       <div class="empty-state">Loading leads...</div>
     </div>
+    <!-- vCISO Retainer Clients -->
+    <div class="section-header" style="margin-top:32px">
+      <div>
+        <div class="section-title">vCISO RETAINER CLIENTS</div>
+        <div class="section-subtitle">Managed security retainers &amp; portal access</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;margin-bottom:16px">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 24px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Monthly Revenue</div>
+        <div id="mrr-value" style="font-size:28px;font-weight:900;font-family:var(--mono);color:var(--green)">$0</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 24px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Active Retainers</div>
+        <div id="retainer-count" style="font-size:28px;font-weight:900;font-family:var(--mono);color:var(--accent)">0</div>
+      </div>
+      <button onclick="showCreateVCISO()" style="background:var(--accent);color:var(--bg);border:none;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;align-self:center">+ New vCISO Client</button>
+      <button onclick="triggerMonthlyReports()" style="background:var(--card);color:var(--accent);border:1px solid var(--accent);padding:10px 20px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;align-self:center">Run Monthly Reports</button>
+    </div>
+    <table class="client-table">
+      <thead><tr><th>Company</th><th>Tier</th><th>Score</th><th>Portal</th></tr></thead>
+      <tbody id="vciso-rows"><tr><td colspan="4" class="empty-state">Loading...</td></tr></tbody>
+    </table>
   </div>
 </div>
 
@@ -222,6 +245,7 @@ function doLogin(e) {
 document.addEventListener('DOMContentLoaded', () => {
   loadPipeline();
   loadClients();
+  loadVCISO();
   loadLeads();
 });
 
@@ -361,6 +385,47 @@ function esc(text) {
   const d = document.createElement('div');
   d.textContent = text || '';
   return d.innerHTML;
+}
+
+// vCISO Client Management
+async function loadVCISO(){
+  try{
+    const [cRes,mRes]=await Promise.all([fetch('/api/operator/clients'),fetch('/api/operator/mrr')]);
+    const clients=(await cRes.json()).clients||[];
+    const mrr=await mRes.json();
+    document.getElementById('mrr-value').textContent='$'+mrr.mrr.toLocaleString();
+    document.getElementById('retainer-count').textContent=mrr.retainer_count;
+    const rows=document.getElementById('vciso-rows');
+    if(!clients.length){rows.innerHTML='<tr><td colspan="4" class="empty-state">No vCISO clients yet</td></tr>';return}
+    const tierColors={assessment:'var(--muted)',basic:'var(--accent)',pro:'var(--green)'};
+    rows.innerHTML=clients.map(c=>`<tr>
+      <td><strong>${esc(c.company_name)}</strong><br><span style="color:var(--dim);font-size:11px">${esc(c.domain)}</span></td>
+      <td><span style="color:${tierColors[c.tier]||'var(--dim)'};font-weight:700;text-transform:uppercase;font-size:12px">${esc(c.tier)}</span></td>
+      <td>${c.current_score||'—'} ${c.current_grade||''}</td>
+      <td><button onclick="genPortalLink('${esc(c.client_id)}')" style="background:var(--card);color:var(--accent);border:1px solid var(--border);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600">Portal Link</button></td>
+    </tr>`).join('');
+  }catch(e){console.error('vCISO load error:',e)}
+}
+async function genPortalLink(id){
+  const res=await fetch('/api/operator/clients/'+id+'/portal-access',{method:'POST'});
+  const data=await res.json();
+  if(data.magic_link)prompt('Send this link to your client:',data.magic_link);
+}
+function showCreateVCISO(){
+  const name=prompt('Company name:');if(!name)return;
+  const domain=prompt('Domain (company.com):');if(!domain)return;
+  const tier=prompt('Tier (assessment / basic / pro):','basic');
+  const industry=prompt('Industry (cpa/healthcare/legal/financial/general):','general');
+  const email=prompt('Contact email (optional):','');
+  fetch('/api/operator/clients',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({company_name:name,domain:domain,tier:tier||'basic',industry:industry||'general',contact_email:email||''})})
+    .then(r=>r.json()).then(d=>{if(d.status==='created'){loadVCISO();alert('Client created: '+d.client_id)}});
+}
+async function triggerMonthlyReports(){
+  if(!confirm('Generate monthly reports for all retainer clients?'))return;
+  const res=await fetch('/api/operator/run-monthly-reports',{method:'POST'});
+  const data=await res.json();
+  alert(data.message||'Reports generating...');
 }
 </script>
 {% endif %}

@@ -873,15 +873,37 @@ async def new_scan(req: NewScanRequest):
     company_safe = (req.company_name or req.domain.split('.')[0]).replace(" ", "_").replace("&", "and")
     dir_name = f"{company_safe}_{date.today().strftime('%Y%m%d')}"
 
+    # Create client profile for portal system
+    client_id = req.domain.replace(".", "-").replace(" ", "-").lower()
+    client_manager.create_client(
+        client_id=client_id,
+        company_name=req.company_name or req.domain,
+        domain=req.domain,
+        industry=req.industry,
+    )
+
     async def run_scan():
         await asyncio.to_thread(
             full_delivery, req.domain, req.company_name, req.industry,
             not req.enable_ai, req.employee_count  # no_ai is inverse of enable_ai
         )
+        # Update client score after scan
+        try:
+            scan_file = OUTPUT_DIR / dir_name / "scan_data.json"
+            if scan_file.exists():
+                data = json.loads(scan_file.read_text())
+                score = data.get("scan", {}).get("score", 0)
+                grade = data.get("scan", {}).get("grade", "N/A")
+                client_manager.add_score(client_id, score, grade)
+                from scheduler import _generate_tasks_from_findings
+                findings = data.get("scan", {}).get("archer", {}).get("findings", [])
+                _generate_tasks_from_findings(client_id, findings)
+        except Exception as e:
+            logger.error(f"Post-scan update error: {e}")
 
     asyncio.create_task(run_scan())
     mode = "with AI narratives" if req.enable_ai else "quick mode (no AI)"
-    return {"status": "started", "dir_name": dir_name, "message": f"Scan started — {mode}"}
+    return {"status": "started", "dir_name": dir_name, "client_id": client_id, "message": f"Scan started — {mode}"}
 
 # ─── GENERATE POLICIES ENDPOINT ──────────────────────────
 
