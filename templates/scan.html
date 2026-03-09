@@ -4,41 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Security Scan — CyberComply</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0a0f;--card:#13131d;--border:#222238;--accent:#00e5ff;--accent2:#7c4dff;--green:#00e676;--red:#ff1744;--orange:#ff9100;--yellow:#ffd600;--txt:#e0e0ee;--dim:#8888a8;--muted:#55556e}
+:root{--bg:#09090b;--card:#18181b;--border:rgba(255,255,255,.06);--accent:#c8ff00;--accent2:#c8ff00;--green:#34d399;--red:#ff4757;--orange:#ff6b35;--yellow:#fbbf24;--txt:#fafaf9;--dim:#a1a1aa;--muted:#52525b;--head:'Syne',sans-serif;--body:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace}
 html{scroll-behavior:smooth}
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+body::before{content:'';position:fixed;inset:0;background:linear-gradient(rgba(200,255,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(200,255,0,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
 .orb{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}
-.o1{width:600px;height:600px;background:rgba(0,229,255,.07);top:-200px;right:-200px}
-.o2{width:500px;height:500px;background:rgba(124,77,255,.05);bottom:-100px;left:-200px}
+.o1{width:600px;height:600px;background:rgba(200,255,0,.06);top:-200px;right:-200px}
+.o2{width:500px;height:500px;background:rgba(200,255,0,.04);bottom:-100px;left:-200px}
 
 nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 36px}
-.brand{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:17px;color:var(--accent);text-decoration:none}
-.brand i{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:6px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:15px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:700;font-size:17px;color:var(--accent);text-decoration:none}
+.brand i{width:30px;height:30px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:15px;color:var(--bg)}
 
 .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 20px 60px;position:relative;z-index:1}
 .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:3px;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;gap:8px}
 .dot-pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.5)}50%{box-shadow:0 0 0 10px rgba(0,230,118,0)}}
-.hero h1{font-size:clamp(36px,5.5vw,68px);font-weight:900;line-height:1.05;max-width:860px;margin-bottom:20px;letter-spacing:-2px}
-.grad{background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent));background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shim 4s ease infinite}
+.hero h1{font-family:var(--head);font-size:clamp(36px,5.5vw,68px);font-weight:800;line-height:1.05;max-width:860px;margin-bottom:20px;letter-spacing:-2px}
+.grad{color:var(--accent)}
 @keyframes shim{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .hero-sub{font-size:18px;color:var(--dim);max-width:560px;line-height:1.6;margin-bottom:40px;font-weight:300}
 
 .scan-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:36px;max-width:580px;width:100%;position:relative;overflow:hidden}
-.scan-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent)}
+.scan-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
 .scan-box h3{font-size:20px;font-weight:700;margin-bottom:6px}
 .scan-box>p{color:var(--dim);font-size:13px;margin-bottom:20px}
 .srow{display:flex;gap:10px}
 .srow input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:13px 16px;color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:14px;outline:none;transition:border .3s}
-.srow input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,255,.1)}
+.srow input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,255,0,.1)}
 .srow input::placeholder{color:var(--muted)}
-.sbtn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:13px 24px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;transition:all .3s}
-.sbtn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,229,255,.25)}
+.sbtn{background:var(--accent);color:var(--bg);border:none;padding:13px 24px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;transition:all .3s}
+.sbtn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(200,255,0,.25)}
 .sbtn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .trust{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:var(--muted)}
 
@@ -47,7 +47,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 #scanProgress.on{display:block;animation:fadeUp .5s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .progress-bar{width:100%;height:4px;background:var(--bg);border-radius:4px;overflow:hidden;margin:16px 0 12px}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .4s ease;width:0%}
+.progress-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease;width:0%}
 .step-list{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);text-align:left;line-height:2.2}
 .step-list .done{color:var(--green)}
 .step-list .active{color:var(--accent)}
@@ -78,17 +78,17 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .cta-section{margin-top:24px;display:flex;gap:10px;flex-wrap:wrap}
 .cta-btn{flex:1;min-width:200px;padding:14px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none}
 .cta-primary{background:var(--accent);color:var(--bg)}
-.cta-primary:hover{background:#fff}
-.cta-secondary{background:transparent;border:1px solid var(--accent2);color:var(--accent2)}
-.cta-secondary:hover{background:var(--accent2);color:#fff}
+.cta-primary:hover{opacity:.9}
+.cta-secondary{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.cta-secondary:hover{background:var(--accent);color:var(--bg)}
 
 /* Lead form */
 #leadForm{display:none;margin-top:16px}
 #leadForm.on{display:block;animation:fadeUp .4s ease}
 #leadForm input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--txt);font-size:13px;margin-bottom:8px;outline:none;font-family:'Outfit',sans-serif}
 #leadForm input:focus{border-color:var(--accent)}
-.submit-btn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:14px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s;text-transform:uppercase;letter-spacing:.5px}
-.submit-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,229,255,.25)}
+.submit-btn{width:100%;background:var(--accent);color:var(--bg);border:none;padding:14px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s;text-transform:uppercase;letter-spacing:.5px}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(200,255,0,.25)}
 .form-note{font-size:10px;color:var(--muted);margin-top:6px;text-align:center}
 #leadSuccess{display:none;text-align:center;padding:20px}
 #leadSuccess.on{display:block;animation:fadeUp .4s ease}
@@ -313,6 +313,16 @@ function submitLead() {
     document.getElementById('leadSuccess').classList.add('on');
   });
 }
+
+// Auto-start scan if domain passed from landing page
+document.addEventListener('DOMContentLoaded', function() {
+  const params = new URLSearchParams(window.location.search);
+  const domain = params.get('domain');
+  if (domain && domain.trim() && domain.includes('.')) {
+    document.getElementById('domainInput').value = domain.trim();
+    setTimeout(startScan, 100);
+  }
+});
 
 // Allow Enter key to trigger scan
 document.getElementById('domainInput').addEventListener('keydown', function(e) {

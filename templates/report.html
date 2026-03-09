@@ -5,22 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ client.company_name }} — Security Diagnostic Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ─── VARIABLES ───────────────────────────────── */
 :root {
-  --bg: #0a0b10;
-  --surface: #111219;
-  --surface-2: #191a24;
-  --surface-3: #21222f;
-  --border: #2a2c3e;
-  --border-light: #353750;
-  --text: #e2e8f0;
-  --text-muted: #7c8599;
-  --text-dim: #505672;
+  --bg: #09090b;
+  --surface: #18181b;
+  --surface-2: #1e1e22;
+  --surface-3: #27272a;
+  --border: rgba(255,255,255,.06);
+  --border-light: rgba(255,255,255,.1);
+  --text: #fafaf9;
+  --text-muted: #a1a1aa;
+  --text-dim: #52525b;
+  --accent: #c8ff00;
+  --accent-dim: rgba(200,255,0,0.08);
+  --accent-glow: rgba(200,255,0,0.25);
   --emerald: #34d399;
   --emerald-dim: rgba(52,211,153,0.12);
-  --lime: #a3e635;
+  --lime: #c8ff00;
   --amber: #fbbf24;
   --amber-dim: rgba(251,191,36,0.12);
   --orange: #f97316;
@@ -29,8 +32,8 @@
   --red-dim: rgba(239,68,68,0.12);
   --blue: #60a5fa;
   --blue-dim: rgba(96,165,250,0.12);
-  --serif: 'Instrument Serif', Georgia, serif;
-  --sans: 'DM Sans', system-ui, sans-serif;
+  --head: 'Syne', sans-serif;
+  --sans: 'Outfit', sans-serif;
   --mono: 'JetBrains Mono', monospace;
   --max-w: 1140px;
   --radius: 10px;
@@ -48,11 +51,12 @@ body {
   font-size: 15px;
 }
 
-/* ─── NOISE OVERLAY ──────────────────────────── */
+/* ─── GRID OVERLAY ───────────────────────────── */
 body::before {
   content: '';
   position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-image: radial-gradient(rgba(200,255,0,.03) 1px,transparent 1px);
+  background-size: 32px 32px;
   pointer-events: none; z-index: 0;
 }
 
@@ -76,7 +80,7 @@ body::before {
 .nav-brand {
   font-family: var(--mono);
   font-weight: 700; font-size: 13px;
-  color: var(--emerald);
+  color: var(--accent);
   letter-spacing: 0.05em;
   white-space: nowrap;
   margin-right: 16px;
@@ -95,11 +99,11 @@ body::before {
   letter-spacing: 0.03em;
 }
 .nav-link:hover { color: var(--text); background: var(--surface-2); }
-.nav-link.active { color: var(--emerald); background: var(--emerald-dim); }
+.nav-link.active { color: var(--accent); background: var(--accent-dim); }
 .nav-actions { margin-left: auto; display: flex; gap: 8px; }
 .btn-print {
   font-family: var(--mono); font-size: 11px; font-weight: 600;
-  color: var(--bg); background: var(--emerald);
+  color: var(--bg); background: var(--accent);
   border: none; padding: 6px 14px; border-radius: 4px;
   cursor: pointer; letter-spacing: 0.03em;
   transition: opacity 0.2s;
@@ -132,14 +136,14 @@ body::before {
 }
 .section-num {
   font-family: var(--mono); font-size: 11px; font-weight: 700;
-  color: var(--emerald);
-  background: var(--emerald-dim);
+  color: var(--accent);
+  background: var(--accent-dim);
   padding: 3px 8px; border-radius: 4px;
 }
 .section-title {
-  font-family: var(--serif);
+  font-family: var(--head);
   font-size: clamp(28px, 4vw, 38px);
-  font-weight: 400;
+  font-weight: 700;
   color: var(--text);
   line-height: 1.15;
   margin-bottom: 8px;
@@ -164,18 +168,18 @@ body::before {
 .cover-eyebrow {
   font-family: var(--mono); font-size: 11px; font-weight: 600;
   letter-spacing: 0.15em; text-transform: uppercase;
-  color: var(--emerald);
+  color: var(--accent);
   margin-bottom: 16px;
 }
 .cover-title {
-  font-family: var(--serif);
+  font-family: var(--head);
   font-size: clamp(36px, 5vw, 56px);
-  font-weight: 400;
+  font-weight: 800;
   line-height: 1.1;
   color: var(--text);
   margin-bottom: 8px;
 }
-.cover-title em { font-style: italic; color: var(--emerald); }
+.cover-title em { font-style: italic; color: var(--accent); }
 .cover-domain {
   font-family: var(--mono); font-size: 16px;
   color: var(--text-muted); margin-bottom: 32px;
@@ -534,8 +538,8 @@ body::before {
 }
 .price-card:hover { transform: translateY(-2px); }
 .price-card.featured {
-  border-color: var(--emerald);
-  box-shadow: 0 0 40px rgba(52,211,153,0.08);
+  border-color: var(--accent);
+  box-shadow: 0 0 40px rgba(200,255,0,0.08);
 }
 .price-tier {
   font-family: var(--mono); font-size: 11px; font-weight: 700;
@@ -543,7 +547,7 @@ body::before {
   color: var(--text-dim);
   margin-bottom: 8px;
 }
-.price-card.featured .price-tier { color: var(--emerald); }
+.price-card.featured .price-tier { color: var(--accent); }
 .price-name { font-weight: 700; font-size: 18px; margin-bottom: 4px; }
 .price-amount {
   font-family: var(--mono); font-weight: 700; font-size: 32px;
@@ -588,7 +592,7 @@ body::before {
 }
 .price-cta:hover { background: var(--surface-2); border-color: var(--border-light); }
 .price-card.featured .price-cta {
-  background: var(--emerald); color: var(--bg); border-color: var(--emerald);
+  background: var(--accent); color: var(--bg); border-color: var(--accent);
 }
 .price-card.featured .price-cta:hover { opacity: 0.9; }
 
@@ -606,7 +610,7 @@ body::before {
 }
 .footer-brand {
   font-family: var(--mono); font-weight: 700; font-size: 13px;
-  color: var(--emerald);
+  color: var(--accent);
   letter-spacing: 0.1em;
   margin-bottom: 12px;
 }
@@ -650,7 +654,7 @@ body::before {
 .upsell-why { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
 .upsell-price {
   font-family: var(--mono); font-weight: 700; font-size: 16px;
-  color: var(--emerald);
+  color: var(--accent);
 }
 
 /* ─── UTILITY ────────────────────────────────── */
@@ -678,11 +682,13 @@ body::before {
   .kpi-num, .fw-pct, .cat-score, .price-amount { color: #111; }
   .section-title { color: #111; }
   .cover-title { color: #111; }
-  .cover-title em { color: #0d7347; }
-  .section-num { background: #e6f7ef; color: #0d7347; }
+  .cover-title em { color: #5a7a00; }
+  .section-num { background: #f0f7d4; color: #5a7a00; }
+  .nav-brand, .footer-brand { color: #5a7a00; }
   .fw-controls { max-height: none !important; }
   .cat-bar, .fw-bar-fill { transition: none; }
   :root {
+    --accent: #5a7a00; --accent-dim: #f0f7d4;
     --emerald: #0d7347; --red: #c0392b; --amber: #d4930d; --orange: #bf6516; --blue: #2563eb;
     --emerald-dim: #e6f7ef; --red-dim: #fce4e4; --amber-dim: #fef3cd; --blue-dim: #dbeafe;
   }
