@@ -31,9 +31,10 @@ python-multipart>=0.0.6
 # supabase>=2.0  # Supabase (free tier)
 # sqlalchemy>=2.0  # Direct PostgreSQL
 
-# Scheduling
-# celery>=5.3  # For cron jobs (weekly scans, monthly reports)
-# redis>=5.0   # Celery broker
+# Scheduling & Auth
+apscheduler>=3.10.0
+bcrypt>=4.1.0
+PyJWT>=2.8.0
 
 # Optional: Nuclei vulnerability scanning (Go binary, not pip)
 # Install separately: go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
