@@ -129,6 +129,26 @@ class ComplyAgent:
             })
         return checklist
 
+    def generate_compliance_update(self, client_name: str, frameworks: list,
+                                     compliance_status: dict) -> str:
+        """Generate compliance progress update using P57 prompt."""
+        from prompt_engine import call_prompt
+
+        framework_summary = []
+        for fw_id, status in compliance_status.items():
+            pct = status.get("percentage", 0) if isinstance(status, dict) else 0
+            framework_summary.append(f"- {fw_id}: {pct}% compliant")
+
+        try:
+            return call_prompt(
+                "P57_COMPLIANCE_PROGRESS_UPDATE_EMAIL",
+                client_name=client_name,
+                frameworks="\n".join(framework_summary) if framework_summary else "No frameworks tracked",
+                overall_progress=str(sum(s.get("percentage", 0) for s in compliance_status.values() if isinstance(s, dict)) // max(len(compliance_status), 1)),
+            )
+        except Exception:
+            return f"Compliance update for {client_name}: {len(frameworks)} frameworks tracked."
+
 
 """
 BREACH — AI Penetration Testing Agent

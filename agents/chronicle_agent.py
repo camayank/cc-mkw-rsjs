@@ -33,26 +33,58 @@ class ChronicleAgent:
         """
         return generate_report(scan_data, output_path)
 
-    def generate_monthly_report(self, client_data: dict, output_path: str) -> dict:
-        """
-        Generate monthly security posture report. (Phase 2)
+    def generate_monthly_report(self, client_id: str, scan_data: dict,
+                                previous_scan: dict = None, alerts: list = None,
+                                compliance_data: dict = None) -> dict:
+        """Generate monthly security report using P46 prompt."""
+        from prompt_engine import call_prompt
+        from datetime import date
+        import json
 
-        Will include: score trend, findings resolved vs new, compliance progress,
-        dark web status, phishing results, vendor risk summary, top 3 priorities.
-        """
+        company = scan_data.get("company_name", "Client")
+        score = scan_data.get("score", 0)
+        grade = scan_data.get("grade", "N/A")
+        findings = scan_data.get("archer", {}).get("findings", [])
+
+        prev_score = previous_scan.get("score", 0) if previous_scan else score
+        score_delta = score - prev_score
+
+        new_alerts = len(alerts) if alerts else 0
+        resolved_count = sum(1 for f in findings if f.get("status") == "resolved")
+
+        try:
+            narrative = call_prompt(
+                "P46_MONTHLY_SECURITY_REPORT",
+                client_name=company,
+                current_score=str(score),
+                previous_score=str(prev_score),
+                score_delta=str(score_delta),
+                grade=grade,
+                findings_count=str(len(findings)),
+                critical_findings=str(sum(1 for f in findings if f.get("severity") == "CRITICAL")),
+                high_findings=str(sum(1 for f in findings if f.get("severity") == "HIGH")),
+                resolved_count=str(resolved_count),
+                new_alerts=str(new_alerts),
+                top_findings=json.dumps(findings[:5], indent=2) if findings else "None",
+            )
+        except Exception as e:
+            narrative = f"Monthly report generation pending. Score: {score}/{grade}. Findings: {len(findings)}."
+
         return {
-            "status": "planned",
-            "agent": self.AGENT_NAME,
-            "note": "Monthly report generation available in Phase 2",
-            "sections": [
-                "Security score trend (month-over-month)",
-                "Findings resolved this month vs new findings",
-                "Compliance progress per framework",
-                "Dark web exposure status",
-                "Phishing simulation results",
-                "Vendor risk summary",
-                "Top 3 priorities for next month",
-            ],
+            "type": "monthly_report",
+            "date": date.today().isoformat(),
+            "company": company,
+            "score": score,
+            "grade": grade,
+            "score_delta": score_delta,
+            "narrative": narrative,
+            "findings_summary": {
+                "total": len(findings),
+                "critical": sum(1 for f in findings if f.get("severity") == "CRITICAL"),
+                "high": sum(1 for f in findings if f.get("severity") == "HIGH"),
+                "resolved": resolved_count,
+            },
+            "alerts_count": new_alerts,
         }
 
     def generate_quarterly_report(self, client_data: dict, output_path: str) -> dict:

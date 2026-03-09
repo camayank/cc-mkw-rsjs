@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberComply — Set Up Your Portal</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0f1a;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:#111827;border:1px solid #1e293b;border-radius:16px;padding:48px;width:100%;max-width:420px}
+.logo{text-align:center;margin-bottom:24px}
+.logo h1{font-size:1.5rem;color:#06b6d4}
+.logo p{color:#94a3b8;font-size:.875rem;margin-top:8px}
+label{display:block;font-size:.875rem;color:#94a3b8;margin-bottom:6px;margin-top:20px}
+input{width:100%;padding:12px 16px;background:#0f172a;border:1px solid #1e293b;border-radius:8px;color:#e2e8f0;font-size:1rem;outline:none}
+input:focus{border-color:#06b6d4}
+button{width:100%;padding:14px;background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;margin-top:28px}
+button:hover{opacity:.9}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <h1>&#x1f6e1;&#xfe0f; Welcome to CyberComply</h1>
+    <p>Set a password to access your Security Command Center</p>
+  </div>
+  <form id="setupForm">
+    <input type="hidden" id="client_id" value="{{ client_id }}">
+    <input type="hidden" id="token" value="{{ token }}">
+    <label for="password">Create Password</label>
+    <input type="password" id="password" placeholder="Min 8 characters" required minlength="8">
+    <label for="confirm">Confirm Password</label>
+    <input type="password" id="confirm" placeholder="Repeat password" required>
+    <button type="submit">Activate Portal</button>
+  </form>
+</div>
+<script>
+document.getElementById('setupForm').addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const pw=document.getElementById('password').value;
+  if(pw!==document.getElementById('confirm').value){alert('Passwords do not match');return}
+  const res=await fetch('/portal/setup',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({client_id:document.getElementById('client_id').value,token:document.getElementById('token').value,password:pw})});
+  const data=await res.json();
+  if(data.status==='ok'){window.location=data.redirect}else{alert(data.message||'Error')}
+});
+</script>
+</body>
+</html>

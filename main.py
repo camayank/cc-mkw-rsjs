@@ -30,6 +30,7 @@ from jinja2 import Environment, FileSystemLoader
 logger = logging.getLogger("cybercomply.api")
 
 # Import all agents
+import client_manager
 from agents.shadow_agent import ShadowAgent
 from agents.recon_agent import ReconAgent
 from agents.guardian_agent import GuardianAgent
@@ -80,6 +81,13 @@ dispatch = DispatchAgent()
 falcon = FalconAgent()
 vanguard = VanguardAgent()
 chronicle = ChronicleAgent()
+
+# Initialize scheduler
+from scheduler import init_scheduler
+
+@app.on_event("startup")
+async def startup_scheduler():
+    app.state.scheduler = init_scheduler(app)
 
 # ─── MODELS ───────────────────────────────────────────────────
 
@@ -933,6 +941,227 @@ async def list_leads():
         return {"leads": json.loads(leads_file.read_text())}
     except Exception:
         return {"leads": []}
+
+# ─── PORTAL AUTH ─────────────────────────────────────────────
+
+@app.get("/portal/login", response_class=HTMLResponse)
+async def portal_login_page(request: Request, client: str = "", token: str = ""):
+    if token and client:
+        if client_manager.verify_magic_token(client, token):
+            tmpl = templates.get_template("portal_setup.html")
+            return HTMLResponse(tmpl.render(client_id=client, token=token))
+    tmpl = templates.get_template("portal_login.html")
+    return HTMLResponse(tmpl.render(error=""))
+
+
+class PortalLoginRequest(BaseModel):
+    client_id: str
+    password: str
+
+@app.post("/portal/login")
+async def portal_login(req: PortalLoginRequest):
+    if client_manager.verify_password(req.client_id, req.password):
+        token = client_manager.create_jwt(req.client_id)
+        resp = JSONResponse({"status": "ok", "redirect": f"/portal/{req.client_id}"})
+        resp.set_cookie("portal_token", token, max_age=86400 * 30, httponly=True, samesite="lax")
+        return resp
+    return JSONResponse({"status": "error", "message": "Invalid credentials"}, status_code=401)
+
+
+class PortalSetupRequest(BaseModel):
+    client_id: str
+    token: str
+    password: str
+
+@app.post("/portal/setup")
+async def portal_setup(req: PortalSetupRequest):
+    if not client_manager.verify_magic_token(req.client_id, req.token):
+        return JSONResponse({"status": "error", "message": "Invalid or expired link"}, status_code=401)
+    client_manager.set_portal_password(req.client_id, req.password)
+    jwt_token = client_manager.create_jwt(req.client_id)
+    resp = JSONResponse({"status": "ok", "redirect": f"/portal/{req.client_id}"})
+    resp.set_cookie("portal_token", jwt_token, max_age=86400 * 30, httponly=True, samesite="lax")
+    return resp
+
+
+def check_portal_auth(request: Request, client_id: str) -> bool:
+    token = request.cookies.get("portal_token", "")
+    if not token:
+        return False
+    verified_id = client_manager.verify_jwt(token)
+    return verified_id == client_id
+
+
+# ─── PORTAL MAIN VIEW ───────────────────────────────────────
+
+@app.get("/portal/{client_id}", response_class=HTMLResponse)
+async def portal_page(client_id: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return HTMLResponse('<script>window.location="/portal/login"</script>')
+
+    client = client_manager.get_client(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    tier_config = client_manager.get_tier_config(client.get("tier", "assessment"))
+    tasks = client_manager.get_tasks(client_id)
+    alerts = client_manager.get_alerts(client_id)
+    reports = client_manager.get_reports(client_id)
+    policies = client_manager.get_policies(client_id)
+
+    score_history = client.get("score_history", [])
+    current_score = client.get("current_score", 0)
+    current_grade = client.get("current_grade", "N/A")
+
+    open_tasks = [t for t in tasks if t["status"] == "open"]
+    in_progress_tasks = [t for t in tasks if t["status"] == "in_progress"]
+    resolved_tasks = [t for t in tasks if t["status"] in ("resolved", "verified")]
+
+    compliance_pct = 0
+    frameworks = client.get("frameworks", [])
+
+    agent_status = _get_agent_status(client_id)
+    threats_blocked = sum(1 for a in alerts if a.get("type") == "threat")
+    dark_web_alerts = sum(1 for a in alerts if a.get("type") == "darkweb")
+
+    tmpl = templates.get_template("portal.html")
+    return HTMLResponse(tmpl.render(
+        client=client, tier=tier_config,
+        current_score=current_score, current_grade=current_grade,
+        score_history=score_history,
+        open_tasks=open_tasks, in_progress_tasks=in_progress_tasks,
+        resolved_tasks=resolved_tasks,
+        alerts=alerts, dark_web_alerts=dark_web_alerts,
+        threats_blocked=threats_blocked,
+        reports=reports, policies=policies,
+        agent_status=agent_status, frameworks=frameworks,
+        compliance_pct=compliance_pct,
+    ))
+
+
+def _get_agent_status(client_id: str) -> list:
+    status_file = client_manager._client_dir(client_id) / "agent_status.json"
+    if status_file.exists():
+        return json.loads(status_file.read_text())
+    return [
+        {"name": "RECON", "label": "External Scan", "status": "active", "last_run": "Pending first scan"},
+        {"name": "SHADOW", "label": "Dark Web Monitor", "status": "active", "last_run": "Pending"},
+        {"name": "FALCON", "label": "Threat Intelligence", "status": "active", "last_run": "Pending"},
+        {"name": "GUARDIAN", "label": "Compliance Engine", "status": "active", "last_run": "Pending"},
+        {"name": "PHANTOM", "label": "Phishing Defense", "status": "standby", "last_run": "Not scheduled"},
+        {"name": "DISPATCH", "label": "Incident Response", "status": "standby", "last_run": "0 active incidents"},
+    ]
+
+
+@app.post("/portal/{client_id}/task/{task_id}/status")
+async def update_task(client_id: str, task_id: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    body = await request.json()
+    client_manager.update_task_status(client_id, task_id, body.get("status", "open"))
+    return {"status": "ok"}
+
+
+@app.get("/portal/{client_id}/download/{doc_type}/{filename}")
+async def portal_download(client_id: str, doc_type: str, filename: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if doc_type not in ("reports", "policies"):
+        raise HTTPException(status_code=400)
+    file_path = client_manager._client_dir(client_id) / doc_type / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404)
+    from starlette.responses import FileResponse
+    return FileResponse(str(file_path), filename=filename)
+
+
+# ─── OPERATOR: CLIENT MANAGEMENT ────────────────────────────
+
+class CreateClientRequest(BaseModel):
+    company_name: str
+    domain: str
+    industry: str = "general"
+    tier: str = "assessment"
+    contact_name: str = ""
+    contact_email: str = ""
+    contact_title: str = ""
+
+@app.post("/api/operator/clients")
+async def create_client_endpoint(req: CreateClientRequest, request: Request):
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    client_id = req.domain.replace(".", "-").replace(" ", "-").lower()
+    profile = client_manager.create_client(
+        client_id=client_id, company_name=req.company_name, domain=req.domain,
+        industry=req.industry, tier=req.tier, contact_name=req.contact_name,
+        contact_email=req.contact_email, contact_title=req.contact_title,
+    )
+    return {"status": "created", "client_id": client_id, "profile": profile}
+
+
+@app.post("/api/operator/clients/{client_id}/portal-access")
+async def create_portal_access(client_id: str, request: Request):
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    client = client_manager.get_client(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    token = client_manager.generate_magic_link(client_id)
+    base_url = os.getenv("BASE_URL", "https://www.cybercomply.io")
+    link = f"{base_url}/portal/login?client={client_id}&token={token}"
+    return {"status": "ok", "magic_link": link, "expires": "7 days"}
+
+
+@app.post("/api/operator/clients/{client_id}/tier")
+async def update_tier(client_id: str, request: Request):
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    body = await request.json()
+    new_tier = body.get("tier", "assessment")
+    profile = client_manager._load_profile(client_id)
+    profile["tier"] = new_tier
+    client_manager._save_profile(client_id, profile)
+    return {"status": "ok", "tier": new_tier}
+
+
+@app.get("/api/operator/clients")
+async def list_clients_endpoint(request: Request):
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    clients = client_manager.list_all_clients()
+    return {"clients": clients}
+
+
+@app.get("/api/operator/mrr")
+async def get_mrr(request: Request):
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    clients = client_manager.list_all_clients()
+    mrr = 0
+    for c in clients:
+        tier = c.get("tier", "assessment")
+        if tier == "basic": mrr += 2000
+        elif tier == "pro": mrr += 5000
+    return {"mrr": mrr, "client_count": len(clients), "retainer_count": sum(1 for c in clients if c.get("tier") in ("basic", "pro"))}
+
+
+@app.post("/api/operator/run-monthly-reports")
+async def trigger_monthly_reports(request: Request):
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    from scheduler import run_monthly_reports
+    asyncio.create_task(asyncio.to_thread(run_monthly_reports))
+    return {"status": "started", "message": "Monthly reports generating for all retainer clients"}
+
+
+@app.post("/api/operator/run-scan/{client_id}")
+async def trigger_client_scan(client_id: str, request: Request):
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    from scheduler import run_weekly_scan
+    asyncio.create_task(asyncio.to_thread(run_weekly_scan))
+    return {"status": "started"}
+
 
 # ─── RUN ──────────────────────────────────────────────────────
 

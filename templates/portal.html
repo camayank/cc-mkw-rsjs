@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ client.company_name }} — Security Command Center</title>
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0f1a;--card:#111827;--border:#1e293b;--text:#e2e8f0;--muted:#64748b;--accent:#06b6d4;--accent2:#0891b2;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--orange:#f97316}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:1.125rem;color:var(--accent);display:flex;align-items:center;gap:8px}
+.header .company{font-size:1rem;color:var(--text);font-weight:400}
+.header .score-badge{background:var(--bg);border:2px solid var(--accent);border-radius:12px;padding:8px 20px;font-size:1.25rem;font-weight:700;color:var(--accent)}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;padding:24px 32px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.stat-card .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.stat-card .value{font-size:2rem;font-weight:700;margin-top:4px}
+.stat-card .sub{font-size:.8rem;margin-top:4px}
+.main{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 32px 32px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px}
+.panel h2{font-size:1rem;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.score-up{color:var(--green)}.score-down{color:var(--red)}
+.agent-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.agent-row:last-child{border:none}
+.agent-name{font-weight:600;font-size:.9rem}
+.agent-status{font-size:.8rem;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px}
+.dot.active{background:var(--green)}.dot.standby{background:var(--yellow)}
+.task-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.task-row:last-child{border:none}
+.sev{font-size:.7rem;padding:2px 8px;border-radius:4px;font-weight:600;text-transform:uppercase}
+.sev-critical{background:rgba(239,68,68,.15);color:var(--red)}
+.sev-high{background:rgba(249,115,22,.15);color:var(--orange)}
+.sev-medium{background:rgba(245,158,11,.15);color:var(--yellow)}
+.sev-low{background:rgba(16,185,129,.15);color:var(--green)}
+.doc-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.doc-row:last-child{border:none}
+.doc-row a{color:var(--accent);text-decoration:none;font-size:.9rem}
+.doc-row a:hover{text-decoration:underline}
+.doc-icon{font-size:1.2rem}
+.bar{height:6px;background:var(--border);border-radius:3px;margin-top:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--green))}
+.trend{display:flex;gap:4px;align-items:flex-end;height:80px;margin-top:12px}
+.trend-bar{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:4px;position:relative}
+.trend-label{font-size:.65rem;color:var(--muted);text-align:center;margin-top:4px}
+.status-btn{padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-size:.75rem}
+.status-btn:hover{border-color:var(--accent);color:var(--accent)}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.main{grid-template-columns:1fr}}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div><h1>&#x1f6e1;&#xfe0f; CyberComply <span class="company">&mdash; {{ client.company_name }}</span></h1></div>
+  <div class="score-badge">{{ current_score }}/100 {{ current_grade }}</div>
+</div>
+
+<div class="grid">
+  <div class="stat-card">
+    <div class="label">Security Score</div>
+    <div class="value" style="color:var(--accent)">{{ current_score }}</div>
+    <div class="sub">
+      {% if score_history|length > 1 %}
+        {% set delta = current_score - score_history[-2].score %}
+        {% if delta > 0 %}<span class="score-up">&#x25b2; +{{ delta }} from last month</span>
+        {% elif delta < 0 %}<span class="score-down">&#x25bc; {{ delta }} from last month</span>
+        {% else %}&#x2192; No change{% endif %}
+      {% else %}Baseline assessment{% endif %}
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Dark Web Alerts</div>
+    <div class="value" style="color:{% if dark_web_alerts > 0 %}var(--red){% else %}var(--green){% endif %}">{{ dark_web_alerts }}</div>
+    <div class="sub">{% if dark_web_alerts > 0 %}&#x26a0; Requires attention{% else %}&#x2713; No new exposures{% endif %}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Compliance</div>
+    <div class="value" style="color:var(--accent)">{{ compliance_pct }}%</div>
+    <div class="bar"><div class="bar-fill" style="width:{{ compliance_pct }}%"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Threats Monitored</div>
+    <div class="value" style="color:var(--green)">{{ threats_blocked }}</div>
+    <div class="sub">CVEs tracked this month</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="panel">
+    <h2>&#x1f4c8; Score Trend</h2>
+    {% if score_history %}
+    <div class="trend">
+      {% for entry in score_history[-6:] %}
+      <div style="flex:1;text-align:center">
+        <div class="trend-bar" style="height:{{ entry.score * 0.8 }}px;{% if loop.last %}background:var(--green){% endif %}"></div>
+        <div class="trend-label">{{ entry.score }}<br>{{ entry.date[5:7] }}/{{ entry.date[8:10] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--muted)">Score history will appear after your first monthly scan.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>&#x1f916; Active Agents (24/7)</h2>
+    {% for agent in agent_status %}
+    <div class="agent-row">
+      <div>
+        <span class="dot {{ agent.status }}"></span>
+        <span class="agent-name">{{ agent.name }}</span>
+        <span style="color:var(--muted);font-size:.8rem"> &mdash; {{ agent.label }}</span>
+      </div>
+      <div class="agent-status">{{ agent.last_run }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="panel">
+    <h2>&#x1f4cb; Remediation Tasks ({{ open_tasks|length }} open)</h2>
+    {% for task in open_tasks[:8] %}
+    <div class="task-row">
+      <div>
+        <span class="sev sev-{{ task.severity|lower }}">{{ task.severity }}</span>
+        <span style="margin-left:8px;font-size:.9rem">{{ task.title }}</span>
+      </div>
+      <button class="status-btn"
+              hx-post="/portal/{{ client.client_id }}/task/{{ task.id }}/status"
+              hx-vals='{"status":"in_progress"}' hx-swap="outerHTML"
+              hx-confirm="Mark as in progress?">Start</button>
+    </div>
+    {% endfor %}
+    {% if resolved_tasks %}
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="color:var(--green);font-size:.85rem;font-weight:600">&#x2713; {{ resolved_tasks|length }} resolved</div>
+    </div>
+    {% endif %}
+    {% if not open_tasks and not resolved_tasks %}
+    <p style="color:var(--muted)">No tasks yet. Tasks will be created from scan findings.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>&#x1f4c4; Reports &amp; Policies</h2>
+    {% for report in reports[:5] %}
+    <div class="doc-row">
+      <span class="doc-icon">&#x1f4ca;</span>
+      <a href="/portal/{{ client.client_id }}/download/reports/{{ report.filename }}">{{ report.filename }}</a>
+    </div>
+    {% endfor %}
+    {% for policy in policies[:5] %}
+    <div class="doc-row">
+      <span class="doc-icon">&#x1f4dd;</span>
+      <a href="/portal/{{ client.client_id }}/download/policies/{{ policy.filename }}">{{ policy.filename }}</a>
+    </div>
+    {% endfor %}
+    {% if not reports and not policies %}
+    <p style="color:var(--muted)">Documents will appear here as they are generated.</p>
+    {% endif %}
+  </div>
+</div>
+
+</body>
+</html>
