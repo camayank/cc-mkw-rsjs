@@ -13,7 +13,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .header h1{font-size:1.125rem;color:var(--accent);display:flex;align-items:center;gap:8px}
 .header .company{font-size:1rem;color:var(--text);font-weight:400}
 .header .score-badge{background:var(--bg);border:2px solid var(--accent);border-radius:12px;padding:8px 20px;font-size:1.25rem;font-weight:700;color:var(--accent)}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;padding:24px 32px}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;padding:24px 32px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
 .stat-card .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .stat-card .value{font-size:2rem;font-weight:700;margin-top:4px}
@@ -54,6 +54,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .alert-detail h3{color:var(--accent);font-size:.9rem;margin-bottom:12px}
 .report-banner{background:var(--card);border:1px solid var(--accent);border-radius:12px;padding:24px;margin:0 32px 16px}
 .report-banner h2{font-size:1rem;color:var(--accent);margin-bottom:12px}
+@media(max-width:1200px){.grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.main{grid-template-columns:1fr}}
 @media(max-width:600px){.grid{grid-template-columns:1fr}}
 </style>
@@ -93,6 +94,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="value" style="color:var(--green)">{{ threats_blocked }}</div>
     <div class="sub">Click to view CVE details</div>
   </div>
+  <div class="stat-card" onclick="toggleAlert('vulns')">
+    <div class="label">Vulnerability Scan</div>
+    <div class="value" style="color:{% if vuln_findings > 0 %}var(--orange){% else %}var(--green){% endif %}">{{ vuln_findings }}</div>
+    <div class="sub">Click to view scan results</div>
+  </div>
+  <div class="stat-card" onclick="toggleAlert('phishing')">
+    <div class="label">Phishing Tests</div>
+    <div class="value" style="color:var(--accent)">{{ phishing_tests }}</div>
+    <div class="sub">Click to view results</div>
+  </div>
 </div>
 
 <div class="alert-detail" id="darkweb-detail">
@@ -104,6 +115,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="alert-detail" id="threats-detail">
   <h3>&#x1f6a8; Threat Intelligence Details</h3>
   <div id="threats-content" hx-get="/portal/{{ client.client_id }}/alerts/threats" hx-trigger="revealed" hx-swap="innerHTML">
+    <p style="color:var(--muted)">Loading...</p>
+  </div>
+</div>
+<div class="alert-detail" id="vulns-detail">
+  <h3>&#x1f50d; Vulnerability Scan Results</h3>
+  <div id="vulns-content" hx-get="/portal/{{ client.client_id }}/alerts/vulns" hx-trigger="revealed" hx-swap="innerHTML">
+    <p style="color:var(--muted)">Loading...</p>
+  </div>
+</div>
+<div class="alert-detail" id="phishing-detail">
+  <h3>&#x1f3a3; Phishing Test Results</h3>
+  <div id="phishing-content" hx-get="/portal/{{ client.client_id }}/alerts/phishing" hx-trigger="revealed" hx-swap="innerHTML">
+    <p style="color:var(--muted)">Loading...</p>
+  </div>
+</div>
+<div class="alert-detail" id="monitoring-detail">
+  <h3>&#x1f441;&#xfe0f; Monitoring Activity</h3>
+  <div id="monitoring-content" hx-get="/portal/{{ client.client_id }}/alerts/monitoring" hx-trigger="revealed" hx-swap="innerHTML">
     <p style="color:var(--muted)">Loading...</p>
   </div>
 </div>
@@ -135,7 +164,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="panel">
-    <h2>&#x1f916; Active Agents (24/7)</h2>
+    <h2 style="cursor:pointer" onclick="toggleAlert('monitoring')">&#x1f916; Active Agents (24/7) <span style="font-size:.7rem;color:var(--muted)">&#x25be; details</span></h2>
     {% for agent in agent_status %}
     <div class="agent-row">
       <div>

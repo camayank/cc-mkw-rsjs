@@ -225,6 +225,66 @@ def run_monthly_reports():
             logger.error(f"Monthly report error for {client.get('client_id', '?')}: {e}")
 
 
+def run_breach_scan():
+    """Monthly/weekly: run Nuclei vulnerability scan per client tier."""
+    from agents.agents_remaining import BreachAgent
+    import client_manager
+
+    breach_agent = BreachAgent()
+    clients = client_manager.list_active_clients()
+
+    for client in clients:
+        tier_config = client_manager.get_tier_config(client.get("tier", "assessment"))
+        if not tier_config.get("monthly_rescan"):
+            continue
+
+        try:
+            domain = client.get("domain", "")
+            industry = client.get("industry", "general")
+            result = breach_agent.run_nuclei_scan(domain, industry=industry)
+
+            if result.get("status") == "complete" and result.get("total", 0) > 0:
+                narrative = ""
+                try:
+                    from prompt_engine import call_prompt
+                    narrative = call_prompt(
+                        "P94_VULNERABILITY_SCAN_REPORT",
+                        client_name=client.get("company_name", ""),
+                        industry=industry,
+                        findings_json=json.dumps(result["findings"][:10], indent=2),
+                    )
+                except Exception:
+                    narrative = f"Nuclei scan found {result['total']} vulnerabilities: {result['critical']} critical, {result['high']} high, {result['medium']} medium."
+
+                severity = "CRITICAL" if result["critical"] > 0 else "HIGH" if result["high"] > 0 else "MEDIUM"
+                alert_data = {
+                    "type": "vulnscan",
+                    "severity": severity,
+                    "date": datetime.utcnow().isoformat(),
+                    "title": f"Vulnerability scan: {result['total']} findings on {domain}",
+                    "summary": f"{result['critical']} critical, {result['high']} high, {result['medium']} medium",
+                    "narrative": narrative,
+                    "target": domain,
+                    "total": result["total"],
+                    "critical": result["critical"],
+                    "high": result["high"],
+                    "medium": result["medium"],
+                    "findings": result["findings"][:20],
+                    "actions": [f"Fix: {f['name']} ({f['severity']})" for f in result["findings"][:5]],
+                    "status": "new",
+                    "emailed": False,
+                }
+                client_manager.save_alert(client["client_id"], alert_data)
+
+                if severity in ("CRITICAL", "HIGH"):
+                    _send_alert_email(client, alert_data)
+
+            _update_agent_timestamp(client["client_id"], "BREACH", "Vulnerability Scanner")
+            logger.info(f"BREACH: {client['client_id']} — {result.get('total', 0)} findings")
+        except Exception as e:
+            logger.error(f"BREACH error for {client['client_id']}: {e}")
+
+
 def _auto_verify_tasks(client_id: str, scan_result: dict):
     """Close tasks when scans confirm the issue is fixed."""
     import client_manager
@@ -376,6 +436,9 @@ def init_scheduler(app=None):
     # Monthly: full report (1st of each month at 8am UTC)
     scheduler.add_job(run_monthly_reports, 'cron', day=1, hour=8, id='monthly_reports')
 
+    # Monthly 15th: vulnerability scan
+    scheduler.add_job(run_breach_scan, 'cron', day=15, hour=10, id='breach_scan')
+
     scheduler.start()
-    logger.info("Scheduler started: falcon(6h), shadow(daily), recon(weekly), reports(monthly)")
+    logger.info("Scheduler started: falcon(6h), shadow(daily), recon(weekly), reports(monthly), breach(monthly)")
     return scheduler

@@ -1058,6 +1058,9 @@ async def portal_page(client_id: str, request: Request):
     agent_status = _get_agent_status(client_id)
     threats_blocked = sum(1 for a in alerts if a.get("type") == "threat")
     dark_web_alerts = sum(1 for a in alerts if a.get("type") == "darkweb")
+    vuln_findings = sum(1 for a in alerts if a.get("type") == "vulnscan")
+    phishing_tests = sum(1 for a in alerts if a.get("type") == "phishing")
+    monitoring_alerts = sum(1 for a in alerts if a.get("type") == "monitoring")
 
     tmpl = templates.get_template("portal.html")
     return HTMLResponse(tmpl.render(
@@ -1068,6 +1071,8 @@ async def portal_page(client_id: str, request: Request):
         resolved_tasks=resolved_tasks,
         alerts=alerts, dark_web_alerts=dark_web_alerts,
         threats_blocked=threats_blocked,
+        vuln_findings=vuln_findings, phishing_tests=phishing_tests,
+        monitoring_alerts=monitoring_alerts,
         reports=reports, policies=policies,
         agent_status=agent_status, frameworks=frameworks,
         compliance_pct=compliance_pct,
@@ -1199,6 +1204,39 @@ async def portal_latest_report(client_id: str, request: Request):
           </div>''')
     except Exception:
         return HTMLResponse('<p style="color:var(--muted);padding:16px 0">Report loading...</p>')
+
+
+@app.get("/portal/{client_id}/alerts/vulns", response_class=HTMLResponse)
+async def portal_vuln_alerts(client_id: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return HTMLResponse("", status_code=401)
+    alerts = client_manager.get_alerts(client_id, limit=20)
+    vulns = [a for a in alerts if a.get("type") == "vulnscan"]
+    rows = ""
+    for a in vulns[:5]:
+        sev = a.get("severity", "MEDIUM").lower()
+        sev_colors = {"critical": "var(--red)", "high": "var(--orange)", "medium": "var(--yellow)", "low": "var(--green)"}
+        color = sev_colors.get(sev, "var(--muted)")
+        findings_html = ""
+        for f in a.get("findings", [])[:5]:
+            cve = f.get("cve_id", "")
+            cve_link = f'<a href="https://nvd.nist.gov/vuln/detail/{cve}" target="_blank" style="color:var(--accent)">{cve}</a>' if cve else ""
+            f_sev = f.get("severity", "").lower()
+            f_color = sev_colors.get(f_sev, "var(--muted)")
+            findings_html += f'<div style="font-size:.8rem;padding:6px 0;border-bottom:1px solid var(--border)"><span style="background:{f_color};color:#fff;padding:1px 6px;border-radius:3px;font-size:.7rem">{f.get("severity","")}</span> {f.get("name","")} {cve_link}<div style="color:var(--muted);margin-top:2px">{f.get("matched_at","")}</div></div>'
+        rows += f'''<div style="padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="background:{color};color:#fff;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600">{a.get("severity","MEDIUM")}</span>
+            <span style="color:var(--muted);font-size:.75rem">{a.get("date","")[:10]}</span>
+          </div>
+          <div style="font-weight:600;margin:8px 0">{a.get("title","Vulnerability Scan")}</div>
+          <div style="color:var(--muted);font-size:.85rem;line-height:1.5;margin-bottom:12px">{a.get("narrative", a.get("summary",""))}</div>
+          <div style="font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:8px">Findings ({a.get("total",0)} total):</div>
+          {findings_html}
+        </div>'''
+    if not rows:
+        rows = '<p style="color:var(--muted);padding:16px 0">No vulnerability scans yet. First scan runs on the 15th of the month.</p>'
+    return HTMLResponse(rows)
 
 
 # ─── OPERATOR: CLIENT MANAGEMENT ────────────────────────────
