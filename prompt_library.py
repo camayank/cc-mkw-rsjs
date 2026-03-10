@@ -2161,6 +2161,28 @@ Write investor update. Under 300 words."""
 }
 
 
+PROMPTS["P94_VULNERABILITY_SCAN_REPORT"] = {
+    "stage": "Retainer",
+    "purpose": "AI narrative summarizing Nuclei vulnerability scan findings for client",
+    "when": "After each BREACH agent vulnerability scan",
+    "cost": "$0.02-0.05",
+    "system": """You are a senior penetration tester writing a vulnerability scan summary for a non-technical business owner.
+Be direct and actionable. No jargon. Prioritize by business impact.
+
+Rules:
+- Total vulnerabilities by severity
+- Top 3 critical items needing immediate action (plain English)
+- 30-day remediation priority list
+- Under 200 words
+- Start with the most urgent item""",
+    "user": """Summarize these vulnerability scan findings for {client_name} ({industry} industry):
+
+Findings: {findings_json}
+
+Write vulnerability scan summary. Under 200 words."""
+}
+
+
 # ═══════════════════════════════════════════════════════════════════
 # SUMMARY
 # ═══════════════════════════════════════════════════════════════════

@@ -161,37 +161,84 @@ Requires human validation for findings.
 class BreachAgent:
     AGENT_NAME = "BREACH"
     AGENT_TAGLINE = "I break in so nobody else can."
-    
-    TOOLS = {
-        "zap": {"name": "OWASP ZAP", "github": "github.com/zaproxy/zaproxy",
-                "install": "docker pull ghcr.io/zaproxy/zaproxy:stable",
-                "purpose": "Web application vulnerability scanning"},
-        "sqlmap": {"name": "SQLMap", "github": "github.com/sqlmapproject/sqlmap",
-                   "install": "pip install sqlmap",
-                   "purpose": "SQL injection detection and exploitation"},
-        "subfinder": {"name": "Subfinder", "github": "github.com/projectdiscovery/subfinder",
-                      "install": "go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest",
-                      "purpose": "Subdomain enumeration and discovery"},
-        "nuclei": {"name": "Nuclei", "github": "github.com/projectdiscovery/nuclei",
-                   "install": "go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
-                   "purpose": "Template-based vulnerability scanning"},
-        "metasploit": {"name": "Metasploit", "github": "github.com/rapid7/metasploit-framework",
-                       "install": "curl https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb > msfinstall && chmod 755 msfinstall && ./msfinstall",
-                       "purpose": "Exploitation framework"},
+
+    INDUSTRY_TEMPLATES = {
+        "cpa": ["cves", "misconfigurations", "exposed-panels", "default-logins", "takeovers"],
+        "healthcare": ["cves", "misconfigurations", "exposed-panels", "default-logins"],
+        "financial": ["cves", "misconfigurations", "exposed-panels", "default-logins", "takeovers"],
+        "legal": ["cves", "misconfigurations", "exposed-panels", "takeovers"],
+        "general": ["cves", "misconfigurations", "default-logins", "exposures"],
     }
-    
-    def run_web_scan(self, target_url: str) -> dict:
-        """Run OWASP ZAP scan against a web application."""
+
+    def run_nuclei_scan(self, target: str, industry: str = "general", severity: str = "critical,high,medium") -> dict:
+        """Run Nuclei vulnerability scan against a target domain/URL."""
         import subprocess
+        import tempfile
+
+        tags = self.INDUSTRY_TEMPLATES.get(industry, self.INDUSTRY_TEMPLATES["general"])
+        tags_str = ",".join(tags)
+
+        with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False, mode="w") as f:
+            output_file = f.name
+
         try:
-            result = subprocess.run(
-                ["docker", "run", "--rm", "ghcr.io/zaproxy/zaproxy:stable",
-                 "zap-baseline.py", "-t", target_url, "-J", "report.json"],
-                capture_output=True, text=True, timeout=600)
-            return {"status": "complete", "output": result.stdout[:5000]}
+            cmd = [
+                "nuclei", "-u", target,
+                "-severity", severity,
+                "-tags", tags_str,
+                "-jsonl", "-o", output_file,
+                "-silent", "-nc",
+                "-rate-limit", "50",
+                "-timeout", "10",
+            ]
+            subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+
+            findings = []
+            try:
+                with open(output_file, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            finding = json.loads(line)
+                            findings.append({
+                                "template_id": finding.get("template-id", ""),
+                                "name": finding.get("info", {}).get("name", "Unknown"),
+                                "severity": finding.get("info", {}).get("severity", "medium").upper(),
+                                "description": finding.get("info", {}).get("description", ""),
+                                "matched_at": finding.get("matched-at", target),
+                                "matcher_name": finding.get("matcher-name", ""),
+                                "tags": finding.get("info", {}).get("tags", []),
+                                "reference": finding.get("info", {}).get("reference", []),
+                                "cve_id": next((r for r in finding.get("info", {}).get("classification", {}).get("cve-id", []) if r), ""),
+                            })
+            except Exception:
+                pass
+            finally:
+                import os as _os
+                _os.unlink(output_file)
+
+            sev_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
+            findings.sort(key=lambda f: sev_order.get(f["severity"], 5))
+
+            return {
+                "status": "complete",
+                "target": target,
+                "total": len(findings),
+                "critical": sum(1 for f in findings if f["severity"] == "CRITICAL"),
+                "high": sum(1 for f in findings if f["severity"] == "HIGH"),
+                "medium": sum(1 for f in findings if f["severity"] == "MEDIUM"),
+                "findings": findings[:50],
+            }
+        except FileNotFoundError:
+            return {"status": "not_installed", "error": "Nuclei not installed. Runs on Railway deployment.",
+                    "target": target, "total": 0, "findings": []}
+        except subprocess.TimeoutExpired:
+            return {"status": "timeout", "error": "Scan timed out after 5 minutes",
+                    "target": target, "total": 0, "findings": []}
         except Exception as e:
-            return {"status": "error", "error": str(e), "note": "Install ZAP: docker pull ghcr.io/zaproxy/zaproxy:stable"}
-    
+            return {"status": "error", "error": str(e),
+                    "target": target, "total": 0, "findings": []}
+
     def get_pentest_scope_template(self) -> dict:
         """Return standard pentest scope document."""
         return {
