@@ -1044,14 +1044,29 @@ async def portal_page(client_id: str, request: Request):
     frameworks = client.get("frameworks", [])
     try:
         if frameworks:
-            from agents.guardian_agent import GuardianAgent
-            guardian = GuardianAgent()
-            guardian_profile = {"applicable_frameworks": frameworks}
-            guardian_profile.update({k: client.get(k, "") for k in ("mfa_status", "backup_frequency", "encryption_status", "training_frequency", "industry")})
-            compliance_data = guardian.get_compliance_status(guardian_profile)
-            if compliance_data:
-                percentages = [fw.get("compliance_percentage", 0) for fw in compliance_data.values() if isinstance(fw, dict)]
-                compliance_pct = sum(percentages) // max(len(percentages), 1) if percentages else 0
+            # Normalize frameworks to list of strings (IDs)
+            fw_list = []
+            for fw in frameworks:
+                if isinstance(fw, str):
+                    fw_list.append(fw)
+                elif isinstance(fw, dict):
+                    fw_list.append(fw.get("id", fw.get("name", "")))
+            fw_list = [f for f in fw_list if f]
+
+            if fw_list:
+                from agents.guardian_agent import GuardianAgent
+                guardian = GuardianAgent()
+                guardian_profile = {"applicable_frameworks": fw_list}
+                # Map client fields to what _check_control expects
+                guardian_profile["mfa_status"] = client.get("mfa_status", "")
+                guardian_profile["training"] = client.get("training_frequency", client.get("training", ""))
+                guardian_profile["has_wisp"] = client.get("has_wisp", "")
+                guardian_profile["has_irp"] = client.get("has_irp", "")
+                guardian_profile["industry"] = client.get("industry", "")
+                compliance_data = guardian.get_compliance_status(guardian_profile)
+                if compliance_data:
+                    percentages = [fw.get("compliance_percentage", 0) for fw in compliance_data.values() if isinstance(fw, dict)]
+                    compliance_pct = sum(percentages) // max(len(percentages), 1) if percentages else 0
     except Exception:
         compliance_pct = 0
 
@@ -1400,6 +1415,96 @@ async def launch_phishing(client_id: str, request: Request):
         templates_list[0]["key"], employee_emails
     )
     return JSONResponse(result)
+
+
+# ─── STRIPE BILLING ───────────────────────────────────────
+
+@app.post("/api/operator/clients/{client_id}/invoice")
+async def create_client_invoice(client_id: str, request: Request):
+    """Create and send a Stripe invoice for a client."""
+    if not check_dashboard_auth(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    from billing import get_or_create_customer, create_invoice
+
+    body = await request.json()
+    items = body.get("items", [])
+    due_days = body.get("due_days", 7)
+
+    if not items:
+        raise HTTPException(status_code=400, detail="No items provided")
+
+    profile = client_manager.get_client(client_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    try:
+        customer_id = get_or_create_customer(profile)
+        profile["stripe_customer_id"] = customer_id
+        client_manager._save_profile(client_id, profile)
+
+        result = create_invoice(customer_id, items, due_days)
+
+        if result.get("invoice_id"):
+            profile["stripe_invoice_id"] = result["invoice_id"]
+            profile["payment_status"] = "invoiced"
+        if result.get("subscription_id"):
+            profile["stripe_subscription_id"] = result["subscription_id"]
+        client_manager._save_profile(client_id, profile)
+
+        return result
+    except Exception as e:
+        logger.error(f"Invoice creation failed for {client_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/webhooks/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhook events."""
+    from billing import handle_webhook
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    try:
+        result = handle_webhook(payload, sig_header)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Stripe webhook error: {e}")
+        raise HTTPException(status_code=400, detail="Webhook verification failed")
+
+    client_id = result.get("client_id")
+    if not client_id:
+        return {"status": "ok", "action": "no_client_id"}
+
+    profile = client_manager.get_client(client_id)
+    if not profile:
+        logger.warning(f"Webhook for unknown client: {client_id}")
+        return {"status": "ok", "action": "client_not_found"}
+
+    action = result.get("action")
+    details = result.get("details", {})
+
+    if action == "update_tier":
+        profile["tier"] = details["tier"]
+        client_manager._save_profile(client_id, profile)
+        logger.info(f"Tier updated to {details['tier']} for {client_id}")
+    elif action == "downgrade_tier":
+        profile["tier"] = "assessment"
+        client_manager._save_profile(client_id, profile)
+        logger.info(f"Tier downgraded to assessment for {client_id}")
+    elif action == "mark_paid":
+        profile["payment_status"] = "paid"
+        profile["paid_at"] = datetime.utcnow().isoformat()
+        client_manager._save_profile(client_id, profile)
+        logger.info(f"Payment received for {client_id}")
+    elif action == "mark_overdue":
+        profile["payment_status"] = "overdue"
+        client_manager._save_profile(client_id, profile)
+        logger.warning(f"Payment failed for {client_id}")
+
+    return {"status": "ok", "action": action}
 
 
 # ─── RUN ──────────────────────────────────────────────────────

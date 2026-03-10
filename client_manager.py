@@ -56,6 +56,11 @@ def create_client(client_id: str, company_name: str, domain: str,
         "score_history": profile.get("score_history", []),
         "frameworks": profile.get("frameworks", []),
         "tech_stack": profile.get("tech_stack", []),
+        "stripe_customer_id": profile.get("stripe_customer_id", ""),
+        "stripe_subscription_id": profile.get("stripe_subscription_id", ""),
+        "stripe_invoice_id": profile.get("stripe_invoice_id", ""),
+        "payment_status": profile.get("payment_status", "none"),
+        "paid_at": profile.get("paid_at", ""),
     })
     _save_profile(client_id, profile)
     for sub in ["scans", "reports", "policies", "alerts"]:
