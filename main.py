@@ -81,7 +81,7 @@ templates = Environment(loader=FileSystemLoader("templates"), autoescape=True)
 
 DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "cybercomply2026")
 _dashboard_sessions = set()  # In-memory session tokens (cleared on restart)
-CALENDLY_LINK = os.getenv("CALENDAR_LINK", "https://calendly.com/cybercomply/security-review")
+CALENDLY_LINK = os.getenv("CALENDAR_LINK", "https://calendly.com/security-cybercomply/30min")
 
 
 def safe_path_component(value: str) -> str:
@@ -139,6 +139,25 @@ class IncidentRequest(BaseModel):
 async def landing_page():
     tmpl = templates.get_template("landing.html")
     return HTMLResponse(tmpl.render(calendly_link=CALENDLY_LINK))
+
+@app.get("/api/test-email")
+async def test_email():
+    """Debug endpoint — tests SendGrid send and returns result."""
+    sendgrid_key = os.getenv("SENDGRID_API_KEY")
+    from_email = os.getenv("SMTP_FROM", os.getenv("SENDER_EMAIL", "security@cybercomply.io"))
+    if not sendgrid_key:
+        return {"error": "SENDGRID_API_KEY not set", "from_email": from_email}
+    try:
+        import sendgrid as sg_lib
+        from sendgrid.helpers.mail import Mail
+        sg = sg_lib.SendGridAPIClient(api_key=sendgrid_key)
+        message = Mail(from_email=from_email, to_emails=from_email,
+                       subject="CyberComply Email Test",
+                       plain_text_content=f"SendGrid is working. Sent at {datetime.utcnow().isoformat()}Z")
+        response = sg.send(message)
+        return {"status": "sent", "code": response.status_code, "from": from_email}
+    except Exception as e:
+        return {"status": "failed", "error": str(e), "type": type(e).__name__, "from": from_email, "key_prefix": sendgrid_key[:10] + "..."}
 
 @app.get("/api/health")
 async def health_check():
