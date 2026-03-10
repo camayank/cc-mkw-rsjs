@@ -25,6 +25,9 @@ def run_falcon_check():
             if tech_stack:
                 threats = falcon.filter_for_client(threats, tech_stack)
 
+            # Filter out error entries from check_cisa_kev
+            threats = [t for t in threats if isinstance(t, dict) and not t.get("error")]
+
             if threats:
                 narrative = ""
                 try:
@@ -38,8 +41,7 @@ def run_falcon_check():
                 except Exception:
                     narrative = f"{len(threats)} new vulnerabilities identified by CISA that may affect your infrastructure."
 
-                has_critical = any(t.get("severity", "").upper() == "CRITICAL" for t in threats)
-                severity = "CRITICAL" if has_critical else "HIGH" if len(threats) > 2 else "MEDIUM"
+                severity = "HIGH" if len(threats) > 2 else "MEDIUM"
 
                 alert_data = {
                     "type": "threat",
@@ -51,7 +53,7 @@ def run_falcon_check():
                     "source": "CISA KEV",
                     "count": len(threats),
                     "threats": threats[:5],
-                    "actions": [f"Patch {t.get('cve_id', 'vulnerability')}: {t.get('name', 'Update required')}" for t in threats[:3]],
+                    "actions": [f"Patch {t.get('cve', 'vulnerability')}: {t.get('product', 'Update required')}" for t in threats[:3]],
                     "status": "new",
                     "emailed": False,
                 }
@@ -587,6 +589,10 @@ def init_scheduler(app=None):
     # Quarterly: phishing campaign (1st of Jan/Apr/Jul/Oct)
     scheduler.add_job(run_phishing_campaign, 'cron', month='1,4,7,10', day=1, hour=14, id='phishing_campaign')
 
+    # Daily at 9am UTC: send due outreach emails
+    from email_scheduler import send_due_emails
+    scheduler.add_job(send_due_emails, 'cron', hour=9, minute=0, id='outreach_emails')
+
     scheduler.start()
-    logger.info("Scheduler started: falcon(6h), vigil(6h), shadow(daily), recon(weekly), reports(monthly), breach(monthly), phishing(quarterly)")
+    logger.info("Scheduler started: falcon(6h), vigil(6h), shadow(daily), outreach(daily), recon(weekly), reports(monthly), breach(monthly), phishing(quarterly)")
     return scheduler
