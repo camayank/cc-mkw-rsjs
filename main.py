@@ -651,22 +651,10 @@ class LeadCapture(BaseModel):
     score: Optional[int] = None
 
 def send_report_email(to_email: str, to_name: str, domain: str, pdf_path: str):
-    """Send the PDF report via SMTP. Silently fails if SMTP not configured."""
-    smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_pass = os.getenv("SMTP_PASS")
+    """Send the PDF report via SendGrid (preferred) or SMTP fallback."""
     from_email = os.getenv("SMTP_FROM", os.getenv("SENDER_EMAIL", "security@cybercomply.io"))
     from_name = os.getenv("SENDER_NAME", "CyberComply")
-
-    if not smtp_host or not smtp_user or not smtp_pass:
-        logger.info(f"SMTP not configured — skipping email to {to_email}. Set SMTP_HOST/SMTP_USER/SMTP_PASS in .env")
-        return False
-
-    msg = MIMEMultipart()
-    msg["From"] = f"{from_name} <{from_email}>"
-    msg["To"] = to_email
-    msg["Subject"] = f"Your Security Assessment Report — {domain}"
+    subject = f"Your Security Assessment Report — {domain}"
 
     body = f"""Hi {to_name or 'there'},
 
@@ -685,26 +673,94 @@ Best,
 {from_name}
 CyberComply — 11 AI Agents. Always On. Always Watching.
 """
-    msg.attach(MIMEText(body, "plain"))
 
+    # Read PDF attachment if exists
+    attachments = []
     if pdf_path and Path(pdf_path).exists():
         with open(pdf_path, "rb") as f:
-            part = MIMEBase("application", "pdf")
-            part.set_payload(f.read())
-            encoders.encode_base64(part)
-            part.add_header("Content-Disposition", f"attachment; filename={Path(pdf_path).name}")
-            msg.attach(part)
+            attachments.append(("application/pdf", Path(pdf_path).name, f.read()))
+
+    # Try SendGrid first
+    sendgrid_key = os.getenv("SENDGRID_API_KEY")
+    if sendgrid_key:
+        try:
+            import sendgrid
+            from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+            import base64
+            sg = sendgrid.SendGridAPIClient(api_key=sendgrid_key)
+            message = Mail(from_email=(from_email, from_name), to_emails=to_email, subject=subject, plain_text_content=body)
+            for mime_type, filename, data in attachments:
+                att = Attachment(FileContent(base64.b64encode(data).decode()), FileName(filename), FileType(mime_type), Disposition("attachment"))
+                message.add_attachment(att)
+            sg.send(message)
+            logger.info(f"Report emailed via SendGrid to {to_email}")
+            return True
+        except Exception as e:
+            logger.error(f"SendGrid failed for {to_email}: {e}")
+
+    # Fallback to SMTP
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    if smtp_host and smtp_user and smtp_pass:
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = f"{from_name} <{from_email}>"
+            msg["To"] = to_email
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body, "plain"))
+            for mime_type, filename, data in attachments:
+                part = MIMEBase("application", "pdf")
+                part.set_payload(data)
+                encoders.encode_base64(part)
+                part.add_header("Content-Disposition", f"attachment; filename={filename}")
+                msg.attach(part)
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+            logger.info(f"Report emailed via SMTP to {to_email}")
+            return True
+        except Exception as e:
+            logger.error(f"SMTP failed for {to_email}: {e}")
+
+    logger.warning(f"No email transport configured — report not sent to {to_email}")
+    return False
+
+
+def notify_operator_new_lead(lead_name: str, lead_email: str, domain: str, score: int = None):
+    """Send operator a notification when a new lead comes in."""
+    operator_email = os.getenv("SMTP_FROM", os.getenv("SENDER_EMAIL", "security@cybercomply.io"))
+    sendgrid_key = os.getenv("SENDGRID_API_KEY")
+    if not sendgrid_key:
+        return
 
     try:
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-        logger.info(f"Report emailed to {to_email}")
-        return True
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
+        sg = sendgrid.SendGridAPIClient(api_key=sendgrid_key)
+        score_text = f"Score: {score}" if score else "Score: pending"
+        body = f"""New lead captured on CyberComply!
+
+Name: {lead_name or 'Not provided'}
+Email: {lead_email}
+Domain: {domain}
+{score_text}
+Time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
+
+View in dashboard: https://www.cybercomply.io/dashboard
+"""
+        message = Mail(
+            from_email=(operator_email, "CyberComply Alerts"),
+            to_emails=operator_email,
+            subject=f"New Lead: {domain} — {lead_name or lead_email}",
+            plain_text_content=body,
+        )
+        sg.send(message)
+        logger.info(f"Operator notified of new lead: {domain}")
     except Exception as e:
-        logger.error(f"Failed to email report to {to_email}: {e}")
-        return False
+        logger.error(f"Failed to notify operator of lead: {e}")
 
 
 @app.post("/api/lead/capture")
@@ -726,6 +782,12 @@ async def capture_lead(request: Request, lead: LeadCapture):
         "captured_at": datetime.utcnow().isoformat() + "Z",
     })
     leads_file.write_text(json.dumps(leads, indent=2))
+
+    # Notify operator of new lead
+    try:
+        notify_operator_new_lead(lead.name, lead.email, lead.domain, lead.score)
+    except Exception:
+        pass
 
     # Background: generate full report + email it
     if lead.email and lead.domain:
