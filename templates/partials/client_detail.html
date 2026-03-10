@@ -93,10 +93,38 @@
       <button onclick="triggerAction(this, '/api/clients/{{ dir_name }}/generate-emails')" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;cursor:pointer;border:1px solid var(--accent2);color:var(--accent2);background:transparent">
         Generate Email Sequence (AI)
       </button>
+      <button onclick="openInvoiceModal('{{ dir_name }}')" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;cursor:pointer;border:1px solid var(--green);color:var(--green);background:transparent">
+        Send Stripe Invoice
+      </button>
     </div>
 
     <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:1px">SCAN DATE</div>
     <div style="font-size:12px;color:var(--dim)">{{ scan.scan_date or 'Unknown' }}</div>
+  </div>
+</div>
+
+<!-- Invoice Modal -->
+<div id="invoiceModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:12px;padding:24px;max-width:500px;width:90%;border:1px solid var(--border)">
+    <div style="font-weight:700;font-size:16px;margin-bottom:16px">Send Invoice</div>
+    <div id="invoiceItems">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim)">Description</label>
+        <input id="inv_desc" type="text" value="Security Assessment + Risk Report" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--txt);margin-top:4px">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim)">Amount (USD)</label>
+        <input id="inv_amount" type="number" value="5000" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--txt);margin-top:4px">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim)"><input id="inv_recurring" type="checkbox" style="margin-right:6px">Recurring (monthly)</label>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button onclick="closeInvoiceModal()" style="padding:8px 16px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--dim);cursor:pointer">Cancel</button>
+      <button id="invoiceSendBtn" onclick="sendInvoice()" style="padding:8px 16px;background:var(--green);border:none;border-radius:6px;color:#000;font-weight:600;cursor:pointer">Send Invoice</button>
+    </div>
+    <div id="invoiceResult" style="margin-top:12px;font-size:12px;display:none"></div>
   </div>
 </div>
 
@@ -115,6 +143,48 @@ function triggerAction(btn, url) {
     btn.style.borderColor = 'var(--red)';
     btn.disabled = false;
     btn.style.opacity = '1';
+  });
+}
+var _invoiceClientId = '';
+function openInvoiceModal(dirName) {
+  _invoiceClientId = dirName;
+  document.getElementById('invoiceModal').style.display = 'flex';
+}
+function closeInvoiceModal() {
+  document.getElementById('invoiceModal').style.display = 'none';
+  document.getElementById('invoiceResult').style.display = 'none';
+}
+function sendInvoice() {
+  var btn = document.getElementById('invoiceSendBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  var items = [{
+    description: document.getElementById('inv_desc').value,
+    amount: parseFloat(document.getElementById('inv_amount').value),
+    recurring: document.getElementById('inv_recurring').checked
+  }];
+  fetch('/api/operator/clients/' + _invoiceClientId + '/invoice', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({items: items, due_days: 7})
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    var result = document.getElementById('invoiceResult');
+    if (data.invoice_url) {
+      result.innerHTML = 'Invoice sent! <a href="' + data.invoice_url + '" target="_blank" style="color:var(--accent)">View Invoice</a>';
+      result.style.color = 'var(--green)';
+    } else {
+      result.textContent = data.detail || 'Invoice created';
+      result.style.color = 'var(--green)';
+    }
+    result.style.display = 'block';
+    btn.textContent = 'Sent!';
+  }).catch(function() {
+    var result = document.getElementById('invoiceResult');
+    result.textContent = 'Failed — check Stripe API key';
+    result.style.color = 'var(--red)';
+    result.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Send Invoice';
   });
 }
 </script>

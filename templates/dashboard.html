@@ -152,6 +152,32 @@ function doLogin(e) {
       <div class="pipe-card revenue"><div class="pipe-num" id="pValue">-</div><div class="pipe-label">Pipeline</div></div>
     </div>
 
+    <!-- Email Outreach Pipeline -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:28px">
+      <div style="font-size:13px;font-weight:700;font-family:var(--mono);letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+        EMAIL OUTREACH PIPELINE
+        <span id="emailNextBatch" style="font-size:11px;font-weight:400;color:var(--muted);font-family:var(--body)"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">
+        <div class="pipe-card" style="margin:0">
+          <div class="pipe-num" id="emailScheduled" style="color:var(--accent)">-</div>
+          <div class="pipe-label">Scheduled</div>
+        </div>
+        <div class="pipe-card" style="margin:0">
+          <div class="pipe-num" id="emailSent" style="color:var(--green)">-</div>
+          <div class="pipe-label">Sent</div>
+        </div>
+        <div class="pipe-card" style="margin:0">
+          <div class="pipe-num" id="emailPending" style="color:var(--yellow)">-</div>
+          <div class="pipe-label">Pending</div>
+        </div>
+        <div class="pipe-card" style="margin:0">
+          <div class="pipe-num" id="emailFailed" style="color:var(--red)">-</div>
+          <div class="pipe-label">Failed</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Client Table -->
     <div class="section-header">
       <div>
@@ -257,6 +283,15 @@ function loadPipeline() {
     document.getElementById('pValue').textContent = '$' + data.total_value.toLocaleString();
     document.getElementById('aiCost').textContent = 'AI: $' + data.ai_cost.toFixed(2);
     document.getElementById('clientCount').textContent = 'Clients: ' + data.scanned;
+    // Email outreach stats
+    var es = data.email_stats || {};
+    document.getElementById('emailScheduled').textContent = es.scheduled != null ? es.scheduled : '-';
+    document.getElementById('emailSent').textContent = es.sent != null ? es.sent : '-';
+    document.getElementById('emailPending').textContent = es.pending != null ? es.pending : '-';
+    document.getElementById('emailFailed').textContent = es.failed != null ? es.failed : '-';
+    if (es.next_batch) {
+      document.getElementById('emailNextBatch').textContent = 'Next batch: ' + es.next_batch;
+    }
   });
 }
 
