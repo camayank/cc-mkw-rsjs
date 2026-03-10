@@ -40,8 +40,9 @@ from prompt_library import INDUSTRY_CONTEXT
 
 logger = logging.getLogger("email_scheduler")
 
-OUTPUT_DIR = Path("outreach_emails")
-SCHEDULE_FILE = Path("outreach_schedule.json")
+DATA_DIR = Path(os.getenv("DATA_DIR", "."))
+OUTPUT_DIR = DATA_DIR / "outreach_emails"
+SCHEDULE_FILE = DATA_DIR / "outreach_schedule.json"
 
 # Follow-up sequence: (prompt_id, days_after_p03, label)
 SEQUENCE = [
@@ -85,6 +86,7 @@ def generate_sequence(
     employee_count: int = 15,
     contact_name: str = None,
     contact_title: str = None,
+    contact_email: str = None,
     scan_data: dict = None,
     start_date: date = None,
 ):
@@ -249,6 +251,7 @@ def generate_sequence(
         "domain": domain,
         "industry": industry,
         "contact": contact,
+        "contact_email": contact_email,
         "score": score,
         "start_date": start_date.isoformat(),
         "emails": schedule_entries,
@@ -280,7 +283,7 @@ def generate_batch(csv_file: str):
             # Try to load existing scan data
             company_safe = company.replace(" ", "_").replace("&", "and")
             scan_data = None
-            for d in Path("client-deliverables").glob(f"{company_safe}_*"):
+            for d in (DATA_DIR / "client-deliverables").glob(f"{company_safe}_*"):
                 sd = _load_scan_data(d)
                 if sd:
                     scan_data = sd
@@ -440,7 +443,7 @@ if __name__ == "__main__":
         # Try to find scan data
         company_safe = args.company.replace(" ", "_").replace("&", "and")
         scan_data = None
-        for d in Path("client-deliverables").glob(f"{company_safe}_*"):
+        for d in (DATA_DIR / "client-deliverables").glob(f"{company_safe}_*"):
             sd = _load_scan_data(d)
             if sd:
                 scan_data = sd
