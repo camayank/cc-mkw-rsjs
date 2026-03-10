@@ -295,42 +295,86 @@ class PhantomAgent:
                 })
         return applicable
 
-    def create_campaign(self, campaign_name: str, template_key: str, 
+    def create_campaign(self, campaign_name: str, template_key: str,
                         employee_emails: list, send_date: str = None) -> dict:
         """Create a phishing campaign via GoPhish API."""
         template = self.templates.get(template_key)
         if not template:
             return {"error": f"Template '{template_key}' not found"}
 
-        # GoPhish API call structure
-        campaign_data = {
-            "name": campaign_name,
-            "template": {
-                "name": template["name"],
-                "subject": template["subject"],
-                "html": template["html_body"]
-            },
-            "groups": [{"name": "target_group", "targets": [
-                {"email": e} for e in employee_emails
-            ]}],
-            "send_by_date": send_date or datetime.utcnow().isoformat(),
-        }
+        if not self.gophish_key:
+            return {"status": "prepared", "template": template_key,
+                    "targets": len(employee_emails),
+                    "note": "GoPhish not connected — set GOPHISH_URL and GOPHISH_API_KEY"}
 
-        if self.gophish_key:
-            try:
-                resp = requests.post(
-                    f"{self.gophish_url}/api/campaigns/",
-                    headers={"Authorization": f"Bearer {self.gophish_key}"},
-                    json=campaign_data,
-                    verify=False,
-                    timeout=10
-                )
-                return resp.json()
-            except Exception as e:
-                return {"error": str(e), "note": "GoPhish not connected — campaign data prepared"}
-        
-        return {"status": "prepared", "campaign": campaign_data, 
-                "note": "GoPhish not connected — connect to send"}
+        headers = {"Authorization": f"Bearer {self.gophish_key}"}
+        base = self.gophish_url
+
+        try:
+            # 1. Create or reuse sending profile
+            smtp_name = "CyberComply SMTP"
+            smtp_data = {
+                "name": smtp_name,
+                "host": os.getenv("SMTP_HOST", "smtp.gmail.com:587"),
+                "from_address": os.getenv("SMTP_FROM", "security@cybercomply.io"),
+                "username": os.getenv("SMTP_USER", ""),
+                "password": os.getenv("SMTP_PASS", ""),
+                "ignore_cert_errors": True,
+            }
+            resp = requests.post(f"{base}/api/smtp/", headers=headers, json=smtp_data, verify=False, timeout=10)
+            smtp_id = resp.json().get("id")
+            if not smtp_id:
+                existing = requests.get(f"{base}/api/smtp/", headers=headers, verify=False, timeout=10).json()
+                smtp_id = next((s["id"] for s in existing if s.get("name") == smtp_name), None)
+
+            # 2. Create email template
+            tmpl_data = {
+                "name": f"{campaign_name}_template",
+                "subject": template["subject"],
+                "html": template["html_body"],
+            }
+            resp = requests.post(f"{base}/api/templates/", headers=headers, json=tmpl_data, verify=False, timeout=10)
+            tmpl_id = resp.json().get("id")
+
+            # 3. Create landing page
+            page_data = {
+                "name": f"{campaign_name}_page",
+                "html": self.generate_training_page(template_key),
+                "capture_credentials": False,
+                "redirect_url": "",
+            }
+            resp = requests.post(f"{base}/api/pages/", headers=headers, json=page_data, verify=False, timeout=10)
+            page_id = resp.json().get("id")
+
+            # 4. Create target group
+            targets = [{"email": e, "first_name": e.split("@")[0]} for e in employee_emails]
+            group_data = {"name": f"{campaign_name}_targets", "targets": targets}
+            resp = requests.post(f"{base}/api/groups/", headers=headers, json=group_data, verify=False, timeout=10)
+            group_id = resp.json().get("id")
+
+            # 5. Launch campaign
+            campaign_data = {
+                "name": campaign_name,
+                "template": {"id": tmpl_id},
+                "page": {"id": page_id},
+                "smtp": {"id": smtp_id},
+                "groups": [{"id": group_id}],
+                "launch_date": send_date or datetime.utcnow().isoformat() + "Z",
+            }
+            resp = requests.post(f"{base}/api/campaigns/", headers=headers, json=campaign_data, verify=False, timeout=10)
+            result = resp.json()
+
+            return {
+                "status": "launched",
+                "campaign_id": result.get("id"),
+                "name": campaign_name,
+                "targets": len(employee_emails),
+                "template": template_key,
+            }
+
+        except Exception as e:
+            return {"status": "error", "error": str(e),
+                    "note": "GoPhish API call failed. Check GOPHISH_URL and GOPHISH_API_KEY."}
 
     def get_campaign_results(self, campaign_id: int) -> dict:
         """Get results from a GoPhish campaign."""

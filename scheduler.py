@@ -285,6 +285,79 @@ def run_breach_scan():
             logger.error(f"BREACH error for {client['client_id']}: {e}")
 
 
+def run_phishing_campaign():
+    """Quarterly/monthly: launch phishing test per client tier."""
+    from agents.phantom_agent import PhantomAgent
+    import client_manager
+
+    phantom_agent = PhantomAgent()
+    clients = client_manager.list_active_clients()
+
+    for client in clients:
+        tier_config = client_manager.get_tier_config(client.get("tier", "assessment"))
+        if not tier_config.get("tasks"):
+            continue
+
+        try:
+            client_id = client["client_id"]
+            industry = client.get("industry", "general")
+            contact_email = client.get("contact_email", "")
+            employee_emails = client.get("employee_emails", [contact_email] if contact_email else [])
+
+            if not employee_emails:
+                continue
+
+            templates = phantom_agent.get_templates_for_industry(industry)
+            if not templates:
+                templates = phantom_agent.get_templates_for_industry("All")
+            if not templates:
+                continue
+
+            template_key = templates[0]["key"]
+            campaign_name = f"{client.get('company_name', client_id)}_phishing_{date.today().isoformat()}"
+
+            result = phantom_agent.create_campaign(campaign_name, template_key, employee_emails)
+
+            if result.get("status") in ("launched", "prepared"):
+                narrative = f"Phishing simulation launched for {len(employee_emails)} employees using '{templates[0]['name']}' template."
+                try:
+                    from prompt_engine import call_prompt
+                    narrative = call_prompt(
+                        "P50_PHISHING_RESULTS",
+                        client_name=client.get("company_name", ""),
+                        campaign_name=campaign_name,
+                        template_name=templates[0]["name"],
+                        total_targets=str(len(employee_emails)),
+                        click_rate="Pending — results in 48 hours",
+                        open_rate="Pending",
+                        department_breakdown="Full results after campaign completes",
+                        previous_rate="N/A",
+                    )
+                except Exception:
+                    pass
+
+                alert_data = {
+                    "type": "phishing",
+                    "severity": "LOW",
+                    "date": datetime.utcnow().isoformat(),
+                    "title": f"Phishing test launched: {templates[0]['name']}",
+                    "summary": f"Campaign sent to {len(employee_emails)} employees",
+                    "narrative": narrative,
+                    "campaign_id": result.get("campaign_id"),
+                    "template": template_key,
+                    "targets": len(employee_emails),
+                    "actions": ["Monitor results in 48 hours", "Review click rates", "Send training to clickers"],
+                    "status": "new",
+                    "emailed": False,
+                }
+                client_manager.save_alert(client_id, alert_data)
+
+            _update_agent_timestamp(client_id, "PHANTOM", "Phishing Defense")
+            logger.info(f"PHANTOM: {client_id} — campaign {result.get('status', 'unknown')}")
+        except Exception as e:
+            logger.error(f"PHANTOM error for {client.get('client_id', '?')}: {e}")
+
+
 def _auto_verify_tasks(client_id: str, scan_result: dict):
     """Close tasks when scans confirm the issue is fixed."""
     import client_manager
@@ -439,6 +512,9 @@ def init_scheduler(app=None):
     # Monthly 15th: vulnerability scan
     scheduler.add_job(run_breach_scan, 'cron', day=15, hour=10, id='breach_scan')
 
+    # Quarterly: phishing campaign (1st of Jan/Apr/Jul/Oct)
+    scheduler.add_job(run_phishing_campaign, 'cron', month='1,4,7,10', day=1, hour=14, id='phishing_campaign')
+
     scheduler.start()
-    logger.info("Scheduler started: falcon(6h), shadow(daily), recon(weekly), reports(monthly), breach(monthly)")
+    logger.info("Scheduler started: falcon(6h), shadow(daily), recon(weekly), reports(monthly), breach(monthly), phishing(quarterly)")
     return scheduler

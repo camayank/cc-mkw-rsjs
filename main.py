@@ -1239,6 +1239,59 @@ async def portal_vuln_alerts(client_id: str, request: Request):
     return HTMLResponse(rows)
 
 
+@app.get("/portal/{client_id}/alerts/phishing", response_class=HTMLResponse)
+async def portal_phishing_alerts(client_id: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return HTMLResponse("", status_code=401)
+    alerts = client_manager.get_alerts(client_id, limit=20)
+    phishing = [a for a in alerts if a.get("type") == "phishing"]
+    rows = ""
+    for a in phishing[:5]:
+        actions_html = "".join(f'<li style="margin:4px 0">{act}</li>' for act in a.get("actions", []))
+        rows += f'''<div style="padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="background:var(--accent);color:#fff;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600">PHISHING TEST</span>
+            <span style="color:var(--muted);font-size:.75rem">{a.get("date","")[:10]}</span>
+          </div>
+          <div style="font-weight:600;margin:8px 0">{a.get("title","Phishing Campaign")}</div>
+          <div style="color:var(--muted);font-size:.85rem;line-height:1.5">{a.get("narrative", a.get("summary",""))}</div>
+          {"<ul style='margin:12px 0 0 16px;color:var(--accent);font-size:.85rem'>" + actions_html + "</ul>" if actions_html else ""}
+        </div>'''
+    if not rows:
+        rows = '<p style="color:var(--muted);padding:16px 0">No phishing tests yet. First campaign launches next quarter.</p>'
+    return HTMLResponse(rows)
+
+
+@app.get("/portal/{client_id}/alerts/monitoring", response_class=HTMLResponse)
+async def portal_monitoring_alerts(client_id: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return HTMLResponse("", status_code=401)
+    alerts = client_manager.get_alerts(client_id, limit=20)
+    monitoring = [a for a in alerts if a.get("type") == "monitoring"]
+    rows = ""
+    for a in monitoring[:10]:
+        sev = a.get("severity", "MEDIUM").lower()
+        sev_colors = {"critical": "var(--red)", "high": "var(--orange)", "medium": "var(--yellow)", "low": "var(--green)"}
+        color = sev_colors.get(sev, "var(--muted)")
+        anomaly_html = ""
+        for an in a.get("anomalies", [])[:5]:
+            anomaly_html += f'<div style="font-size:.8rem;padding:4px 0;color:var(--muted)">&#x2022; {an.get("type","")}: {an.get("user","N/A")} from {an.get("location","unknown")} ({an.get("app","")})</div>'
+        actions_html = "".join(f'<li style="margin:4px 0">{act}</li>' for act in a.get("actions", []))
+        rows += f'''<div style="padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="background:{color};color:#fff;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600">{a.get("severity","MEDIUM")}</span>
+            <span style="color:var(--muted);font-size:.75rem">{a.get("date","")[:10]}</span>
+          </div>
+          <div style="font-weight:600;margin:8px 0">{a.get("title","Monitoring Alert")}</div>
+          <div style="color:var(--muted);font-size:.85rem;line-height:1.5;margin-bottom:8px">{a.get("narrative", a.get("summary",""))}</div>
+          {anomaly_html}
+          {"<ul style='margin:12px 0 0 16px;color:var(--accent);font-size:.85rem'>" + actions_html + "</ul>" if actions_html else ""}
+        </div>'''
+    if not rows:
+        rows = '<p style="color:var(--muted);padding:16px 0">No monitoring anomalies detected. All systems normal.</p>'
+    return HTMLResponse(rows)
+
+
 # ─── OPERATOR: CLIENT MANAGEMENT ────────────────────────────
 
 class CreateClientRequest(BaseModel):
@@ -1325,6 +1378,28 @@ async def trigger_client_scan(client_id: str, request: Request):
     from scheduler import run_weekly_scan
     asyncio.create_task(asyncio.to_thread(run_weekly_scan))
     return {"status": "started"}
+
+
+@app.post("/api/operator/phishing/launch/{client_id}")
+async def launch_phishing(client_id: str, request: Request):
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    client = client_manager.get_client(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    industry = client.get("industry", "general")
+    contact_email = client.get("contact_email", "")
+    employee_emails = client.get("employee_emails", [contact_email] if contact_email else [])
+    if not employee_emails:
+        return JSONResponse({"error": "No employee emails configured"}, status_code=400)
+    templates_list = phantom.get_templates_for_industry(industry)
+    if not templates_list:
+        return JSONResponse({"error": "No templates for industry"}, status_code=400)
+    result = phantom.create_campaign(
+        f"{client.get('company_name', client_id)}_manual_{date.today().isoformat()}",
+        templates_list[0]["key"], employee_emails
+    )
+    return JSONResponse(result)
 
 
 # ─── RUN ──────────────────────────────────────────────────────
