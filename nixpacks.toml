@@ -2,8 +2,11 @@
 nixPkgs = ["wget", "unzip"]
 
 [phases.install]
+dependsOn = ["setup"]
+
+[phases.nuclei]
+dependsOn = ["install"]
 cmds = [
-    "pip install -r requirements.txt",
     "wget -q https://github.com/projectdiscovery/nuclei/releases/download/v3.3.7/nuclei_3.3.7_linux_amd64.zip -O /tmp/nuclei.zip",
     "unzip -o /tmp/nuclei.zip -d /usr/local/bin/",
     "chmod +x /usr/local/bin/nuclei",
