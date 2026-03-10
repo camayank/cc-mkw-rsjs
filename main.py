@@ -49,12 +49,19 @@ app = FastAPI(
     version="2.0.0"
 )
 
+_allowed_origins = os.getenv("ALLOWED_ORIGINS", "").split(",") if os.getenv("ALLOWED_ORIGINS") else [
+    "https://www.cybercomply.io",
+    "https://cybercomply.io",
+    "http://localhost:8000",
+]
+_allowed_origins = [o.strip() for o in _allowed_origins if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Lock down in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # ─── JINJA2 SETUP ────────────────────────────────────────
@@ -64,6 +71,7 @@ load_dotenv()
 templates = Environment(loader=FileSystemLoader("templates"), autoescape=True)
 
 DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "cybercomply2026")
+_dashboard_sessions = set()  # In-memory session tokens (cleared on restart)
 CALENDLY_LINK = os.getenv("CALENDAR_LINK", "https://calendly.com/cybercomply/security-review")
 DATA_DIR = Path(os.getenv("DATA_DIR", "."))
 OUTPUT_DIR = DATA_DIR / "client-deliverables"
@@ -347,11 +355,13 @@ async def scan_page():
     return HTMLResponse(tmpl.render(calendly_link=CALENDLY_LINK))
 
 def check_dashboard_auth(request: Request):
-    auth = request.cookies.get("dashboard_auth")
-    if auth == DASHBOARD_PASSWORD:
+    # Check session token cookie first
+    token = request.cookies.get("dashboard_auth")
+    if token and token in _dashboard_sessions:
         return True
-    token = request.query_params.get("password")
-    if token == DASHBOARD_PASSWORD:
+    # Fall back to password for initial login
+    password = request.query_params.get("password")
+    if password == DASHBOARD_PASSWORD:
         return True
     return False
 
@@ -360,9 +370,21 @@ async def dashboard_page(request: Request):
     if not check_dashboard_auth(request):
         tmpl = templates.get_template("dashboard.html")
         return HTMLResponse(tmpl.render(authenticated=False))
+
     tmpl = templates.get_template("dashboard.html")
     resp = HTMLResponse(tmpl.render(authenticated=True, calendly_link=CALENDLY_LINK))
-    resp.set_cookie("dashboard_auth", DASHBOARD_PASSWORD, max_age=86400)
+
+    # Only mint a new session token if authenticated via password (not existing token)
+    existing_token = request.cookies.get("dashboard_auth")
+    if not (existing_token and existing_token in _dashboard_sessions):
+        session_token = secrets.token_hex(32)
+        _dashboard_sessions.add(session_token)
+        # Cap sessions to prevent unbounded growth (single-operator dashboard)
+        if len(_dashboard_sessions) > 100:
+            _dashboard_sessions.clear()
+            _dashboard_sessions.add(session_token)
+        resp.set_cookie("dashboard_auth", session_token, max_age=86400,
+                         httponly=True, secure=True, samesite="lax")
     return resp
 
 # ─── DIAGNOSTIC REPORT ──────────────────────────────────
