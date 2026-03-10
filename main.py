@@ -7,7 +7,7 @@ Run: uvicorn main:app --reload --port 8000
 
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse
+from fastapi.responses import JSONResponse, StreamingResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
@@ -864,6 +864,7 @@ async def download_client_file(dir_name: str, file_type: str):
 
 @app.get("/api/clients/{dir_name}/detail", response_class=HTMLResponse)
 async def client_detail(dir_name: str):
+    dir_name = safe_path_component(dir_name)
     client_dir = OUTPUT_DIR / dir_name
     if not client_dir.exists():
         raise HTTPException(status_code=404, detail="Client not found")
@@ -1008,6 +1009,7 @@ async def new_scan(req: NewScanRequest):
 
 @app.post("/api/clients/{dir_name}/generate-policies")
 async def generate_policies_for_client(dir_name: str):
+    dir_name = safe_path_component(dir_name)
     client_dir = OUTPUT_DIR / dir_name
     scan_file = client_dir / "scan_data.json"
     if not scan_file.exists():
@@ -1031,6 +1033,7 @@ async def generate_policies_for_client(dir_name: str):
 
 @app.post("/api/clients/{dir_name}/generate-emails")
 async def generate_emails_for_client(dir_name: str):
+    dir_name = safe_path_component(dir_name)
     client_dir = OUTPUT_DIR / dir_name
     scan_file = client_dir / "scan_data.json"
     if not scan_file.exists():

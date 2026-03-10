@@ -194,11 +194,12 @@ function doLogin(e) {
           <th>Score</th>
           <th>Date</th>
           <th>Status</th>
+          <th>Outreach</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody id="clientTableBody">
-        <tr><td colspan="6" class="empty-state">Loading clients...</td></tr>
+        <tr><td colspan="7" class="empty-state">Loading clients...</td></tr>
       </tbody>
     </table>
 
@@ -285,10 +286,11 @@ function loadPipeline() {
     document.getElementById('clientCount').textContent = 'Clients: ' + data.scanned;
     // Email outreach stats
     var es = data.email_stats || {};
-    document.getElementById('emailScheduled').textContent = es.scheduled != null ? es.scheduled : '-';
+    document.getElementById('emailScheduled').textContent = es.total_scheduled != null ? es.total_scheduled : '-';
     document.getElementById('emailSent').textContent = es.sent != null ? es.sent : '-';
     document.getElementById('emailPending').textContent = es.pending != null ? es.pending : '-';
-    document.getElementById('emailFailed').textContent = es.failed != null ? es.failed : '-';
+    var failed = (es.total_scheduled || 0) - (es.sent || 0) - (es.pending || 0);
+    document.getElementById('emailFailed').textContent = failed > 0 ? failed : '0';
     if (es.next_batch) {
       document.getElementById('emailNextBatch').textContent = 'Next batch: ' + es.next_batch;
     }
@@ -299,7 +301,7 @@ function loadClients() {
   fetch('/api/clients').then(r => r.json()).then(data => {
     const tbody = document.getElementById('clientTableBody');
     if (!data.clients || data.clients.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No clients yet. Run your first scan!</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No clients yet. Run your first scan!</td></tr>';
       return;
     }
     tbody.innerHTML = '';
@@ -322,6 +324,9 @@ function loadClients() {
           '<div class="status-dot ' + (c.has_policies ? 'on' : 'off') + '" title="Policies"></div>' +
           '<div class="status-dot ' + (c.has_emails ? 'on' : 'off') + '" title="Emails"></div>' +
         '</div></td>' +
+        '<td><span style="font-size:11px;font-family:var(--mono);color:' + (c.email_status === 'sequence_complete' ? 'var(--green)' : c.email_status && c.email_status.indexOf('day_') === 0 ? 'var(--yellow)' : 'var(--muted)') + '">' + (c.email_status ? c.email_status.replace(/_/g, ' ') : 'none') + '</span>' +
+          (c.next_email_due ? '<div style="font-size:10px;color:var(--dim)">next: ' + c.next_email_due + '</div>' : '') +
+        '</td>' +
         '<td><div class="action-btns">' +
           (c.has_pdf ? '<a href="/api/clients/' + esc(c.dir_name) + '/download/pdf" class="action-btn" title="Download PDF">PDF</a>' : '') +
           (c.has_proposal ? '<a href="/api/clients/' + esc(c.dir_name) + '/download/proposal" class="action-btn" title="View Proposal">Proposal</a>' : '') +
@@ -349,7 +354,7 @@ function toggleDetail(dirName, row) {
   const detailRow = document.createElement('tr');
   detailRow.className = 'detail-row';
   const td = document.createElement('td');
-  td.colSpan = 6;
+  td.colSpan = 7;
   td.innerHTML = '<div class="detail-panel"><div class="spinner"></div> Loading...</div>';
   detailRow.appendChild(td);
   row.after(detailRow);
