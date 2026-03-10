@@ -1,4 +1,4 @@
-# DigiComply Cyber Shield — Python Dependencies
+# CyberComply — Python Dependencies (build v2)
 
 # Core Framework
 fastapi==0.115.0
