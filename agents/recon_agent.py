@@ -122,7 +122,7 @@ class ReconAgent:
                     'points': 0
                 }
         except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer, dns.resolver.NoNameservers, Exception) as e:
-            checks['spf'] = {'status': 'FAIL', 'exists': False, 'issue': str(e), 'points': 0}
+            checks['spf'] = {'status': 'FAIL', 'exists': False, 'issue': 'No SPF record found — anyone can send email as your domain', 'points': 0}
 
         # DMARC Check
         try:

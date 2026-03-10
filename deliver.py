@@ -41,7 +41,7 @@ BRAND = {
     "email": "security@cybercomply.io",
     "phone": "+1-XXX-XXX-XXXX",
     "website": "https://cybercomply.io",
-    "calendly": "https://calendly.com/cybercomply/security-review",
+    "calendly": "https://calendly.com/security-cybercomply/30min",
 }
 
 # Create output directory

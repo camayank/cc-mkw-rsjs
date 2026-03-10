@@ -212,6 +212,15 @@ def generate_report(scan_data: dict, output_path: str = "security_report.pdf"):
     breakdown = score_data.get("breakdown", {})
     executive_summary_ai = scan_data.get("executive_summary")
 
+    CATEGORY_LABELS = {
+        'email_security': 'Email Security',
+        'ssl_tls': 'SSL / TLS',
+        'security_headers': 'Security Headers',
+        'network_exposure': 'Network Exposure',
+        'technology': 'Technology',
+        'dns_security': 'DNS Security',
+    }
+
     doc = SimpleDocTemplate(
         output_path, pagesize=letter,
         topMargin=60, bottomMargin=50,
@@ -272,7 +281,7 @@ def generate_report(scan_data: dict, output_path: str = "security_report.pdf"):
     story.append(Spacer(1, 8))
 
     for cat_name, cat_data in breakdown.items():
-        display_name = cat_name.replace('_', ' ').title()
+        display_name = CATEGORY_LABELS.get(cat_name, cat_name.replace('_', ' ').title())
         story.append(BarChart(display_name, cat_data['score'], cat_data['max']))
         story.append(Spacer(1, 4))
 
@@ -471,7 +480,7 @@ def generate_report(scan_data: dict, output_path: str = "security_report.pdf"):
     ))
 
     for cat_name, cat_data in breakdown.items():
-        display_name = cat_name.replace('_', ' ').title()
+        display_name = CATEGORY_LABELS.get(cat_name, cat_name.replace('_', ' ').title())
         story.append(BarChart(display_name, cat_data['score'], cat_data['max']))
         story.append(Spacer(1, 6))
 
@@ -532,7 +541,7 @@ def generate_report(scan_data: dict, output_path: str = "security_report.pdf"):
 
     story.append(Paragraph(
         "This assessment identified several areas requiring immediate attention. "
-        "CyberComply's 10 AI agents can address all findings automatically — "
+        "CyberComply's 11 AI agents can address all findings automatically — "
         "from continuous dark web monitoring to policy generation, compliance tracking, "
         "employee phishing tests, and 24/7 security event monitoring.",
         styles['Body']
@@ -578,7 +587,7 @@ def generate_report(scan_data: dict, output_path: str = "security_report.pdf"):
     ))
     story.append(Spacer(1, 8))
     story.append(Paragraph(
-        '<b>Schedule:</b> https://calendly.com/cybercomply/security-review', styles['AccentText']
+        '<b>Schedule:</b> https://calendly.com/security-cybercomply/30min', styles['AccentText']
     ))
     story.append(Paragraph(
         '<b>Email:</b> security@cybercomply.io', styles['AccentText']
