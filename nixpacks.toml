@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["wget", "unzip"]
+nixPkgs = ["python311", "gcc", "wget", "unzip"]
 
 [start]
 cmd = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"
