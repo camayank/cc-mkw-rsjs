@@ -688,7 +688,7 @@ CyberComply — 11 AI Agents. Always On. Always Watching.
             from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
             import base64
             sg = sendgrid.SendGridAPIClient(api_key=sendgrid_key)
-            message = Mail(from_email=(from_email, from_name), to_emails=to_email, subject=subject, plain_text_content=body)
+            message = Mail(from_email=from_email, to_emails=to_email, subject=subject, plain_text_content=body)
             for mime_type, filename, data in attachments:
                 att = Attachment(FileContent(base64.b64encode(data).decode()), FileName(filename), FileType(mime_type), Disposition("attachment"))
                 message.add_attachment(att)
@@ -752,7 +752,7 @@ Time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
 View in dashboard: https://www.cybercomply.io/dashboard
 """
         message = Mail(
-            from_email=(operator_email, "CyberComply Alerts"),
+            from_email=operator_email,
             to_emails=operator_email,
             subject=f"New Lead: {domain} — {lead_name or lead_email}",
             plain_text_content=body,
