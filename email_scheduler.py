@@ -71,6 +71,156 @@ def _save_schedule(schedule: dict):
     SCHEDULE_FILE.write_text(json.dumps(schedule, indent=2, default=str))
 
 
+def send_email(to_email: str, subject: str, body: str, attachments: list = None) -> bool:
+    """Send an email via SendGrid (preferred) or SMTP fallback. Returns True on success."""
+    sendgrid_key = os.getenv("SENDGRID_API_KEY")
+    if sendgrid_key:
+        return _send_via_sendgrid(to_email, subject, body, attachments, sendgrid_key)
+    return _send_via_smtp(to_email, subject, body, attachments)
+
+
+def _send_via_sendgrid(to_email: str, subject: str, body: str, attachments: list, api_key: str) -> bool:
+    try:
+        import base64
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
+        from_email = os.getenv("SMTP_FROM", "security@cybercomply.io")
+        message = Mail(from_email=from_email, to_emails=to_email, subject=subject, plain_text_content=body)
+        if attachments:
+            for filepath in attachments:
+                fpath = Path(filepath)
+                if fpath.exists():
+                    with open(fpath, "rb") as f:
+                        data = base64.b64encode(f.read()).decode()
+                    att = Attachment(FileContent(data), FileName(fpath.name),
+                        FileType("application/pdf" if fpath.suffix == ".pdf" else "application/octet-stream"),
+                        Disposition("attachment"))
+                    message.attachment = att
+        sg = SendGridAPIClient(api_key)
+        response = sg.send(message)
+        logger.info(f"SendGrid email sent to {to_email}: {response.status_code}")
+        return response.status_code in (200, 201, 202)
+    except Exception as e:
+        logger.error(f"SendGrid send failed for {to_email}: {e}")
+        return False
+
+
+def _send_via_smtp(to_email: str, subject: str, body: str, attachments: list) -> bool:
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from email.mime.base import MIMEBase
+    from email import encoders
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    from_email = os.getenv("SMTP_FROM", "security@cybercomply.io")
+    if not smtp_host or not smtp_user or not smtp_pass:
+        logger.warning(f"SMTP not configured — email to {to_email} skipped")
+        return False
+    msg = MIMEMultipart()
+    msg["From"] = f"CyberComply <{from_email}>"
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+    if attachments:
+        for filepath in attachments:
+            fpath = Path(filepath)
+            if fpath.exists():
+                part = MIMEBase("application", "octet-stream")
+                with open(fpath, "rb") as f:
+                    part.set_payload(f.read())
+                encoders.encode_base64(part)
+                part.add_header("Content-Disposition", f"attachment; filename={fpath.name}")
+                msg.attach(part)
+    try:
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        logger.info(f"SMTP email sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"SMTP send failed for {to_email}: {e}")
+        return False
+
+
+def _extract_subject(email_text: str, company_name: str, score: int) -> str:
+    """Extract subject from AI-generated email. Files have header (===) then content."""
+    lines = email_text.split("\n")
+    past_header = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("=" * 10):
+            past_header = True
+            continue
+        if not past_header:
+            continue
+        if not stripped:
+            continue
+        if stripped.lower().startswith("subject:"):
+            return stripped[len("subject:"):].strip()
+        return stripped[:100]
+    return f"Security Alert — {company_name} scored {score}/100"
+
+
+def send_due_emails():
+    """Send all outreach emails due today or overdue. Called by scheduler daily at 9am UTC."""
+    today = date.today()
+    schedule = _load_schedule()
+    sent_count = 0
+    fail_count = 0
+
+    for company_key, data in schedule.items():
+        contact_email = data.get("contact_email")
+        if not contact_email:
+            continue
+        company_name = data.get("company_name", company_key)
+        score = data.get("score", 0)
+
+        for email_entry in data.get("emails", []):
+            if email_entry.get("status") == "sent":
+                continue
+            send_date = date.fromisoformat(email_entry["send_date"])
+            if send_date > today:
+                continue
+
+            email_file = Path(email_entry.get("file", ""))
+            if not email_file.exists():
+                logger.warning(f"Email file not found: {email_file}")
+                fail_count += 1
+                continue
+
+            body = email_file.read_text()
+            subject = _extract_subject(body, company_name, score)
+
+            # Attach PDF report for Day 0 email
+            attachments = None
+            if email_entry.get("prompt_id") == "P03_COLD_EMAIL_1":
+                deliverables_dir = DATA_DIR / "client-deliverables"
+                company_safe = company_name.replace(" ", "_").replace("&", "and")
+                for d in deliverables_dir.glob(f"{company_safe}_*"):
+                    pdfs = list(d.glob("*.pdf"))
+                    if pdfs:
+                        attachments = [str(pdfs[0])]
+                        break
+
+            success = send_email(contact_email, subject, body, attachments)
+            if success:
+                email_entry["status"] = "sent"
+                email_entry["sent_at"] = datetime.utcnow().isoformat()
+                sent_count += 1
+                logger.info(f"Sent {email_entry.get('label', '?')} to {contact_email} ({company_name})")
+            else:
+                fail_count += 1
+                logger.error(f"Failed {email_entry.get('label', '?')} to {contact_email}")
+
+    if sent_count > 0 or fail_count > 0:
+        _save_schedule(schedule)
+    logger.info(f"Outreach run complete: {sent_count} sent, {fail_count} failed")
+
+
 def _load_scan_data(client_dir: Path) -> dict | None:
     """Try to load scan_data.json from a client deliverables directory."""
     scan_file = client_dir / "scan_data.json"
