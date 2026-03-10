@@ -860,6 +860,67 @@ def full_delivery(domain, company_name=None, industry="cpa", no_ai=False, employ
     return client_dir
 
 
+def outreach_pipeline(clients_file: str):
+    """Batch scan + email sequence generation in one command.
+    CSV format: domain,company,industry,contact_name,contact_title,contact_email
+    """
+    from email_scheduler import generate_sequence
+
+    deliverables_dir = Path(os.getenv("DATA_DIR", ".")) / "client-deliverables"
+
+    # Step 1: Batch scan
+    results = batch_scan(clients_file)
+
+    # Step 2: Generate email sequences for qualifying prospects
+    sequenced = 0
+    skipped = 0
+    total_emails = 0
+
+    for result in results:
+        if "error" in result:
+            continue
+
+        contact_email = result.get("contact_email")
+        if not contact_email:
+            print(f"  Skipping {result['company']} — no contact email")
+            skipped += 1
+            continue
+
+        score = result.get("score", 100)
+        if score >= 70:
+            print(f"  Skipping {result['company']} — score {score}/100 (above threshold)")
+            skipped += 1
+            continue
+
+        company_safe = result["company"].replace(" ", "_").replace("&", "and")
+        scan_data = None
+        for d in deliverables_dir.glob(f"{company_safe}_*"):
+            scan_file = d / "scan_data.json"
+            if scan_file.exists():
+                scan_data = json.loads(scan_file.read_text())
+                break
+
+        generated = generate_sequence(
+            domain=result["domain"],
+            company_name=result["company"],
+            industry=result.get("industry", "general"),
+            contact_name=result.get("contact_name"),
+            contact_title=result.get("contact_title"),
+            contact_email=contact_email,
+            scan_data=scan_data,
+        )
+        sequenced += 1
+        total_emails += len(generated)
+
+    print(f"\n{'='*60}")
+    print(f"  OUTREACH PIPELINE COMPLETE")
+    print(f"{'='*60}")
+    print(f"  {len(results)} scanned, {sequenced} qualify, {total_emails} emails scheduled over 21 days")
+    print(f"  {skipped} skipped (no email or score >= 70)")
+    print(f"\n  Emails will auto-send daily at 9am UTC via scheduler.")
+    print(f"  Check schedule: python email_scheduler.py list")
+
+
 # ═══════════════════════════════════════════════════════════
 # CLI
 # ═══════════════════════════════════════════════════════════
@@ -892,7 +953,11 @@ if __name__ == "__main__":
     # Batch scan
     batch = subparsers.add_parser("batch", help="Batch scan from CSV file")
     batch.add_argument("file", help="CSV file: domain,company,industry")
-    
+
+    # Outreach: batch scan + email sequences
+    outreach = subparsers.add_parser("outreach", help="Batch scan + generate email sequences")
+    outreach.add_argument("file", help="CSV: domain,company,industry,contact_name,contact_title,contact_email")
+
     args = parser.parse_args()
     
     if args.command == "deliver":
@@ -919,6 +984,8 @@ if __name__ == "__main__":
         run_scan(args.domain)
     elif args.command == "batch":
         batch_scan(args.file)
+    elif args.command == "outreach":
+        outreach_pipeline(args.file)
     else:
         print_banner()
         print("  Usage:")

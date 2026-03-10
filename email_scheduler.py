@@ -412,7 +412,9 @@ def generate_sequence(
 
 
 def generate_batch(csv_file: str):
-    """Generate outreach sequences for all prospects in a CSV file."""
+    """Generate outreach sequences for all prospects in a CSV file.
+    CSV format: domain,company,industry,contact_name,contact_title,contact_email
+    """
     results = []
     with open(csv_file) as f:
         for line in f:
@@ -424,7 +426,8 @@ def generate_batch(csv_file: str):
             company = parts[1] if len(parts) > 1 else domain.split(".")[0].title()
             industry = parts[2] if len(parts) > 2 else "cpa"
             contact = parts[3] if len(parts) > 3 else None
-            email_count = parts[4] if len(parts) > 4 else None
+            contact_title = parts[4] if len(parts) > 4 else None
+            contact_email = parts[5] if len(parts) > 5 else None
 
             print(f"\n{'='*60}")
             print(f"  Generating sequence for: {company} ({domain})")
@@ -449,6 +452,8 @@ def generate_batch(csv_file: str):
                 company_name=company,
                 industry=industry,
                 contact_name=contact,
+                contact_title=contact_title,
+                contact_email=contact_email,
                 scan_data=scan_data,
             )
             results.append((company, len(generated)))
