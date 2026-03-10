@@ -285,6 +285,75 @@ def run_breach_scan():
             logger.error(f"BREACH error for {client['client_id']}: {e}")
 
 
+def run_vigil_check():
+    """Hourly/6-hourly: check M365 sign-ins + uptime per client."""
+    from agents.agents_remaining import VigilAgent
+    import client_manager
+
+    vigil_agent = VigilAgent()
+    clients = client_manager.list_active_clients()
+
+    for client in clients:
+        try:
+            client_id = client["client_id"]
+            domain = client.get("domain", "")
+
+            m365_tenant = client.get("m365_tenant_id")
+            m365_client = client.get("m365_client_id")
+            m365_secret = client.get("m365_client_secret")
+
+            anomalies = []
+            if m365_tenant and m365_client and m365_secret:
+                result = vigil_agent.check_m365_signin_logs(m365_tenant, m365_client, m365_secret)
+                anomalies = result.get("anomalies", [])
+            else:
+                uptime = vigil_agent.check_uptime(domain)
+                if uptime.get("status") in ("down", "ssl_error"):
+                    anomalies.append({
+                        "type": f"Site {uptime['status'].replace('_', ' ')}",
+                        "severity": "HIGH" if uptime["status"] == "down" else "MEDIUM",
+                        "user": "N/A",
+                        "ip": "",
+                        "location": domain,
+                        "app": "Website",
+                        "time": datetime.utcnow().isoformat(),
+                    })
+
+            if anomalies:
+                has_critical = any(a.get("severity") == "CRITICAL" for a in anomalies)
+                has_high = any(a.get("severity") == "HIGH" for a in anomalies)
+                severity = "CRITICAL" if has_critical else "HIGH" if has_high else "MEDIUM"
+
+                alert_data = {
+                    "type": "monitoring",
+                    "severity": severity,
+                    "date": datetime.utcnow().isoformat(),
+                    "title": f"{len(anomalies)} security anomalies detected",
+                    "summary": ", ".join(set(a["type"] for a in anomalies[:3])),
+                    "narrative": f"VIGIL detected {len(anomalies)} anomalies in the last 24 hours for {client.get('company_name', domain)}. " +
+                                 "; ".join(f"{a['type']}: {a.get('user', 'N/A')} from {a.get('location', 'unknown')}" for a in anomalies[:3]),
+                    "anomalies": anomalies[:20],
+                    "actions": list(set(
+                        "Investigate impossible travel — verify with user" if "impossible" in a["type"].lower()
+                        else "Review failed sign-ins for brute force attempts" if "failed" in a["type"].lower()
+                        else "Check site availability and SSL certificate" if "down" in a["type"].lower() or "ssl" in a["type"].lower()
+                        else f"Review {a['type'].lower()} event"
+                        for a in anomalies[:5]
+                    )),
+                    "status": "new",
+                    "emailed": False,
+                }
+                client_manager.save_alert(client_id, alert_data)
+
+                if severity in ("CRITICAL", "HIGH"):
+                    _send_alert_email(client, alert_data)
+
+            _update_agent_timestamp(client_id, "VIGIL", "Continuous Monitor")
+            logger.info(f"VIGIL: {client_id} — {len(anomalies)} anomalies")
+        except Exception as e:
+            logger.error(f"VIGIL error for {client.get('client_id', '?')}: {e}")
+
+
 def run_phishing_campaign():
     """Quarterly/monthly: launch phishing test per client tier."""
     from agents.phantom_agent import PhantomAgent
@@ -503,6 +572,9 @@ def init_scheduler(app=None):
     # Daily: dark web check
     scheduler.add_job(run_shadow_check, 'interval', hours=24, id='shadow_check')
 
+    # Every 6 hours: monitoring check
+    scheduler.add_job(run_vigil_check, 'interval', hours=6, id='vigil_check')
+
     # Weekly: quick scan (every Monday at 6am UTC)
     scheduler.add_job(run_weekly_scan, 'cron', day_of_week='mon', hour=6, id='weekly_scan')
 
@@ -516,5 +588,5 @@ def init_scheduler(app=None):
     scheduler.add_job(run_phishing_campaign, 'cron', month='1,4,7,10', day=1, hour=14, id='phishing_campaign')
 
     scheduler.start()
-    logger.info("Scheduler started: falcon(6h), shadow(daily), recon(weekly), reports(monthly), breach(monthly), phishing(quarterly)")
+    logger.info("Scheduler started: falcon(6h), vigil(6h), shadow(daily), recon(weekly), reports(monthly), breach(monthly), phishing(quarterly)")
     return scheduler

@@ -12,33 +12,117 @@ class VigilAgent:
     AGENT_NAME = "VIGIL"
     AGENT_TAGLINE = "I watch everything. I never sleep."
 
-    def __init__(self, wazuh_url=None, wazuh_user=None, wazuh_pass=None):
-        self.wazuh_url = wazuh_url or os.getenv("WAZUH_URL", "https://localhost:55000")
-        self.wazuh_user = wazuh_user or os.getenv("WAZUH_USER", "wazuh")
-        self.wazuh_pass = wazuh_pass or os.getenv("WAZUH_PASS", "wazuh")
-    
-    def get_alerts(self, hours=24, severity_min=7):
-        """Pull recent alerts from Wazuh API."""
+    GRAPH_BASE = "https://graph.microsoft.com/v1.0"
+    TOKEN_URL = "https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+
+    def __init__(self):
+        pass
+
+    def _get_m365_token(self, tenant_id: str, client_id: str, client_secret: str) -> str:
+        """Get OAuth2 token for Microsoft Graph API."""
+        import requests
+        resp = requests.post(
+            self.TOKEN_URL.format(tenant_id=tenant_id),
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "scope": "https://graph.microsoft.com/.default",
+                "grant_type": "client_credentials",
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()["access_token"]
+
+    def check_m365_signin_logs(self, tenant_id: str, client_id: str, client_secret: str) -> dict:
+        """Pull risky sign-ins from Microsoft 365 Graph API."""
+        import requests
+        from datetime import timedelta
+        try:
+            token = self._get_m365_token(tenant_id, client_id, client_secret)
+            headers = {"Authorization": f"Bearer {token}"}
+
+            since = (datetime.utcnow() - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            url = f"{self.GRAPH_BASE}/auditLogs/signIns?$filter=createdDateTime ge {since} and (riskLevelDuringSignIn eq 'high' or riskLevelDuringSignIn eq 'medium' or status/errorCode ne 0)&$top=50&$orderby=createdDateTime desc"
+
+            resp = requests.get(url, headers=headers, timeout=15)
+            resp.raise_for_status()
+            sign_ins = resp.json().get("value", [])
+
+            anomalies = []
+            for si in sign_ins:
+                risk = si.get("riskLevelDuringSignIn", "none")
+                error_code = si.get("status", {}).get("errorCode", 0)
+                location = si.get("location", {})
+                city = location.get("city", "Unknown")
+                country = location.get("countryOrRegion", "Unknown")
+
+                anomaly_type = None
+                severity = "MEDIUM"
+
+                if risk in ("high",):
+                    anomaly_type = "Risky sign-in"
+                    severity = "HIGH"
+                elif risk in ("medium",):
+                    anomaly_type = "Suspicious sign-in"
+                    severity = "MEDIUM"
+                elif error_code != 0:
+                    anomaly_type = "Failed sign-in"
+                    severity = "LOW"
+
+                if anomaly_type:
+                    anomalies.append({
+                        "type": anomaly_type,
+                        "severity": severity,
+                        "user": si.get("userPrincipalName", "unknown"),
+                        "ip": si.get("ipAddress", ""),
+                        "location": f"{city}, {country}",
+                        "app": si.get("appDisplayName", ""),
+                        "time": si.get("createdDateTime", ""),
+                        "risk_detail": si.get("riskEventTypes_v2", []),
+                        "error_code": error_code,
+                    })
+
+            # Check for impossible travel
+            user_locations = {}
+            for a in anomalies:
+                user = a["user"]
+                if user not in user_locations:
+                    user_locations[user] = []
+                user_locations[user].append(a)
+
+            for user, events in user_locations.items():
+                countries = set(e["location"].split(", ")[-1] for e in events)
+                if len(countries) > 1:
+                    for e in events:
+                        e["type"] = "Impossible travel detected"
+                        e["severity"] = "CRITICAL"
+
+            return {"status": "ok", "anomalies": anomalies, "total_checked": len(sign_ins)}
+
+        except Exception as e:
+            return {"status": "error", "error": str(e), "anomalies": []}
+
+    def check_uptime(self, domain: str) -> dict:
+        """Fallback monitoring: HTTP uptime + SSL check for non-M365 clients."""
         import requests
         try:
-            auth = requests.post(f"{self.wazuh_url}/security/user/authenticate",
-                               auth=(self.wazuh_user, self.wazuh_pass), verify=False, timeout=5)
-            token = auth.json().get("data", {}).get("token")
-            if not token: return {"error": "Auth failed"}
-            
-            resp = requests.get(f"{self.wazuh_url}/alerts",
-                params={"limit": 100, "sort": "-timestamp", "q": f"rule.level>={severity_min}"},
-                headers={"Authorization": f"Bearer {token}"}, verify=False, timeout=10)
-            return resp.json()
+            resp = requests.get(f"https://{domain}", timeout=10, allow_redirects=True)
+            ssl_ok = resp.url.startswith("https")
+            return {
+                "status": "up",
+                "response_time_ms": int(resp.elapsed.total_seconds() * 1000),
+                "status_code": resp.status_code,
+                "ssl": ssl_ok,
+                "domain": domain,
+            }
+        except requests.exceptions.SSLError:
+            return {"status": "ssl_error", "domain": domain, "ssl": False}
+        except requests.exceptions.ConnectionError:
+            return {"status": "down", "domain": domain}
         except Exception as e:
-            return {"error": str(e), "note": "Wazuh not connected. Deploy: github.com/wazuh/wazuh-docker"}
-    
-    def check_m365_signin_logs(self, tenant_id=None, client_id=None, client_secret=None):
-        """Pull Microsoft 365 sign-in logs via Graph API."""
-        # OAuth2 flow → GET /auditLogs/signIns
-        # Detect: impossible travel, failed logins, new locations, brute force
-        return {"status": "ready", "note": "Requires M365 OAuth consent. 3-click setup for client."}
-    
+            return {"status": "error", "domain": domain, "error": str(e)}
+
     def triage_alert_prompt(self, alert_data: dict, client_context: dict) -> str:
         """Generate Claude API prompt for AI alert triage."""
         return f"""You are VIGIL, CyberComply's AI SOC analyst.
