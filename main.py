@@ -64,6 +64,15 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+# ─── RATE LIMITING ────────────────────────────────────────
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # ─── JINJA2 SETUP ────────────────────────────────────────
 from dotenv import load_dotenv
 load_dotenv()
@@ -73,6 +82,14 @@ templates = Environment(loader=FileSystemLoader("templates"), autoescape=True)
 DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "cybercomply2026")
 _dashboard_sessions = set()  # In-memory session tokens (cleared on restart)
 CALENDLY_LINK = os.getenv("CALENDAR_LINK", "https://calendly.com/cybercomply/security-review")
+
+
+def safe_path_component(value: str) -> str:
+    """Reject directory traversal attempts in any path component."""
+    name = Path(value).name
+    if name != value or ".." in value:
+        raise HTTPException(status_code=400, detail="Invalid path")
+    return name
 DATA_DIR = Path(os.getenv("DATA_DIR", "."))
 OUTPUT_DIR = DATA_DIR / "client-deliverables"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -146,32 +163,33 @@ async def health_check():
 # ─── STAGE 0: FREE SCAN (Lead Magnet) ────────────────────────
 
 @app.post("/api/scan/free")
-async def free_scan(request: DomainScanRequest):
+@limiter.limit("10/minute")
+async def free_scan(request: Request, scan_request: DomainScanRequest):
     """
     Stage 0: Free domain scan — the lead magnet.
     Runs SHADOW + RECON quick scan. Returns teaser results.
     """
     results = {
-        "domain": request.domain,
+        "domain": scan_request.domain,
         "scan_date": datetime.utcnow().isoformat() + "Z",
         "agents_used": ["SHADOW", "RECON"],
     }
-    
+
     # RECON: Quick external scan
-    recon_results = recon.scan(request.domain)
+    recon_results = recon.scan(scan_request.domain)
     results["security_score"] = recon_results.get("score", {})
     results["findings_count"] = len(recon_results.get("findings", []))
     results["top_findings"] = recon_results.get("findings", [])[:3]  # Show top 3 only
-    
+
     # SHADOW: Password check (teaser — full scan behind paywall)
-    if request.emails:
-        results["emails_to_check"] = len(request.emails)
+    if scan_request.emails:
+        results["emails_to_check"] = len(scan_request.emails)
         results["shadow_note"] = "Full dark web scan available in detailed report"
-    
+
     # Gate the full results
     results["full_report_available"] = True
     results["message"] = f"Security Score: {recon_results.get('score', {}).get('total', 0)}/100. Full 9-page report available — enter your details to receive it."
-    
+
     return results
 
 # ─── STAGE 1: FULL ASSESSMENT ────────────────────────────────
@@ -392,6 +410,7 @@ async def dashboard_page(request: Request):
 @app.get("/report/{client_dir}", response_class=HTMLResponse)
 async def diagnostic_report(client_dir: str, request: Request):
     """Full 7-section diagnostic report for a client."""
+    client_dir = safe_path_component(client_dir)
     client_path = OUTPUT_DIR / client_dir
     scan_file = client_path / "scan_data.json"
     if not scan_file.exists():
@@ -585,7 +604,8 @@ async def diagnostic_report(client_dir: str, request: Request):
 # ─── SSE SCAN ENDPOINT ──────────────────────────────────
 
 @app.get("/api/scan/free/stream")
-async def free_scan_stream(domain: str):
+@limiter.limit("10/minute")
+async def free_scan_stream(request: Request, domain: str):
     """SSE endpoint for real-time scan progress."""
     if not domain or "." not in domain:
         raise HTTPException(status_code=400, detail="Invalid domain")
@@ -688,7 +708,8 @@ CyberComply — 11 AI Agents. Always On. Always Watching.
 
 
 @app.post("/api/lead/capture")
-async def capture_lead(lead: LeadCapture):
+@limiter.limit("10/minute")
+async def capture_lead(request: Request, lead: LeadCapture):
     leads_file = DATA_DIR / "leads.json"
     leads = []
     if leads_file.exists():
@@ -773,6 +794,7 @@ async def list_clients():
 
 @app.get("/api/clients/{dir_name}/download/{file_type}")
 async def download_client_file(dir_name: str, file_type: str):
+    dir_name = safe_path_component(dir_name)
     client_dir = OUTPUT_DIR / dir_name
     if not client_dir.exists() or not client_dir.is_dir():
         raise HTTPException(status_code=404, detail="Client not found")
@@ -1003,7 +1025,8 @@ class PortalLoginRequest(BaseModel):
     password: str
 
 @app.post("/portal/login")
-async def portal_login(req: PortalLoginRequest):
+@limiter.limit("5/minute")
+async def portal_login(request: Request, req: PortalLoginRequest):
     if client_manager.verify_password(req.client_id, req.password):
         token = client_manager.create_jwt(req.client_id)
         resp = JSONResponse({"status": "ok", "redirect": f"/portal/{req.client_id}"})
@@ -1143,6 +1166,9 @@ async def update_task(client_id: str, task_id: str, request: Request):
 async def portal_download(client_id: str, doc_type: str, filename: str, request: Request):
     if not check_portal_auth(request, client_id):
         return JSONResponse({"error": "unauthorized"}, status_code=401)
+    client_id = safe_path_component(client_id)
+    doc_type = safe_path_component(doc_type)
+    filename = safe_path_component(filename)
     if doc_type not in ("reports", "policies"):
         raise HTTPException(status_code=400)
     file_path = client_manager._client_dir(client_id) / doc_type / filename
