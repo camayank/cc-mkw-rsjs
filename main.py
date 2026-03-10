@@ -765,6 +765,15 @@ async def list_clients():
     clients = []
     if not OUTPUT_DIR.exists():
         return {"clients": []}
+
+    outreach_schedule = {}
+    outreach_file = DATA_DIR / "outreach_schedule.json"
+    if outreach_file.exists():
+        try:
+            outreach_schedule = json.loads(outreach_file.read_text())
+        except Exception:
+            pass
+
     for d in sorted(OUTPUT_DIR.iterdir(), reverse=True):
         if not d.is_dir():
             continue
@@ -785,7 +794,31 @@ async def list_clients():
                 "has_proposal": (d / "PROPOSAL_EMAIL.txt").exists(),
                 "has_policies": any(d.glob("policies_*")),
                 "has_emails": (d / "cold_email_1.txt").exists(),
+                "email_status": "not_started",
+                "last_email_sent": None,
+                "next_email_due": None,
             })
+
+            # Check outreach schedule for email status
+            company_name = scan.get("company_name", d.name)
+            company_safe = company_name.replace(" ", "_").replace("&", "and")
+            _day_offsets = {0: "0", 1: "3", 2: "7", 3: "14", 4: "21"}
+            if company_safe in outreach_schedule:
+                outreach = outreach_schedule[company_safe]
+                emails = outreach.get("emails", [])
+                sent_emails = [e for e in emails if e.get("status") == "sent"]
+                pending_emails = [e for e in emails if e.get("status") != "sent"]
+                if len(sent_emails) == len(emails) and emails:
+                    clients[-1]["email_status"] = "sequence_complete"
+                elif sent_emails:
+                    last_idx = len(sent_emails) - 1
+                    day_label = _day_offsets.get(last_idx, str(last_idx))
+                    clients[-1]["email_status"] = f"day_{day_label}_sent"
+                    last = sent_emails[-1]
+                    clients[-1]["last_email_sent"] = last.get("sent_at") or last.get("send_date")
+                if pending_emails:
+                    clients[-1]["next_email_due"] = pending_emails[0].get("send_date")
+
         except Exception:
             continue
     return {"clients": clients}
@@ -892,14 +925,36 @@ async def get_pipeline():
         except Exception:
             pass
 
+    # Outreach stats from email scheduler
+    email_stats = {"total_scheduled": 0, "sent": 0, "pending": 0, "next_batch": None}
+    outreach_schedule_file = DATA_DIR / "outreach_schedule.json"
+    if outreach_schedule_file.exists():
+        try:
+            outreach_data = json.loads(outreach_schedule_file.read_text())
+            for company_key, data in outreach_data.items():
+                for email in data.get("emails", []):
+                    email_stats["total_scheduled"] += 1
+                    if email.get("status") == "sent":
+                        email_stats["sent"] += 1
+                    else:
+                        email_stats["pending"] += 1
+                        send_date = email.get("send_date", "")
+                        if send_date:
+                            if not email_stats["next_batch"] or send_date < email_stats["next_batch"]:
+                                email_stats["next_batch"] = send_date
+        except Exception:
+            pass
+
     return {
         "leads": leads_count,
         "scanned": scanned,
         "proposed": proposed,
         "has_policies": has_policies,
         "has_emails": has_emails,
+        "emailed": has_emails,
         "total_value": total_value,
         "ai_cost": round(ai_cost, 4),
+        "email_stats": email_stats,
     }
 
 # ─── NEW SCAN ENDPOINT ──────────────────────────────────
