@@ -24,8 +24,8 @@ python-multipart>=0.0.6
 # Phishing (GoPhish API client)
 # GoPhish itself runs as Docker container
 
-# Email Alerts
-# sendgrid>=6.0  # or use smtp directly
+# Email Sending (optional — falls back to SMTP if not set)
+sendgrid>=6.0
 
 # Database (choose one)
 # supabase>=2.0  # Supabase (free tier)
@@ -35,6 +35,12 @@ python-multipart>=0.0.6
 apscheduler>=3.10.0
 bcrypt>=4.1.0
 PyJWT>=2.8.0
+
+# Billing
+stripe>=7.0.0
+
+# Rate Limiting
+slowapi>=0.1.9
 
 # Optional: Nuclei vulnerability scanning (Go binary, not pip)
 # Install separately: go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
