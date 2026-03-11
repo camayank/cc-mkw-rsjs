@@ -69,3 +69,25 @@ def test_full_delivery_generates_tasks(tmp_path, monkeypatch):
         deliver.full_delivery("test.com", company_name="Test Corp", no_ai=True)
 
     mock_gen_tasks.assert_called_once()
+
+
+def test_run_questionnaire_accepts_overrides(monkeypatch):
+    """run_questionnaire() should merge overrides into profile data."""
+    from unittest.mock import patch, MagicMock
+    mock_guardian = MagicMock()
+    mock_guardian.process_questionnaire = MagicMock(return_value={
+        "risk_score": 50, "applicable_frameworks": ["NIST CSF"], "gaps": [],
+        "industry": "CPA", "employee_range": "1-10", "sensitive_data": [],
+    })
+    mock_guardian.get_compliance_status = MagicMock(return_value={})
+
+    with patch("agents.guardian_agent.GuardianAgent", return_value=mock_guardian):
+        if "deliver" in sys.modules:
+            del sys.modules["deliver"]
+        import deliver
+        result = deliver.run_questionnaire("Test Corp", "cpa", overrides={"q3": "1-10", "q7": "Yes — for all users"})
+
+    call_args = mock_guardian.process_questionnaire.call_args[0][0]
+    assert call_args["q3"] == "1-10"
+    assert call_args["q7"] == "Yes — for all users"
+    assert call_args["q1"] == "Test Corp"

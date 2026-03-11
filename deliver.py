@@ -161,15 +161,62 @@ QUICK_PROFILES = {
         "q24": "Yes — some employees", "q25": "No", "q26": "I don't know",
         "q27": ["Compliance violations from AI use", "Employees sharing client data with AI"],
     },
+    "general": {
+        "q1": "", "q2": "Professional Services", "q3": "11-25",
+        "q6": "Microsoft 365", "q7": "No",
+        "q12": ["Client Data", "Employee PII"],
+        "q15": "No", "q16": "No", "q17": "Never", "q18": "No", "q20": "No",
+        "q21": ["NIST CSF"],
+        "q24": "Yes — some employees", "q25": "No", "q26": "I don't know",
+        "q27": ["Employees sharing client data with AI"],
+    },
+    "nonprofit": {
+        "q1": "", "q2": "Nonprofit Organization", "q3": "11-25",
+        "q6": "Google Workspace", "q7": "No",
+        "q12": ["Donor PII", "Employee PII"],
+        "q15": "No", "q16": "No", "q17": "Never", "q18": "No", "q20": "No",
+        "q21": ["NIST CSF"],
+        "q24": "Yes — some employees", "q25": "No", "q26": "I don't know",
+        "q27": ["Employees sharing client data with AI"],
+    },
+    "education": {
+        "q1": "", "q2": "Education", "q3": "26-50",
+        "q6": "Google Workspace", "q7": "Yes — for some users",
+        "q12": ["Student Records (FERPA)", "Employee PII"],
+        "q15": "No", "q16": "No", "q17": "Never", "q18": "No", "q20": "No",
+        "q21": ["NIST CSF", "FERPA"],
+        "q24": "Yes — some employees", "q25": "No", "q26": "I don't know",
+        "q27": ["Employees sharing client data with AI"],
+    },
+    "manufacturing": {
+        "q1": "", "q2": "Manufacturing", "q3": "51-100",
+        "q6": "Microsoft 365", "q7": "No",
+        "q12": ["Employee PII", "Trade Secrets / IP"],
+        "q15": "No", "q16": "No", "q17": "Never", "q18": "No", "q20": "No",
+        "q21": ["NIST CSF", "CMMC"],
+        "q24": "No", "q25": "No", "q26": "I don't know",
+        "q27": ["Compliance violations from AI use"],
+    },
+    "real_estate": {
+        "q1": "", "q2": "Real Estate", "q3": "11-25",
+        "q6": "Google Workspace", "q7": "No",
+        "q12": ["Client Financial Data", "Social Security Numbers"],
+        "q15": "No", "q16": "No", "q17": "Never", "q18": "No", "q20": "No",
+        "q21": ["FTC Safeguards Rule", "NIST CSF"],
+        "q24": "Yes — some employees", "q25": "No", "q26": "I don't know",
+        "q27": ["Employees sharing client data with AI"],
+    },
 }
 
 
-def run_questionnaire(company_name, industry="cpa"):
+def run_questionnaire(company_name, industry="cpa", overrides=None):
     """Run GUARDIAN questionnaire with quick industry profile."""
     from agents.guardian_agent import GuardianAgent
-    
+
     profile_data = QUICK_PROFILES.get(industry, QUICK_PROFILES["cpa"]).copy()
     profile_data["q1"] = company_name
+    if overrides:
+        profile_data.update(overrides)
     
     print(f"\n🏗  GUARDIAN processing questionnaire for {company_name} ({industry})...")
     forge = GuardianAgent()
@@ -744,7 +791,9 @@ def _generate_ai_narratives(scan_data, forge_data, industry, employee_count, cli
 
 def full_delivery(domain, company_name=None, industry="cpa", no_ai=False, employee_count=15,
                   policies_mode=None, policy_single=None,
-                  contact_name=None, contact_title=None, contact_email=None):
+                  contact_name=None, contact_title=None, contact_email=None,
+                  email_provider=None, mfa=None, has_wisp=None, has_irp=None,
+                  cyber_insurance=None, no_fti=False, data_types=None):
     """
     Complete delivery workflow for one client.
     Run this, get: PDF report + policies + proposal email.
@@ -764,8 +813,45 @@ def full_delivery(domain, company_name=None, industry="cpa", no_ai=False, employ
     # Step 1: Scan
     scan_data = run_scan(domain, company_name)
 
+    # Build overrides from arguments
+    overrides = {}
+    if employee_count:
+        ranges = [(10, "1-10"), (25, "11-25"), (50, "26-50"), (100, "51-100"), (250, "101-250")]
+        for threshold, label in ranges:
+            if employee_count <= threshold:
+                overrides["q3"] = label
+                break
+        else:
+            overrides["q3"] = "250+"
+
+    if email_provider:
+        provider_map = {"microsoft": "Microsoft 365", "google": "Google Workspace", "other": "Other"}
+        overrides["q6"] = provider_map.get(email_provider, email_provider)
+
+    if mfa:
+        mfa_map = {"full": "Yes — for all users", "partial": "Yes — for some users",
+                   "none": "No", "unknown": "I don't know"}
+        overrides["q7"] = mfa_map.get(mfa, mfa)
+
+    if has_wisp is not None:
+        overrides["q15"] = "Yes — current and reviewed annually" if has_wisp else "No"
+
+    if has_irp is not None:
+        overrides["q16"] = "Yes — tested within last 12 months" if has_irp else "No"
+
+    if cyber_insurance is not None:
+        overrides["q20"] = "Yes — active policy" if cyber_insurance else "No"
+
+    if data_types:
+        overrides["q12"] = data_types
+
+    if no_fti:
+        profile_data = QUICK_PROFILES.get(industry, QUICK_PROFILES["cpa"])
+        default_types = profile_data.get("q12", [])
+        overrides["q12"] = [t for t in default_types if "Tax" not in t and "FTI" not in t]
+
     # Step 2: Questionnaire
-    forge_data = run_questionnaire(scan_data["company_name"], industry)
+    forge_data = run_questionnaire(scan_data["company_name"], industry, overrides=overrides)
 
     # Step 2.5: AI Narratives (if enabled)
     executive_summary = None
@@ -990,7 +1076,14 @@ if __name__ == "__main__":
     deliver.add_argument("--policies-all", action="store_true", help="Generate all 16 policy documents via AI")
     deliver.add_argument("--policy", type=str, metavar="KEY", help="Generate a single policy (e.g., P29_WISP)")
     deliver.add_argument("--no-policies", action="store_true", help="Skip policy generation entirely")
-    
+    deliver.add_argument("--email-provider", choices=["microsoft", "google", "other"])
+    deliver.add_argument("--mfa", choices=["full", "partial", "none", "unknown"])
+    deliver.add_argument("--has-wisp", type=lambda x: x.lower() == "yes", metavar="yes/no")
+    deliver.add_argument("--has-irp", type=lambda x: x.lower() == "yes", metavar="yes/no")
+    deliver.add_argument("--cyber-insurance", type=lambda x: x.lower() == "yes", metavar="yes/no")
+    deliver.add_argument("--no-fti", action="store_true", help="Client does not handle FTI")
+    deliver.add_argument("--data-types", nargs="+", help="Override sensitive data types")
+
     # Quick scan only (lead magnet)
     scan = subparsers.add_parser("scan", help="Quick scan only (free lead magnet)")
     scan.add_argument("domain", help="Domain to scan")
@@ -1024,7 +1117,11 @@ if __name__ == "__main__":
                       no_ai=args.no_ai, employee_count=args.employees,
                       policies_mode=policies_mode, policy_single=policy_single,
                       contact_name=args.contact, contact_title=args.title,
-                      contact_email=args.email)
+                      contact_email=args.email,
+                      email_provider=args.email_provider, mfa=args.mfa,
+                      has_wisp=args.has_wisp, has_irp=args.has_irp,
+                      cyber_insurance=args.cyber_insurance, no_fti=args.no_fti,
+                      data_types=args.data_types)
     elif args.command == "scan":
         run_scan(args.domain)
     elif args.command == "batch":
