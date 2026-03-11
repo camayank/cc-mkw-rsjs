@@ -181,17 +181,15 @@ footer{border-top:1px solid var(--border);padding:40px clamp(24px,5vw,64px);disp
 .hero-content>*:nth-child(5){animation-delay:.65s}
 .hero-visual{animation:fadeIn 1s ease .4s both}
 
-.rotate-wrap{display:inline-block;position:relative;vertical-align:bottom;text-align:center}
-.rotate-words{display:inline-grid;position:relative}
-.rotate-word{grid-area:1/1;display:inline-block;opacity:0;transition:opacity .45s ease,transform .45s ease;transform:translateY(30%);color:var(--lime);white-space:nowrap}
-.rotate-word.active{opacity:1;transform:translateY(0)}
-.rotate-word.sizing{visibility:hidden;opacity:0;position:relative}
+.rotate-line{display:inline-block;position:relative;height:1.15em;overflow:hidden;vertical-align:bottom;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.rotate-word{position:absolute;left:50%;top:0;transform:translateX(-50%) translateY(110%);opacity:0;white-space:nowrap;color:var(--lime);transition:transform .5s cubic-bezier(.4,0,.2,1),opacity .4s ease}
+.rotate-word.active{transform:translateX(-50%) translateY(0);opacity:1}
+.rotate-word.exit-up{transform:translateX(-50%) translateY(-110%);opacity:0}
 
 @media(max-width:1024px){
 .hero{grid-template-columns:1fr;text-align:center;justify-items:center;min-height:auto;padding-top:96px;padding-bottom:48px}
 .hero-content{display:flex;flex-direction:column;align-items:center}
 .hero h1{font-size:clamp(28px,6vw,48px);letter-spacing:-1px;line-height:1.2}
-.rotate-wrap{display:block;margin:4px auto}
 .hero-sub{max-width:480px;font-size:15px;margin-bottom:24px}
 .hero-badge{margin-bottom:16px;font-size:10px}
 .scan-form{max-width:420px;width:100%}
@@ -219,7 +217,6 @@ footer{border-top:1px solid var(--border);padding:40px clamp(24px,5vw,64px);disp
 }
 @media(max-width:480px){
 .hero h1{font-size:clamp(24px,6.5vw,32px);line-height:1.25}
-.rotate-word{font-size:.85em}
 .bento{grid-template-columns:1fr 1fr}
 .bento-num{font-size:clamp(28px,8vw,40px)}
 .scan-form,.final-cta .scan-form{flex-direction:column}
@@ -253,7 +250,9 @@ footer{flex-direction:column;gap:16px;text-align:center}
 <section class="hero">
 <div class="hero-content">
 <div class="hero-badge"><span class="dot"></span>Compliance Assessment Active</div>
-<h1>Is Your <span class="rotate-wrap"><span class="rotate-words" id="rotateWords"><span class="rotate-word active">CPA Firm</span><span class="rotate-word">SaaS Platform</span><span class="rotate-word">Healthcare Practice</span><span class="rotate-word">Law Firm</span><span class="rotate-word">Business</span></span></span> Compliant<span class="accent">Or Just Lucky?</span></h1>
+<h1>Is Your
+<span class="rotate-line"><span class="rotate-word active">CPA Firm</span><span class="rotate-word">SaaS Startup</span><span class="rotate-word">Medical Practice</span><span class="rotate-word">Law Firm</span><span class="rotate-word">MSP</span><span class="rotate-word">Fintech</span><span class="rotate-word">Nonprofit</span><span class="rotate-word">Agency</span></span>
+<br>Compliant<span class="accent">Or Just Lucky?</span></h1>
 <p class="hero-sub">See how your business scores on security compliance in 30 seconds. SOC 2, HIPAA, FTC Safeguards, WISP &mdash; we check what auditors, insurers, and enterprise buyers actually look for. Free.</p>
 <form class="scan-form" action="/scan" method="GET">
 <input type="text" name="domain" class="scan-input" placeholder="yourdomain.com" required autocomplete="off">
@@ -509,16 +508,33 @@ adPowers.innerHTML=a.powers.map(p=>'<li>'+p+'</li>').join('');
 });
 });
 
-// Rotating headline words
+// Rotating headline words with smooth width
 (function(){
+const line=document.querySelector('.rotate-line');
 const words=document.querySelectorAll('.rotate-word');
-if(!words.length)return;
+if(!line||!words.length)return;
 let cur=0;
+
+function measure(el){
+el.style.visibility='hidden';el.style.position='static';el.style.transform='none';
+const w=el.offsetWidth;
+el.style.visibility='';el.style.position='';el.style.transform='';
+return w;
+}
+
+function setWidth(){line.style.width=measure(words[cur])+'px'}
+setWidth();
+window.addEventListener('resize',setWidth);
+
 setInterval(()=>{
 words[cur].classList.remove('active');
+words[cur].classList.add('exit-up');
+const prev=cur;
 cur=(cur+1)%words.length;
+line.style.width=measure(words[cur])+'px';
 words[cur].classList.add('active');
-},2400);
+setTimeout(()=>words[prev].classList.remove('exit-up'),500);
+},2600);
 })();
 </script>
 </body>
