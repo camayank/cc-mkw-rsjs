@@ -104,6 +104,12 @@ def verify_magic_token(client_id: str, token: str) -> bool:
         return False
     if expires and datetime.fromisoformat(expires) < datetime.utcnow():
         return False
+    # Auto-extend if close to expiry (within 2 days)
+    if expires:
+        exp_dt = datetime.fromisoformat(expires)
+        if (exp_dt - datetime.utcnow()).days < 2:
+            profile["magic_token_expires"] = (datetime.utcnow() + timedelta(days=7)).isoformat()
+            _save_profile(client_id, profile)
     return True
 
 
@@ -127,6 +133,65 @@ def verify_jwt(token: str) -> Optional[str]:
 def get_client(client_id: str) -> Optional[dict]:
     profile = _load_profile(client_id)
     return profile if profile.get("client_id") else None
+
+
+def update_field(client_id: str, field: str, value) -> bool:
+    """Update a single field in client profile."""
+    profile = _load_profile(client_id)
+    if not profile.get("client_id"):
+        return False
+    profile[field] = value
+    _save_profile(client_id, profile)
+    return True
+
+
+def find_by_domain(domain: str) -> Optional[dict]:
+    """Find a client by their domain. Returns profile or None."""
+    if not CLIENTS_DIR.exists():
+        return None
+    for d in CLIENTS_DIR.iterdir():
+        if d.is_dir() and (d / "profile.json").exists():
+            profile = json.loads((d / "profile.json").read_text())
+            if profile.get("domain") == domain:
+                return profile
+    return None
+
+
+def save_call_notes(client_id: str, notes: str, call_date: str = None):
+    """Save notes from a monthly call."""
+    client_dir = _client_dir(client_id)
+    notes_file = client_dir / "call_notes.json"
+    existing = json.loads(notes_file.read_text()) if notes_file.exists() else []
+    existing.append({
+        "date": call_date or datetime.utcnow().strftime("%Y-%m-%d"),
+        "notes": notes,
+    })
+    notes_file.write_text(json.dumps(existing[-12:], indent=2))
+
+
+def get_latest_call_notes(client_id: str) -> str:
+    """Get notes from last month's call for agenda carry-forward."""
+    client_dir = _client_dir(client_id)
+    notes_file = client_dir / "call_notes.json"
+    if not notes_file.exists():
+        return "First month — no previous call notes."
+    notes = json.loads(notes_file.read_text())
+    return notes[-1]["notes"] if notes else "First month — no previous call notes."
+
+
+def log_communication(client_id: str, comm_type: str, subject: str, recipient: str):
+    """Log every email/alert sent to client for audit trail."""
+    log_dir = _client_dir(client_id) / "communications"
+    log_dir.mkdir(exist_ok=True)
+    log_file = log_dir / "log.jsonl"
+    entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "type": comm_type,
+        "subject": subject,
+        "recipient": recipient,
+    }
+    with open(log_file, "a") as f:
+        f.write(json.dumps(entry) + "\n")
 
 
 def get_tier_config(tier: str) -> dict:
@@ -186,7 +251,7 @@ def save_tasks(client_id: str, tasks: list):
 
 
 def add_task(client_id: str, title: str, severity: str, category: str,
-             description: str = "", fix: str = "") -> dict:
+             description: str = "", fix: str = "", verifiable: str = "auto") -> dict:
     tasks = get_tasks(client_id)
     task = {
         "id": f"task_{len(tasks)+1:03d}",
@@ -195,6 +260,7 @@ def add_task(client_id: str, title: str, severity: str, category: str,
         "category": category,
         "description": description,
         "fix": fix,
+        "verifiable": verifiable,
         "status": "open",
         "created_at": date.today().isoformat(),
         "due_date": (date.today() + timedelta(days=30)).isoformat(),
