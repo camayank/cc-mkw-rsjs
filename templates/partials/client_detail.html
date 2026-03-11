@@ -2,7 +2,7 @@
   <!-- Left: Score & Findings -->
   <div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-      <div style="width:60px;height:60px;border-radius:50%;border:3px solid {% if scan.score >= 80 %}var(--green){% elif scan.score >= 60 %}var(--yellow){% elif scan.score >= 40 %}var(--orange){% else %}var(--red){% endif %};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:900;font-size:20px;color:{% if scan.score >= 80 %}var(--green){% elif scan.score >= 60 %}var(--yellow){% elif scan.score >= 40 %}var(--orange){% else %}var(--red){% endif %}">
+      <div style="width:60px;height:60px;border-radius:50%;border:3px solid {% if scan.score >= 80 %}var(--emerald,var(--green)){% elif scan.score >= 60 %}var(--amber,var(--yellow)){% elif scan.score >= 40 %}var(--orange){% else %}var(--red){% endif %};display:flex;align-items:center;justify-content:center;font-family:var(--mono,'JetBrains Mono',monospace);font-weight:900;font-size:20px;color:{% if scan.score >= 80 %}var(--emerald,var(--green)){% elif scan.score >= 60 %}var(--amber,var(--yellow)){% elif scan.score >= 40 %}var(--orange){% else %}var(--red){% endif %};animation:circleIn .5s ease">
         {{ scan.score }}
       </div>
       <div>
@@ -128,6 +128,7 @@
   </div>
 </div>
 
+<style>@keyframes circleIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}</style>
 <script>
 function triggerAction(btn, url) {
   btn.disabled = true;

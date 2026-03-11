@@ -8,13 +8,21 @@
 <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#09090b;--card:#18181b;--border:rgba(255,255,255,.06);--accent:#c8ff00;--accent2:#c8ff00;--green:#34d399;--red:#ff4757;--orange:#ff6b35;--yellow:#fbbf24;--txt:#fafaf9;--dim:#a1a1aa;--muted:#52525b;--head:'Syne',sans-serif;--body:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace}
+:root{
+--bg:#09090b;--surface:#18181b;--surface2:#1e1e22;--card:#18181b;
+--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+--lime:#c8ff00;--lime-dim:rgba(200,255,0,.08);--lime-glow:rgba(200,255,0,.25);
+--accent:#c8ff00;--accent2:#a3d900;
+--red:#ff4757;--orange:#ff6b35;--amber:#fbbf24;--emerald:#34d399;
+--green:#34d399;--yellow:#fbbf24;
+--txt:#fafaf9;--txt2:#d4d4d8;--muted:#a1a1aa;--dim:#52525b;
+--head:'Syne',sans-serif;--body:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace
+}
 html{scroll-behavior:smooth}
+html{-webkit-font-smoothing:antialiased}
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background:linear-gradient(rgba(200,255,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(200,255,0,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
-.orb{position:fixed;border-radius:50%;filter:blur(140px);pointer-events:none;z-index:0}
-.o1{width:600px;height:600px;background:rgba(200,255,0,.06);top:-200px;right:-200px}
-.o2{width:500px;height:500px;background:rgba(200,255,0,.04);bottom:-100px;left:-200px}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(200,255,0,.03) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.35}
 
 nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 36px}
 .brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:700;font-size:17px;color:var(--accent);text-decoration:none}
@@ -57,14 +65,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 #scanResults.on{display:block;animation:fadeUp .6s ease}
 
 .score-display{display:flex;align-items:center;gap:20px;margin:20px 0;padding:20px;background:var(--bg);border-radius:12px;border:1px solid var(--border)}
-.score-circle{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;border:4px solid;position:relative}
+.score-circle{width:90px;height:90px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;border:4px solid;position:relative;animation:circleIn .6s ease forwards}
+@keyframes circleIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 .score-circle .num{font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1}
 .score-circle .of{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
 .score-info h4{font-size:18px;font-weight:700;margin-bottom:4px}
 .score-info p{font-size:12px;color:var(--dim);line-height:1.5}
 .grade-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;margin-top:6px}
 
-.finding{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+.finding{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;opacity:0;animation:fadeUp .4s ease forwards}
+.finding:nth-child(1){animation-delay:.1s}.finding:nth-child(2){animation-delay:.2s}.finding:nth-child(3){animation-delay:.3s}.finding:nth-child(4){animation-delay:.4s}.finding:nth-child(5){animation-delay:.5s}
 .finding:last-child{border-bottom:none}
 .sev-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;margin-top:1px;color:#fff;font-weight:700}
 .sev-CRITICAL{background:var(--red)}
@@ -78,7 +88,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .cta-section{margin-top:24px;display:flex;gap:10px;flex-wrap:wrap}
 .cta-btn{flex:1;min-width:200px;padding:14px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none}
 .cta-primary{background:var(--accent);color:var(--bg)}
-.cta-primary:hover{opacity:.9}
+.cta-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--lime-glow)}
 .cta-secondary{background:transparent;border:1px solid var(--accent);color:var(--accent)}
 .cta-secondary:hover{background:var(--accent);color:var(--bg)}
 
@@ -103,9 +113,6 @@ footer p{font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
-<div class="orb o1"></div>
-<div class="orb o2"></div>
-
 <nav>
   <a href="/" class="brand"><i>C</i>CYBERCOMPLY</a>
 </nav>

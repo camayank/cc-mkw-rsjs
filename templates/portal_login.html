@@ -4,29 +4,49 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CyberComply — Client Portal</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#09090b;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center}
-.login-card{background:#18181b;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:48px;width:100%;max-width:420px;box-shadow:0 25px 50px rgba(0,0,0,.5)}
+:root{
+--bg:#09090b;--surface:#18181b;--surface2:#1e1e22;
+--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+--lime:#c8ff00;--lime-dim:rgba(200,255,0,.08);--lime-glow:rgba(200,255,0,.25);
+--red:#ff4757;--orange:#ff6b35;--amber:#fbbf24;--emerald:#34d399;
+--txt:#fafaf9;--txt2:#d4d4d8;--muted:#a1a1aa;--dim:#52525b;
+--head:'Syne',sans-serif;--body:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--body);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(200,255,0,.03) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.35}
+.orb{position:fixed;width:500px;height:500px;border-radius:50%;background:rgba(200,255,0,.04);filter:blur(140px);pointer-events:none;z-index:0;top:50%;left:50%;transform:translate(-50%,-50%)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px;width:100%;max-width:420px;box-shadow:0 25px 50px rgba(0,0,0,.5);position:relative;z-index:1;overflow:hidden;animation:cardEntry .6s cubic-bezier(.16,1,.3,1) both}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent)}
+@keyframes cardEntry{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .logo{text-align:center;margin-bottom:32px}
-.logo h1{font-family:'Syne',sans-serif;font-size:1.5rem;color:#c8ff00;letter-spacing:-.5px}
-.logo p{color:#64748b;font-size:.875rem;margin-top:4px}
-label{display:block;font-size:.875rem;color:#94a3b8;margin-bottom:6px;margin-top:20px}
-input{width:100%;padding:12px 16px;background:#09090b;border:1px solid rgba(255,255,255,.06);border-radius:8px;color:#e2e8f0;font-size:1rem;font-family:'Outfit',sans-serif;outline:none;transition:border .2s}
-input:focus{border-color:#c8ff00}
-button{width:100%;padding:14px;background:#c8ff00;color:#09090b;border:none;border-radius:8px;font-size:1rem;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;margin-top:28px;transition:opacity .2s}
-button:hover{opacity:.9}
-button:disabled{opacity:.5;cursor:not-allowed}
-.error{color:#f87171;font-size:.875rem;margin-top:12px;text-align:center;display:none}
-.error.show{display:block}
-.shield{font-size:3rem;display:block;margin-bottom:8px}
+.logo svg{margin-bottom:8px;filter:drop-shadow(0 0 8px rgba(200,255,0,.3))}
+.logo h1{font-family:var(--head);font-size:1.5rem;color:var(--lime);letter-spacing:-.5px}
+.logo p{color:var(--muted);font-size:.875rem;margin-top:4px;font-family:var(--mono);font-size:.75rem;letter-spacing:1px;text-transform:uppercase}
+label{display:block;font-size:.875rem;color:var(--muted);margin-bottom:6px;margin-top:20px}
+input{width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--txt);font-size:1rem;font-family:var(--mono);outline:none;transition:border .2s,box-shadow .2s}
+input:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,255,0,.1)}
+input::placeholder{color:var(--dim)}
+button{width:100%;padding:14px;background:var(--lime);color:var(--bg);border:none;border-radius:8px;font-size:1rem;font-family:var(--head);font-weight:700;cursor:pointer;margin-top:28px;transition:all .3s}
+button:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--lime-glow)}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.error{color:var(--red);font-size:.875rem;margin-top:12px;text-align:center;max-height:0;overflow:hidden;transition:max-height .3s ease,opacity .3s ease;opacity:0}
+.error.show{max-height:60px;opacity:1}
 </style>
 </head>
 <body>
+<div class="orb"></div>
 <div class="login-card">
   <div class="logo">
-    <span class="shield">&#x1f6e1;&#xfe0f;</span>
+    <svg width="48" height="48" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 3L5 9.5v9c0 9 5.5 17 13 19 7.5-2 13-10 13-19v-9L18 3z" fill="#c8ff00" opacity=".15" stroke="#c8ff00" stroke-width="1.5"/>
+      <path d="M18 8L9 12.5v6c0 6 3.8 11.5 9 13 5.2-1.5 9-7 9-13v-6L18 8z" fill="#c8ff00" opacity=".08"/>
+      <text x="18" y="23.5" text-anchor="middle" font-family="Syne,sans-serif" font-weight="800" font-size="15" fill="#c8ff00">C</text>
+    </svg>
     <h1>CyberComply</h1>
     <p>Security Command Center</p>
   </div>
