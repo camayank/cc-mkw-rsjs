@@ -590,6 +590,7 @@ def _generate_onboard_tasks(scan_data, forge_data):
             category="Compliance",
             description=f"Required by {', '.join(frameworks[:2])}",
             fix=f"CyberComply provides this — review and adopt the {gap} document",
+            verifiable="manual",
         )
 
 
