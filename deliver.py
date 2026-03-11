@@ -858,9 +858,9 @@ def full_delivery(domain, company_name=None, industry="cpa", no_ai=False, employ
         overrides["q12"] = data_types
 
     if no_fti:
-        profile_data = QUICK_PROFILES.get(industry, QUICK_PROFILES["cpa"])
-        default_types = profile_data.get("q12", [])
-        overrides["q12"] = [t for t in default_types if "Tax" not in t and "FTI" not in t]
+        fallback_types = QUICK_PROFILES.get(industry, QUICK_PROFILES["cpa"]).get("q12", [])
+        source_types = overrides.get("q12", fallback_types)
+        overrides["q12"] = [t for t in source_types if "Tax" not in t and "FTI" not in t]
 
     # Step 2: Questionnaire
     forge_data = run_questionnaire(scan_data["company_name"], industry, overrides=overrides)

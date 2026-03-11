@@ -657,7 +657,7 @@ def _auto_verify_tasks(client_id: str, scan_result: dict):
 
     changed = False
     for task in tasks:
-        if task["status"] in ("open", "in_progress"):
+        if task["status"] in ("open", "in_progress") and task.get("verifiable") != "manual":
             if task["title"].lower() not in finding_titles:
                 task["status"] = "verified"
                 task["resolved_at"] = date.today().isoformat()

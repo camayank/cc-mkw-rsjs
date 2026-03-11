@@ -1639,6 +1639,8 @@ async def trigger_client_scan(client_id: str, request: Request):
 @app.post("/api/operator/call-notes/{client_id}")
 async def save_call_notes_endpoint(client_id: str, request: Request):
     """Save notes after a monthly call."""
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
     body = await request.json()
     notes = body.get("notes", "")
     if not notes:
@@ -1650,6 +1652,8 @@ async def save_call_notes_endpoint(client_id: str, request: Request):
 @app.put("/api/operator/client/{client_id}")
 async def update_client_endpoint(client_id: str, request: Request):
     """Update client profile fields."""
+    if not check_dashboard_auth(request):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
     body = await request.json()
     allowed_fields = ["tier", "contact_name", "contact_email", "contact_title",
                       "industry", "tech_stack", "employee_emails", "task_email_frequency"]

@@ -76,8 +76,8 @@
 # │   P57 - Compliance progress update email                       │
 # │   P58 - Security awareness tip of the week (for client staff)  │
 # │   P59 - Policy annual review update narrative                  │
-# │   P60 - Cyber insurance application narrative / evidence pack  │
-# │   P61 - Cyber insurance renewal support letter                 │
+# │   P60 - Monthly call agenda (regular + first-month variant)     │
+# │   P61 - Weekly task digest email                               │
 # │   P62 - Security questionnaire auto-fill (inbound from client) │
 # │   P63 - Audit readiness checklist narrative                    │
 # ├─────────────────────────────────────────────────────────────────┤

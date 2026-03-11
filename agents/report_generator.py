@@ -788,6 +788,7 @@ def build_roadmap(findings, profile, shadow_data, current_score):
     total_gain = sum(min(gained, CATEGORY_CAPS.get(cat, 15)) for cat, gained in category_gains.items())
     projected = min(current_score + total_gain, 100)
     projected = (projected // 5) * 5
+    projected = max(projected, current_score)
 
     return {
         "week_1_2": week_1_2[:5], "week_3_4": week_3_4[:4],
