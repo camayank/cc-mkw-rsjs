@@ -112,6 +112,8 @@ QUICK_PROFILES = {
         "q12": ["Social Security Numbers", "Tax Returns (FTI)", "Client Financial Data"],
         "q15": "No", "q16": "No", "q17": "Never", "q18": "No", "q20": "No",
         "q21": ["IRS Publication 4557", "FTC Safeguards Rule"],
+        "q24": "Yes — some employees", "q25": "No", "q26": "Possibly — we don't monitor",
+        "q27": ["Employees sharing client data with AI", "Compliance violations from AI use"],
     },
     "healthcare": {
         "q1": "", "q2": "Healthcare", "q3": "26-50",
@@ -119,6 +121,8 @@ QUICK_PROFILES = {
         "q12": ["Protected Health Information (PHI)", "Insurance Data"],
         "q15": "No", "q16": "No", "q17": "Never", "q18": "No", "q20": "No",
         "q21": ["HIPAA", "NIST CSF"],
+        "q24": "Yes — some employees", "q25": "No", "q26": "Possibly — we don't monitor",
+        "q27": ["Employees sharing client data with AI", "Compliance violations from AI use"],
     },
     "legal": {
         "q1": "", "q2": "Legal / Law Firm", "q3": "11-25",
@@ -126,6 +130,8 @@ QUICK_PROFILES = {
         "q12": ["Attorney-Client Privileged Data", "Client Financial Data"],
         "q15": "No", "q16": "No", "q17": "Never", "q18": "No", "q20": "No",
         "q21": ["ABA Formal Opinion 477R", "NIST CSF"],
+        "q24": "Yes — some employees", "q25": "No", "q26": "Possibly — we don't monitor",
+        "q27": ["Employees sharing client data with AI", "AI hallucinations in client work"],
     },
     "financial": {
         "q1": "", "q2": "Financial Services", "q3": "26-50",
@@ -133,6 +139,8 @@ QUICK_PROFILES = {
         "q12": ["Social Security Numbers", "Bank Account Data", "Client Financial Data"],
         "q15": "No", "q16": "No", "q17": "Never", "q18": "No", "q20": "No",
         "q21": ["FTC Safeguards Rule", "NIST CSF", "SOC 2"],
+        "q24": "Yes — some employees", "q25": "No", "q26": "Possibly — we don't monitor",
+        "q27": ["Employees sharing client data with AI", "Compliance violations from AI use"],
     },
     "saas": {
         "q1": "", "q2": "Technology / SaaS", "q3": "26-50",
@@ -140,6 +148,8 @@ QUICK_PROFILES = {
         "q12": ["Client Data", "Source Code"],
         "q15": "Yes", "q16": "No", "q17": "Annually", "q18": "No", "q20": "No",
         "q21": ["SOC 2", "ISO 27001"],
+        "q24": "Yes — widely adopted", "q25": "Yes — informal guidelines", "q26": "Possibly — we don't monitor",
+        "q27": ["Employees sharing client data with AI", "Lack of visibility into AI usage"],
     },
     "govcon": {
         "q1": "", "q2": "Government Contractor", "q3": "51-100",
@@ -147,6 +157,8 @@ QUICK_PROFILES = {
         "q12": ["CUI (Controlled Unclassified Information)", "Government Data"],
         "q15": "Yes", "q16": "No", "q17": "Annually", "q18": "No", "q20": "No",
         "q21": ["CMMC Level 2", "NIST 800-171"],
+        "q24": "Yes — some employees", "q25": "No", "q26": "I don't know",
+        "q27": ["Compliance violations from AI use", "Employees sharing client data with AI"],
     },
 }
 

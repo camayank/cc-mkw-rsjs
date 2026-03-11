@@ -1051,6 +1051,7 @@ POLICIES = {
     "P43_RETENTION": {"name": "Data Retention & Destruction Policy", "desc": "Retention schedules by data type, legal holds, secure destruction methods, destruction certificates, third-party destruction."},
     "P44_SOCIAL_MEDIA": {"name": "Social Media & Communications Policy", "desc": "Authorized spokespersons, personal vs professional accounts, client confidentiality on social, crisis communications."},
     "P45_CUSTOM": {"name": "Custom Policy", "desc": "Any additional policy required by specific framework: HIPAA BAA procedures, CMMC CUI handling, PCI cardholder data, etc."},
+    "P46_AI_GOVERNANCE": {"name": "AI Acceptable Use & Governance Policy", "desc": "Governs employee use of AI tools (ChatGPT, Copilot, Claude, Gemini, etc.). Approved/prohibited AI tools, data classification rules for AI input, client data prohibitions, AI output review requirements, disclosure obligations, regulatory alignment (EU AI Act, NIST AI RMF, state AI laws), vendor AI risk assessment, monitoring and enforcement."},
 }
 
 

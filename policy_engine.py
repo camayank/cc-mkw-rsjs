@@ -20,6 +20,7 @@ logger = logging.getLogger("policy_engine")
 CORE_POLICIES = [
     "P29_WISP", "P30_IRP", "P31_AUP", "P32_ENCRYPTION", "P33_REMOTE_WORK",
     "P34_VENDOR_MGMT", "P35_DATA_CLASS", "P38_PASSWORD", "P40_TRAINING",
+    "P46_AI_GOVERNANCE",
 ]
 
 # ─── Finding-to-policy relevance map ─────────────────────
@@ -42,6 +43,7 @@ POLICY_FINDING_MAP = {
     "P43_RETENTION":  ["retention", "destruction", "disposal", "archive", "gdpr", "ccpa"],
     "P44_SOCIAL_MEDIA":["social media", "linkedin", "twitter", "facebook", "communications"],
     "P45_CUSTOM":     [],
+    "P46_AI_GOVERNANCE":["ai", "chatgpt", "copilot", "claude", "gemini", "llm", "machine learning", "artificial intelligence", "generative"],
 }
 
 

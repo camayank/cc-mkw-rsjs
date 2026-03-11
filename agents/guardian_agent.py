@@ -372,6 +372,21 @@ ONBOARDING_QUESTIONNAIRE = {
                 {"id": "q23", "text": "Are you planning for any certifications?", "type": "multiselect",
                  "options": ["SOC 2 Type II", "ISO 27001", "CMMC", "HITRUST", "None currently"]},
             ]
+        },
+        {
+            "title": "AI & Emerging Technology",
+            "questions": [
+                {"id": "q24", "text": "Do employees use AI tools (ChatGPT, Copilot, Claude, Gemini, etc.)?", "type": "select",
+                 "options": ["Yes — widely adopted", "Yes — some employees", "No", "I don't know"]},
+                {"id": "q25", "text": "Do you have a policy governing AI use with client/sensitive data?", "type": "select",
+                 "options": ["Yes — formal written policy", "Yes — informal guidelines", "No", "What is an AI use policy?"]},
+                {"id": "q26", "text": "Has client or sensitive data ever been entered into an AI tool?", "type": "select",
+                 "options": ["Yes", "Possibly — we don't monitor", "No — we have controls", "I don't know"]},
+                {"id": "q27", "text": "Which AI-related risks concern you most?", "type": "multiselect",
+                 "options": ["Employees sharing client data with AI", "AI-generated phishing attacks",
+                             "Compliance violations from AI use", "AI hallucinations in client work",
+                             "Lack of visibility into AI usage", "None — not concerned"]},
+            ]
         }
     ]
 }
@@ -426,6 +441,10 @@ class GuardianAgent:
             "compliance_frameworks": answers.get("q21", []),
             "security_questionnaires": answers.get("q22", "No"),
             "planned_certifications": answers.get("q23", []),
+            "ai_tool_usage": answers.get("q24", "I don't know"),
+            "ai_policy": answers.get("q25", "No"),
+            "ai_data_exposure": answers.get("q26", "I don't know"),
+            "ai_risk_concerns": answers.get("q27", []),
         }
 
         # Auto-detect applicable frameworks
@@ -549,6 +568,27 @@ class GuardianAgent:
             score += 5
         else:
             findings.append("No recent security assessment")
+
+        # AI Governance (new risk category)
+        ai_usage = profile.get("ai_tool_usage", "I don't know")
+        ai_policy = profile.get("ai_policy", "No")
+        ai_exposure = profile.get("ai_data_exposure", "I don't know")
+
+        if ai_usage in ["Yes — widely adopted", "Yes — some employees", "I don't know"]:
+            # AI is being used (or unknown = assume yes) — policy matters
+            if ai_policy == "Yes — formal written policy":
+                score += 10
+            elif ai_policy == "Yes — informal guidelines":
+                score += 4
+                findings.append("AI tools in use without formal governance policy")
+            else:
+                findings.append("No AI acceptable use policy — employees may be exposing client data to AI tools")
+
+            if ai_exposure in ["Yes", "Possibly — we don't monitor", "I don't know"]:
+                findings.append("Client/sensitive data may have been shared with AI tools — potential compliance violation")
+        else:
+            # No AI usage claimed — still worth noting
+            score += 5
 
         return {
             "questionnaire_score": min(score, max_score),
