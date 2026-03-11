@@ -2183,6 +2183,77 @@ Findings: {findings_json}
 Write vulnerability scan summary. Under 200 words."""
 }
 
+PROMPTS["P60_MONTHLY_CALL_AGENDA"] = {
+    "name": "Monthly Call Agenda",
+    "system": "You are a virtual CISO preparing a monthly client call agenda. Be specific, data-driven, and actionable. Keep it to one page. Use plain language a business owner understands.",
+    "user": """Generate a 1-page monthly call prep for {company_name}.
+
+SCORE: {current_score}/100 ({current_grade}) — was {previous_score}/100 ({previous_grade}) last month
+SCORE CHANGE: {score_delta} points
+RESOLVED TASKS THIS MONTH: {resolved_tasks}
+NEW ALERTS THIS MONTH: {new_alerts}
+OPEN TASKS (top 5): {open_tasks}
+THREAT INTEL: {threat_intel}
+COMPLIANCE STATUS: {compliance_status}
+CALL NOTES FROM LAST MONTH: {previous_notes}
+
+Format as sections:
+1. SCORE CHANGE (celebrate improvement or explain decline)
+2. WINS THIS MONTH (resolved tasks, auto-verified fixes)
+3. NEW ISSUES (new findings or alerts since last month)
+4. TOP 5 OPEN TASKS (with suggested priority)
+5. THREAT INTEL (relevant CISA alerts for their tech stack)
+6. RECOMMENDED DISCUSSION TOPICS
+7. ACTION ITEMS FOR NEXT MONTH""",
+}
+
+PROMPTS["P60_MONTHLY_CALL_AGENDA_FIRST"] = {
+    "name": "Monthly Call Agenda (First Month)",
+    "system": "You are a virtual CISO preparing the first monthly call agenda for a new client. Be welcoming and educational. Explain what each metric means. Keep it to one page.",
+    "user": """Generate a first-month call prep for {company_name}.
+
+BASELINE SCORE: {current_score}/100 ({current_grade})
+TOTAL FINDINGS: {total_findings}
+CRITICAL FINDINGS: {critical_findings}
+OPEN TASKS: {open_tasks}
+COMPLIANCE STATUS: {compliance_status}
+
+This is the FIRST call — the client just received their initial assessment. Format as:
+1. WELCOME & WHAT WE'VE DONE (scan, report, policies delivered)
+2. BASELINE SCORE EXPLAINED (what the number means, where they rank)
+3. TOP FINDINGS WALKTHROUGH (explain top 3-5 in plain language)
+4. QUICK WINS FOR THIS MONTH (what they can do in the next 30 days)
+5. WHAT HAPPENS NEXT (weekly emails, auto-monitoring, next month's call)
+6. Q&A TOPICS TO PREPARE FOR""",
+}
+
+PROMPTS["P61_WEEKLY_TASK_DIGEST"] = {
+    "name": "Weekly Task Digest",
+    "system": "You are a cybersecurity advisor writing a brief, actionable weekly security task email for a business owner. Be specific with HOW instructions based on their email platform. Include time estimates. Keep it under 300 words.",
+    "user": """Write a weekly task digest email for {company_name}.
+
+EMAIL PROVIDER: {email_provider}
+CURRENT SCORE: {current_score}/100
+PROJECTED SCORE IF ALL DONE: {projected_score}/100
+
+TASKS (top {task_count}, sorted by severity):
+{tasks_json}
+
+OVERFLOW: {overflow_count} more items available in portal.
+
+RECENTLY COMPLETED (auto-verified this week):
+{recently_resolved}
+
+When writing HOW instructions:
+- If email_provider is "Microsoft 365": use admin.microsoft.com paths
+- If email_provider is "Google Workspace": use admin.google.com paths
+- If email_provider is "Other": say "Contact your email administrator"
+- For DNS tasks: say "Contact your domain registrar or IT provider"
+- For web server tasks: say "Contact your web developer or hosting provider"
+
+Format: Greeting → grouped by severity (CRITICAL/HIGH/MEDIUM) → each task has WHY (1 line), HOW (step-by-step for their platform), TIME estimate → score projection → sign-off.""",
+}
+
 
 # ═══════════════════════════════════════════════════════════════════
 # SUMMARY

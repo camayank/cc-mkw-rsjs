@@ -429,6 +429,224 @@ def run_phishing_campaign():
             logger.error(f"PHANTOM error for {client.get('client_id', '?')}: {e}")
 
 
+def send_weekly_task_digest():
+    """Monday 10am UTC: send task digest email to retainer clients."""
+    import client_manager
+
+    clients = client_manager.list_active_clients()
+
+    for client in clients:
+        try:
+            client_id = client["client_id"]
+            tier_config = client_manager.get_tier_config(client.get("tier", "assessment"))
+            if not tier_config.get("tasks"):
+                continue
+
+            freq = client.get("task_email_frequency", "weekly")
+            if freq == "paused":
+                continue
+            if freq == "biweekly" and date.today().isocalendar()[1] % 2 != 0:
+                continue
+            if freq == "monthly" and date.today().day > 7:
+                continue
+
+            tasks = client_manager.get_tasks(client_id)
+            open_tasks = [t for t in tasks if t["status"] in ("open", "in_progress")]
+            if not open_tasks:
+                continue
+
+            sev_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+            open_tasks.sort(key=lambda t: sev_order.get(t.get("severity", "LOW"), 3))
+
+            MAX_TASKS = 5
+            shown_tasks = open_tasks[:MAX_TASKS]
+            overflow_count = len(open_tasks) - len(shown_tasks)
+
+            recently_resolved = [t for t in tasks if t.get("status") in ("resolved", "verified")
+                                and (t.get("resolved_at", "") or "")[:7] == date.today().strftime("%Y-%m")]
+
+            current_score = client.get("current_score", 0)
+            contact_email = client.get("contact_email", "")
+            if not contact_email:
+                continue
+
+            try:
+                from prompt_engine import call_prompt
+                email_body = call_prompt(
+                    "P61_WEEKLY_TASK_DIGEST",
+                    company_name=client.get("company_name", ""),
+                    email_provider=client.get("tech_stack", ["Microsoft 365"])[0] if client.get("tech_stack") else "Microsoft 365",
+                    current_score=str(current_score),
+                    projected_score=str(min(current_score + len(shown_tasks) * 5, 100)),
+                    task_count=str(len(shown_tasks)),
+                    tasks_json=json.dumps([{"title": t["title"], "severity": t["severity"],
+                                           "fix": t.get("fix", ""), "category": t.get("category", "")}
+                                          for t in shown_tasks], indent=2),
+                    overflow_count=str(overflow_count),
+                    recently_resolved=json.dumps([t["title"] for t in recently_resolved[:3]]) if recently_resolved else "None this week.",
+                )
+            except Exception as e:
+                logger.error(f"Task digest AI failed for {client_id}: {e}")
+                task_list = "\n".join(f"- [{t['severity']}] {t['title']}" for t in shown_tasks)
+                email_body = f"Weekly Security Tasks for {client.get('company_name', '')}\n\nYour top {len(shown_tasks)} tasks:\n{task_list}\n\n{overflow_count} more items in your portal."
+
+            _send_task_digest_email(client, email_body, len(shown_tasks))
+            client_manager.log_communication(client_id, "task_digest",
+                                            f"Weekly task digest ({len(shown_tasks)} tasks)",
+                                            contact_email)
+            logger.info(f"Task digest: {client_id} — {len(shown_tasks)} tasks sent")
+        except Exception as e:
+            logger.error(f"Task digest error for {client.get('client_id', '?')}: {e}")
+
+
+def _send_task_digest_email(client, body, task_count):
+    """Send the weekly task digest email."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    contact_email = client.get("contact_email", "")
+    if not contact_email:
+        return
+
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    from_email = os.getenv("SMTP_FROM", "security@cybercomply.io")
+
+    if not smtp_host or not smtp_user or not smtp_pass:
+        logger.info(f"SMTP not configured — task digest skipped for {contact_email}")
+        return
+
+    subject = f"Your Weekly Security Tasks ({task_count} items) | {client.get('company_name', '')}"
+
+    msg = MIMEMultipart()
+    msg["From"] = f"CyberComply Security <{from_email}>"
+    msg["To"] = contact_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        logger.info(f"Task digest sent to {contact_email}")
+    except Exception as e:
+        logger.error(f"Task digest email failed for {contact_email}: {e}")
+
+
+def generate_call_agendas():
+    """1st of month at 7am UTC: generate call agendas for all retainer clients."""
+    import client_manager
+
+    clients = client_manager.list_active_clients()
+
+    for client in clients:
+        try:
+            client_id = client["client_id"]
+            tier_config = client_manager.get_tier_config(client.get("tier", "assessment"))
+            if not tier_config.get("monthly_call"):
+                continue
+
+            tasks = client_manager.get_tasks(client_id)
+            open_tasks = [t for t in tasks if t["status"] in ("open", "in_progress")]
+            resolved_this_month = [t for t in tasks if t.get("status") in ("resolved", "verified")
+                                  and (t.get("resolved_at", "") or "")[:7] == date.today().strftime("%Y-%m")]
+
+            alerts = client_manager.get_alerts(client_id, limit=10)
+            new_alerts = [a for a in alerts if (a.get("date", "") or "")[:7] == date.today().strftime("%Y-%m")]
+
+            scores = client.get("score_history", [])
+            current_score = client.get("current_score", 0)
+            current_grade = client.get("current_grade", "N/A")
+            previous_score = scores[-2]["score"] if len(scores) >= 2 else None
+            previous_grade = scores[-2]["grade"] if len(scores) >= 2 else "N/A"
+
+            previous_notes = client_manager.get_latest_call_notes(client_id)
+
+            prompt_key = "P60_MONTHLY_CALL_AGENDA" if previous_score is not None else "P60_MONTHLY_CALL_AGENDA_FIRST"
+
+            try:
+                from prompt_engine import call_prompt
+                if previous_score is not None:
+                    agenda = call_prompt(
+                        prompt_key,
+                        company_name=client.get("company_name", ""),
+                        current_score=str(current_score), current_grade=current_grade,
+                        previous_score=str(previous_score), previous_grade=previous_grade,
+                        score_delta=str(current_score - previous_score),
+                        resolved_tasks=json.dumps([t["title"] for t in resolved_this_month[:5]]),
+                        new_alerts=json.dumps([a.get("title", "") for a in new_alerts[:5]]),
+                        open_tasks=json.dumps([{"title": t["title"], "severity": t["severity"]} for t in open_tasks[:5]]),
+                        threat_intel="See FALCON alerts" if any(a.get("type") == "threat" for a in new_alerts) else "No new threats this month.",
+                        compliance_status="Active monitoring",
+                        previous_notes=previous_notes,
+                    )
+                else:
+                    agenda = call_prompt(
+                        prompt_key,
+                        company_name=client.get("company_name", ""),
+                        current_score=str(current_score), current_grade=current_grade,
+                        total_findings=str(len(open_tasks)),
+                        critical_findings=str(sum(1 for t in open_tasks if t.get("severity") == "CRITICAL")),
+                        open_tasks=json.dumps([{"title": t["title"], "severity": t["severity"]} for t in open_tasks[:5]]),
+                        compliance_status="Initial baseline",
+                    )
+            except Exception as e:
+                logger.error(f"Call agenda AI failed for {client_id}: {e}")
+                agenda = f"Call Agenda for {client.get('company_name', '')}\nScore: {current_score}/100\nOpen tasks: {len(open_tasks)}\nSee dashboard for details."
+
+            reports_dir = client_manager._client_dir(client_id) / "reports"
+            reports_dir.mkdir(exist_ok=True)
+            agenda_file = reports_dir / f"{date.today().isoformat()}-call-agenda.txt"
+            agenda_file.write_text(agenda)
+
+            operator_email = os.getenv("OPERATOR_EMAIL", os.getenv("ADMIN_EMAIL", ""))
+            if operator_email:
+                _send_agenda_email(operator_email, client, agenda)
+                client_manager.log_communication(client_id, "call_agenda",
+                                                f"Monthly call agenda for {date.today().strftime('%B %Y')}",
+                                                operator_email)
+
+            logger.info(f"Call agenda: {client_id} — generated for {date.today().strftime('%B')}")
+        except Exception as e:
+            logger.error(f"Call agenda error for {client.get('client_id', '?')}: {e}")
+
+
+def _send_agenda_email(operator_email, client, agenda):
+    """Send call agenda to operator."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    from_email = os.getenv("SMTP_FROM", "security@cybercomply.io")
+
+    if not smtp_host or not smtp_user or not smtp_pass:
+        return
+
+    subject = f"Call Prep: {client.get('company_name', '')} — {date.today().strftime('%B %Y')}"
+
+    msg = MIMEMultipart()
+    msg["From"] = f"CyberComply <{from_email}>"
+    msg["To"] = operator_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(agenda, "plain"))
+
+    try:
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+    except Exception as e:
+        logger.error(f"Agenda email failed for {operator_email}: {e}")
+
+
 def _auto_verify_tasks(client_id: str, scan_result: dict):
     """Close tasks when scans confirm the issue is fixed."""
     import client_manager
@@ -593,6 +811,12 @@ def init_scheduler(app=None):
     from email_scheduler import send_due_emails
     scheduler.add_job(send_due_emails, 'cron', hour=9, minute=0, id='outreach_emails')
 
+    # Weekly Monday 10am UTC: task digest emails
+    scheduler.add_job(send_weekly_task_digest, 'cron', day_of_week='mon', hour=10, id='weekly_task_digest')
+
+    # Monthly 1st at 7am UTC: generate call agendas
+    scheduler.add_job(generate_call_agendas, 'cron', day=1, hour=7, id='call_agendas')
+
     scheduler.start()
-    logger.info("Scheduler started: falcon(6h), vigil(6h), shadow(daily), outreach(daily), recon(weekly), reports(monthly), breach(monthly), phishing(quarterly)")
+    logger.info("Scheduler started: falcon(6h), vigil(6h), shadow(daily), outreach(daily), recon(weekly), reports(monthly), breach(monthly), phishing(quarterly), task_digest(weekly), call_agendas(monthly)")
     return scheduler
