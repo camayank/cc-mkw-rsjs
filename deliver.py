@@ -45,8 +45,9 @@ BRAND = {
 }
 
 # Create output directory
-OUTPUT_DIR = Path("./client-deliverables")
-OUTPUT_DIR.mkdir(exist_ok=True)
+DATA_DIR = Path(os.getenv("DATA_DIR", "."))
+OUTPUT_DIR = DATA_DIR / "client-deliverables"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def print_banner():
