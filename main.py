@@ -61,7 +61,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -113,6 +113,8 @@ from scheduler import init_scheduler
 
 @app.on_event("startup")
 async def startup_scheduler():
+    if not os.getenv("JWT_SECRET"):
+        logger.warning("JWT_SECRET not set — using random secret. Portal sessions will be lost on restart. Set JWT_SECRET env var for persistence.")
     app.state.scheduler = init_scheduler(app)
 
 # ─── MODELS ───────────────────────────────────────────────────
@@ -907,8 +909,8 @@ async def list_clients():
                 "scan_date": scan.get("scan_date", ""),
                 "has_pdf": any(f.suffix == ".pdf" for f in d.iterdir()),
                 "has_proposal": (d / "PROPOSAL_EMAIL.txt").exists(),
-                "has_policies": any(d.glob("policies_*")),
-                "has_emails": (d / "cold_email_1.txt").exists(),
+                "has_policies": (d / "policies").is_dir() and any((d / "policies").iterdir()),
+                "has_emails": False,  # updated below after company_safe is known
                 "email_status": "not_started",
                 "last_email_sent": None,
                 "next_email_due": None,
@@ -917,6 +919,8 @@ async def list_clients():
             # Check outreach schedule for email status
             company_name = scan.get("company_name", d.name)
             company_safe = company_name.replace(" ", "_").replace("&", "and")
+            email_dir = DATA_DIR / "outreach_emails" / company_safe
+            clients[-1]["has_emails"] = email_dir.is_dir() and any(email_dir.glob("*.txt"))
             _day_offsets = {0: "0", 1: "3", 2: "7", 3: "14", 4: "21"}
             if company_safe in outreach_schedule:
                 outreach = outreach_schedule[company_safe]
@@ -978,7 +982,9 @@ async def download_client_file(dir_name: str, file_type: str):
 # ─── CLIENT DETAIL ENDPOINT ─────────────────────────────
 
 @app.get("/api/clients/{dir_name}/detail", response_class=HTMLResponse)
-async def client_detail(dir_name: str):
+async def client_detail(dir_name: str, request: Request):
+    if not check_dashboard_auth(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
     dir_name = safe_path_component(dir_name)
     client_dir = OUTPUT_DIR / dir_name
     if not client_dir.exists():
@@ -994,7 +1000,7 @@ async def client_detail(dir_name: str):
         dir_name=dir_name, scan=scan, forge=forge,
         has_pdf=any(f.suffix == ".pdf" for f in client_dir.iterdir()),
         has_proposal=(client_dir / "PROPOSAL_EMAIL.txt").exists(),
-        has_policies=any(client_dir.glob("policies_*")),
+        has_policies=(client_dir / "policies").is_dir() and any((client_dir / "policies").iterdir()),
     ))
 
 # ─── PIPELINE ENDPOINT ──────────────────────────────────
@@ -1017,10 +1023,18 @@ async def get_pipeline():
             if (d / "PROPOSAL_EMAIL.txt").exists():
                 proposed += 1
                 total_value += 2500
-            if any(d.glob("policies_*")):
+            if (d / "policies").is_dir() and any((d / "policies").iterdir()):
                 has_policies += 1
-            if (d / "cold_email_1.txt").exists():
-                has_emails += 1
+            # Check outreach_emails dir for this company
+            try:
+                scan_data = json.loads((d / "scan_data.json").read_text()) if (d / "scan_data.json").exists() else {}
+                co_name = scan_data.get("scan", {}).get("company_name", d.name)
+                co_safe = co_name.replace(" ", "_").replace("&", "and")
+                email_dir = DATA_DIR / "outreach_emails" / co_safe
+                if email_dir.is_dir() and any(email_dir.glob("*.txt")):
+                    has_emails += 1
+            except Exception:
+                pass
 
     leads_count = 0
     leads_file = DATA_DIR / "leads.json"
@@ -1113,6 +1127,17 @@ async def new_scan(req: NewScanRequest):
                 from scheduler import _generate_tasks_from_findings
                 findings = data.get("scan", {}).get("archer", {}).get("findings", [])
                 _generate_tasks_from_findings(client_id, findings)
+                # Persist scan to clients/{id}/scans/ for audit trail
+                scans_dir = client_manager._client_dir(client_id) / "scans"
+                scans_dir.mkdir(exist_ok=True)
+                scan_date = data.get("scan", {}).get("date", time.strftime("%Y-%m-%d"))
+                (scans_dir / f"{scan_date}-initial.json").write_text(json.dumps(data.get("scan", {}), indent=2, default=str))
+                # Copy PDF to portal reports/ so it shows in client portal
+                import shutil
+                portal_reports = client_manager._client_dir(client_id) / "reports"
+                portal_reports.mkdir(exist_ok=True)
+                for pdf in (OUTPUT_DIR / dir_name).glob("*.pdf"):
+                    shutil.copy2(str(pdf), str(portal_reports / pdf.name))
         except Exception as e:
             logger.error(f"Post-scan update error: {e}")
 
@@ -1295,6 +1320,35 @@ async def portal_page(client_id: str, request: Request):
     phishing_tests = sum(1 for a in alerts if a.get("type") == "phishing")
     monitoring_alerts = sum(1 for a in alerts if a.get("type") == "monitoring")
 
+    # Load call notes for portal display
+    call_notes_file = client_manager._client_dir(client_id) / "call_notes.json"
+    call_notes = json.loads(call_notes_file.read_text()) if call_notes_file.exists() else []
+
+    # Industry benchmark
+    industry_avg_score = None
+    try:
+        from prompt_library import INDUSTRY_CONTEXT
+        industry_key = client.get("industry", "").lower().strip()
+        if industry_key and industry_key in INDUSTRY_CONTEXT:
+            industry_avg_score = INDUSTRY_CONTEXT[industry_key].get("industry_avg_score")
+    except Exception:
+        pass
+
+    # Monthly narrative from latest report
+    monthly_narrative = None
+    try:
+        reports_dir = client_manager._client_dir(client_id) / "reports"
+        monthly_files = sorted(reports_dir.glob("*monthly*"), reverse=True) if reports_dir.exists() else []
+        if monthly_files:
+            report_data = json.loads(monthly_files[0].read_text())
+            monthly_narrative = report_data.get("narrative", "")
+    except Exception:
+        pass
+
+    # Advisor info
+    advisor_name = client.get("advisor_name", "CyberComply Security Team")
+    next_call_date = client.get("next_call_date", "")
+
     tmpl = templates.get_template("portal.html")
     return HTMLResponse(tmpl.render(
         client=client, tier=tier_config,
@@ -1309,6 +1363,12 @@ async def portal_page(client_id: str, request: Request):
         reports=reports, policies=policies,
         agent_status=agent_status, frameworks=frameworks,
         compliance_pct=compliance_pct,
+        call_notes=call_notes,
+        industry_avg_score=industry_avg_score,
+        monthly_narrative=monthly_narrative,
+        advisor_name=advisor_name,
+        next_call_date=next_call_date,
+        calendly_link=CALENDLY_LINK,
     ))
 
 
@@ -1371,16 +1431,98 @@ async def portal_download(client_id: str, doc_type: str, filename: str, request:
     return FileResponse(str(file_path), filename=filename)
 
 
+@app.get("/portal/{client_id}/download/audit-package")
+async def portal_download_audit_package(client_id: str, request: Request):
+    if not check_portal_auth(request, client_id):
+        return JSONResponse({"error": "unauthorized"}, status_code=401)
+    client_id = safe_path_component(client_id)
+    client = client_manager.get_client(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    company = client.get("company_name", "Unknown").replace(" ", "_")
+    today = time.strftime("%Y%m%d")
+    zip_name = f"{company}_Audit_Package_{today}.zip"
+    client_dir = client_manager._client_dir(client_id)
+
+    # Sanitize profile — strip sensitive fields
+    SENSITIVE_KEYS = {"password_hash", "magic_token", "magic_token_expires", "stripe_secret", "stripe_secret_key"}
+    profile = {k: v for k, v in client.items() if k not in SENSITIVE_KEYS}
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as zf:
+        # Profile summary
+        zf.writestr("profile_summary.json", json.dumps(profile, indent=2, default=str))
+
+        # Score history
+        score_history = client.get("score_history", [])
+        zf.writestr("score_history.json", json.dumps(score_history, indent=2, default=str))
+
+        # Scans
+        scans_dir = client_dir / "scans"
+        if scans_dir.exists():
+            for f in sorted(scans_dir.glob("*.json")):
+                zf.write(str(f), f"scans/{f.name}")
+
+        # Reports
+        reports_dir = client_dir / "reports"
+        if reports_dir.exists():
+            for f in sorted(f for f in reports_dir.iterdir() if f.suffix in (".pdf", ".json")):
+                zf.write(str(f), f"reports/{f.name}")
+
+        # Policies
+        policies_dir = client_dir / "policies"
+        if policies_dir.exists():
+            for f in sorted(policies_dir.glob("*.*")):
+                zf.write(str(f), f"policies/{f.name}")
+
+        # Tasks
+        tasks = client_manager.get_tasks(client_id)
+        zf.writestr("tasks.json", json.dumps(tasks, indent=2, default=str))
+
+        # Alerts — all historical
+        alerts_dir = client_dir / "alerts"
+        if alerts_dir.exists():
+            for f in sorted(alerts_dir.glob("*.json")):
+                zf.write(str(f), f"alerts/{f.name}")
+
+        # Communications log
+        comms_file = client_dir / "communications" / "log.jsonl"
+        if comms_file.exists():
+            zf.write(str(comms_file), "communications_log.jsonl")
+
+        # Call notes
+        call_notes_file = client_dir / "call_notes.json"
+        if call_notes_file.exists():
+            zf.write(str(call_notes_file), "call_notes.json")
+
+        # MANIFEST
+        file_list = zf.namelist()
+        manifest_lines = [
+            f"# Audit Evidence Package",
+            f"**Company:** {client.get('company_name', 'N/A')}",
+            f"**Domain:** {client.get('domain', 'N/A')}",
+            f"**Generated:** {time.strftime('%Y-%m-%d %H:%M UTC')}",
+            f"**Total files:** {len(file_list) + 1}",
+            "",
+            "## Contents",
+        ]
+        for name in sorted(file_list):
+            manifest_lines.append(f"- {name}")
+        zf.writestr("MANIFEST.md", "\n".join(manifest_lines))
+
+    return FileResponse(tmp.name, filename=zip_name, media_type="application/zip")
+
+
 # ─── PORTAL: ALERT DETAIL ENDPOINTS (HTMX partials) ────────
 
 @app.get("/portal/{client_id}/alerts/darkweb", response_class=HTMLResponse)
 async def portal_darkweb_alerts(client_id: str, request: Request):
     if not check_portal_auth(request, client_id):
         return HTMLResponse("", status_code=401)
-    alerts = client_manager.get_alerts(client_id, limit=20)
-    darkweb = [a for a in alerts if a.get("type") == "darkweb"]
+    darkweb = client_manager.get_alerts(client_id, limit=10, alert_type="darkweb")
     rows = ""
-    for a in darkweb[:10]:
+    for a in darkweb:
         sev = a.get("severity", "MEDIUM").lower()
         sev_colors = {"critical": "var(--red)", "high": "var(--orange)", "medium": "var(--yellow)", "low": "var(--green)"}
         color = sev_colors.get(sev, "var(--muted)")
@@ -1405,10 +1547,9 @@ async def portal_darkweb_alerts(client_id: str, request: Request):
 async def portal_threat_alerts(client_id: str, request: Request):
     if not check_portal_auth(request, client_id):
         return HTMLResponse("", status_code=401)
-    alerts = client_manager.get_alerts(client_id, limit=20)
-    threats = [a for a in alerts if a.get("type") == "threat"]
+    threats = client_manager.get_alerts(client_id, limit=10, alert_type="threat")
     rows = ""
-    for a in threats[:10]:
+    for a in threats:
         sev = a.get("severity", "MEDIUM").lower()
         sev_colors = {"critical": "var(--red)", "high": "var(--orange)", "medium": "var(--yellow)", "low": "var(--green)"}
         color = sev_colors.get(sev, "var(--muted)")
@@ -1450,12 +1591,30 @@ async def portal_latest_report(client_id: str, request: Request):
         delta = data.get("score_delta", 0)
         findings = data.get("findings_summary", {})
         delta_html = f'<span style="color:var(--green)">&#x25b2; +{delta}</span>' if delta > 0 else f'<span style="color:var(--red)">&#x25bc; {delta}</span>' if delta < 0 else '&#x2192; No change'
+        critical_count = findings.get("critical", 0)
+        critical_html = f'<span style="color:var(--red);font-weight:600">{critical_count} critical</span>' if critical_count else '<span style="color:var(--green)">0 critical</span>'
+        # Industry benchmark line
+        benchmark_html = ""
+        try:
+            client = client_manager.get_client(client_id)
+            if client:
+                from prompt_library import INDUSTRY_CONTEXT
+                ind = client.get("industry", "").lower().strip()
+                if ind and ind in INDUSTRY_CONTEXT:
+                    avg = INDUSTRY_CONTEXT[ind].get("industry_avg_score", 0)
+                    if avg:
+                        cmp_color = "var(--green)" if score >= avg else "var(--orange)"
+                        benchmark_html = f'<div style="font-size:.8rem;color:var(--muted);margin-top:4px">Industry avg: {avg} &mdash; <span style="color:{cmp_color}">{"above" if score >= avg else "below"} benchmark</span></div>'
+        except Exception:
+            pass
         return HTMLResponse(f'''
           <div style="padding:16px 0">
-            <div style="display:flex;gap:24px;margin-bottom:16px">
+            <div style="display:flex;gap:24px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
               <div><span style="font-size:2rem;font-weight:700;color:var(--accent)">{score}</span><span style="color:var(--muted)">/{grade}</span> {delta_html}</div>
-              <div style="color:var(--muted);font-size:.85rem">Findings: {findings.get("total", 0)} total | {findings.get("resolved", 0)} resolved</div>
+              <div style="color:var(--muted);font-size:.85rem">Findings: {findings.get("total", 0)} total | {findings.get("resolved", 0)} resolved | {critical_html}</div>
+              <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,255,0,.1);color:var(--accent);font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid rgba(200,255,0,.2);text-transform:uppercase;letter-spacing:.5px">&#x2713; CISSP-Reviewed</span>
             </div>
+            {benchmark_html}
             <div style="color:var(--text);font-size:.9rem;line-height:1.6;white-space:pre-wrap">{narrative[:1500]}</div>
           </div>''')
     except Exception:
@@ -1466,10 +1625,9 @@ async def portal_latest_report(client_id: str, request: Request):
 async def portal_vuln_alerts(client_id: str, request: Request):
     if not check_portal_auth(request, client_id):
         return HTMLResponse("", status_code=401)
-    alerts = client_manager.get_alerts(client_id, limit=20)
-    vulns = [a for a in alerts if a.get("type") == "vulnscan"]
+    vulns = client_manager.get_alerts(client_id, limit=5, alert_type="vulnscan")
     rows = ""
-    for a in vulns[:5]:
+    for a in vulns:
         sev = a.get("severity", "MEDIUM").lower()
         sev_colors = {"critical": "var(--red)", "high": "var(--orange)", "medium": "var(--yellow)", "low": "var(--green)"}
         color = sev_colors.get(sev, "var(--muted)")
@@ -1499,10 +1657,9 @@ async def portal_vuln_alerts(client_id: str, request: Request):
 async def portal_phishing_alerts(client_id: str, request: Request):
     if not check_portal_auth(request, client_id):
         return HTMLResponse("", status_code=401)
-    alerts = client_manager.get_alerts(client_id, limit=20)
-    phishing = [a for a in alerts if a.get("type") == "phishing"]
+    phishing = client_manager.get_alerts(client_id, limit=5, alert_type="phishing")
     rows = ""
-    for a in phishing[:5]:
+    for a in phishing:
         actions_html = "".join(f'<li style="margin:4px 0">{act}</li>' for act in a.get("actions", []))
         rows += f'''<div style="padding:16px 0;border-bottom:1px solid var(--border)">
           <div style="display:flex;justify-content:space-between;align-items:center">
@@ -1522,10 +1679,9 @@ async def portal_phishing_alerts(client_id: str, request: Request):
 async def portal_monitoring_alerts(client_id: str, request: Request):
     if not check_portal_auth(request, client_id):
         return HTMLResponse("", status_code=401)
-    alerts = client_manager.get_alerts(client_id, limit=20)
-    monitoring = [a for a in alerts if a.get("type") == "monitoring"]
+    monitoring = client_manager.get_alerts(client_id, limit=10, alert_type="monitoring")
     rows = ""
-    for a in monitoring[:10]:
+    for a in monitoring:
         sev = a.get("severity", "MEDIUM").lower()
         sev_colors = {"critical": "var(--red)", "high": "var(--orange)", "medium": "var(--yellow)", "low": "var(--green)"}
         color = sev_colors.get(sev, "var(--muted)")

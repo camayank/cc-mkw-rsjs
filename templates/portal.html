@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ client.company_name }} — Security Command Center</title>
 <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0f1a;--card:#111827;--border:#1e293b;--text:#e2e8f0;--muted:#64748b;--accent:#06b6d4;--accent2:#0891b2;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--orange:#f97316}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+:root{--bg:#09090b;--card:#18181b;--border:rgba(255,255,255,.06);--text:#e2e8f0;--muted:#64748b;--accent:#c8ff00;--accent2:#a3d900;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;--orange:#f97316}
+body{font-family:'Outfit',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;justify-content:space-between;align-items:center}
-.header h1{font-size:1.125rem;color:var(--accent);display:flex;align-items:center;gap:8px}
+.header h1{font-family:'Syne',sans-serif;font-size:1.125rem;color:var(--accent);display:flex;align-items:center;gap:8px}
 .header .company{font-size:1rem;color:var(--text);font-weight:400}
-.header .score-badge{background:var(--bg);border:2px solid var(--accent);border-radius:12px;padding:8px 20px;font-size:1.25rem;font-weight:700;color:var(--accent)}
+.header .score-badge{font-family:'Syne',sans-serif;background:var(--bg);border:2px solid var(--accent);border-radius:12px;padding:8px 20px;font-size:1.25rem;font-weight:700;color:var(--accent)}
 .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;padding:24px 32px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
 .stat-card .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
@@ -20,7 +21,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .stat-card .sub{font-size:.8rem;margin-top:4px}
 .main{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 32px 32px}
 .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px}
-.panel h2{font-size:1rem;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.panel h2{font-family:'Syne',sans-serif;font-size:1rem;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .score-up{color:var(--green)}.score-down{color:var(--red)}
 .agent-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
 .agent-row:last-child{border:none}
@@ -53,7 +54,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .alert-detail.open{display:block}
 .alert-detail h3{color:var(--accent);font-size:.9rem;margin-bottom:12px}
 .report-banner{background:var(--card);border:1px solid var(--accent);border-radius:12px;padding:24px;margin:0 32px 16px}
-.report-banner h2{font-size:1rem;color:var(--accent);margin-bottom:12px}
+.report-banner h2{font-family:'Syne',sans-serif;font-size:1rem;color:var(--accent);margin-bottom:12px}
+.cissp-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(200,255,0,.1);color:var(--accent);font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid rgba(200,255,0,.2);text-transform:uppercase;letter-spacing:.5px}
+.advisor-info{display:flex;align-items:center;gap:12px;font-size:.85rem;color:var(--muted)}
+.book-call{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:var(--bg);font-size:.8rem;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;font-family:'Syne',sans-serif;transition:opacity .2s}
+.book-call:hover{opacity:.85}
+.narrative-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:0 32px 16px}
+.narrative-box h2{font-family:'Syne',sans-serif;font-size:1rem;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.roadmap-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px}
+.roadmap-panel h2{font-family:'Syne',sans-serif;font-size:1rem;color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.roadmap-step{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.roadmap-step:last-child{border:none}
+.step-num{width:28px;height:28px;border-radius:50%;background:rgba(200,255,0,.1);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;flex-shrink:0}
+.fw-badge{display:inline-block;background:rgba(200,255,0,.08);color:var(--accent);font-size:.7rem;font-weight:600;padding:3px 8px;border-radius:4px;margin-right:4px;margin-top:4px;font-family:'JetBrains Mono',monospace}
+.benchmark-row{display:flex;align-items:center;gap:6px;font-size:.8rem;margin-top:6px}
 @media(max-width:1200px){.grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.main{grid-template-columns:1fr}}
 @media(max-width:600px){.grid{grid-template-columns:1fr}}
@@ -62,7 +76,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <body>
 
 <div class="header">
-  <div><h1>&#x1f6e1;&#xfe0f; CyberComply <span class="company">&mdash; {{ client.company_name }}</span></h1></div>
+  <div>
+    <h1>&#x1f6e1;&#xfe0f; CyberComply <span class="company">&mdash; {{ client.company_name }}</span></h1>
+    <div class="advisor-info" style="margin-top:6px">
+      <span class="cissp-badge">&#x2713; CISSP-Reviewed</span>
+      <span>{{ advisor_name }}</span>
+      {% if next_call_date %}<span>&middot; Next call: {{ next_call_date }}</span>{% endif %}
+      {% if calendly_link %}<a href="{{ calendly_link }}" target="_blank" class="book-call">&#x1f4c5; Book a Call</a>{% endif %}
+    </div>
+  </div>
   <div class="score-badge">{{ current_score }}/100 {{ current_grade }}</div>
 </div>
 
@@ -78,6 +100,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         {% else %}&#x2192; No change{% endif %}
       {% else %}Baseline assessment{% endif %}
     </div>
+    {% if industry_avg_score %}
+    <div class="benchmark-row">
+      {% if current_score >= industry_avg_score %}
+        <span style="color:var(--green)">&#x25b2;</span>
+        <span style="color:var(--green)">{{ current_score - industry_avg_score }} pts above</span>
+      {% else %}
+        <span style="color:var(--orange)">&#x25bc;</span>
+        <span style="color:var(--orange)">{{ industry_avg_score - current_score }} pts below</span>
+      {% endif %}
+      <span style="color:var(--muted)">industry avg ({{ industry_avg_score }})</span>
+    </div>
+    {% endif %}
   </div>
   <div class="stat-card" onclick="toggleAlert('darkweb')">
     <div class="label">Dark Web Alerts</div>
@@ -88,6 +122,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="label">Compliance</div>
     <div class="value" style="color:var(--accent)">{{ compliance_pct }}%</div>
     <div class="bar"><div class="bar-fill" style="width:{{ compliance_pct }}%"></div></div>
+    {% if frameworks %}
+    <div style="margin-top:8px">
+      {% for fw in frameworks[:4] %}
+        <span class="fw-badge">{{ fw if fw is string else fw.id|default(fw.name, '') }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
   <div class="stat-card" onclick="toggleAlert('threats')">
     <div class="label">Threats Monitored</div>
@@ -136,6 +177,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <p style="color:var(--muted)">Loading...</p>
   </div>
 </div>
+
+{% if monthly_narrative %}
+<div class="narrative-box">
+  <h2>&#x1f4dd; This Month's Summary</h2>
+  <div style="color:var(--text);font-size:.9rem;line-height:1.6;margin-bottom:12px">{{ monthly_narrative[:800] }}</div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="cissp-badge">&#x2713; CISSP-Reviewed</span>
+    <span style="color:var(--muted);font-size:.8rem">{{ advisor_name }}</span>
+  </div>
+</div>
+{% endif %}
 
 {% if reports %}
 <div class="report-banner">
@@ -205,6 +257,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     {% endif %}
   </div>
 
+  <div class="roadmap-panel">
+    <h2>&#x1f6a9; Path to Compliance</h2>
+    {% set priority_tasks = open_tasks[:3] %}
+    {% if priority_tasks %}
+      {% for task in priority_tasks %}
+      <div class="roadmap-step">
+        <div class="step-num">{{ loop.index }}</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sev sev-{{ task.severity|lower }}">{{ task.severity }}</span>
+            <span style="font-weight:600;font-size:.9rem">{{ task.title }}</span>
+          </div>
+          {% if task.fix %}<div style="color:var(--muted);font-size:.8rem;margin-top:4px">{{ task.fix[:120] }}</div>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="color:var(--green);font-size:.9rem">&#x2713; No open compliance tasks. You are on track.</p>
+    {% endif %}
+  </div>
+
   <div class="panel">
     <h2>&#x1f4c4; Reports &amp; Policies</h2>
     {% for report in reports[:5] %}
@@ -221,6 +294,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     {% endfor %}
     {% if not reports and not policies %}
     <p style="color:var(--muted)">Documents will appear here as they are generated.</p>
+    {% endif %}
+    {% if reports or policies %}
+    <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border)">
+      <a href="/portal/{{ client.client_id }}/download/audit-package" class="btn" style="width:100%; text-align:center; display:block;">&#x1f4e6; Download Audit Package (ZIP)</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>&#x1f4de; Monthly Review Notes</h2>
+    {% if call_notes %}
+    {% for note in call_notes|reverse %}
+    <div style="margin-bottom:12px; padding-bottom:12px; {% if not loop.last %}border-bottom:1px solid var(--border){% endif %}">
+      <div style="color:var(--accent); font-size:.8rem; font-weight:600; margin-bottom:4px">{{ note.date }}</div>
+      <div style="color:var(--muted); font-size:.9rem; white-space:pre-line">{{ note.notes }}</div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:var(--muted)">Notes from your monthly review calls will appear here.</p>
     {% endif %}
   </div>
 </div>

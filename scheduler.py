@@ -59,7 +59,7 @@ def run_falcon_check():
                 }
                 client_manager.save_alert(client["client_id"], alert_data)
 
-                if severity == "CRITICAL":
+                if severity in ("HIGH", "CRITICAL"):
                     _send_alert_email(client, alert_data)
 
             _update_agent_timestamp(client["client_id"], "FALCON", "Threat Intelligence")
@@ -490,51 +490,26 @@ def send_weekly_task_digest():
                 task_list = "\n".join(f"- [{t['severity']}] {t['title']}" for t in shown_tasks)
                 email_body = f"Weekly Security Tasks for {client.get('company_name', '')}\n\nYour top {len(shown_tasks)} tasks:\n{task_list}\n\n{overflow_count} more items in your portal."
 
-            _send_task_digest_email(client, email_body, len(shown_tasks))
-            client_manager.log_communication(client_id, "task_digest",
-                                            f"Weekly task digest ({len(shown_tasks)} tasks)",
-                                            contact_email)
-            logger.info(f"Task digest: {client_id} — {len(shown_tasks)} tasks sent")
+            sent = _send_task_digest_email(client, email_body, len(shown_tasks))
+            if sent:
+                client_manager.log_communication(client_id, "task_digest",
+                                                f"Weekly task digest ({len(shown_tasks)} tasks)",
+                                                contact_email)
+                logger.info(f"Task digest: {client_id} — {len(shown_tasks)} tasks sent")
         except Exception as e:
             logger.error(f"Task digest error for {client.get('client_id', '?')}: {e}")
 
 
-def _send_task_digest_email(client, body, task_count):
-    """Send the weekly task digest email."""
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
+def _send_task_digest_email(client, body, task_count) -> bool:
+    """Send the weekly task digest email. Returns True on success."""
+    from email_scheduler import send_email
 
     contact_email = client.get("contact_email", "")
     if not contact_email:
-        return
-
-    smtp_host = os.getenv("SMTP_HOST")
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_pass = os.getenv("SMTP_PASS")
-    from_email = os.getenv("SMTP_FROM", "security@cybercomply.io")
-
-    if not smtp_host or not smtp_user or not smtp_pass:
-        logger.info(f"SMTP not configured — task digest skipped for {contact_email}")
-        return
+        return False
 
     subject = f"Your Weekly Security Tasks ({task_count} items) | {client.get('company_name', '')}"
-
-    msg = MIMEMultipart()
-    msg["From"] = f"CyberComply Security <{from_email}>"
-    msg["To"] = contact_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
-
-    try:
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-        logger.info(f"Task digest sent to {contact_email}")
-    except Exception as e:
-        logger.error(f"Task digest email failed for {contact_email}: {e}")
+    return send_email(contact_email, subject, body)
 
 
 def generate_call_agendas():
@@ -605,46 +580,25 @@ def generate_call_agendas():
 
             operator_email = os.getenv("OPERATOR_EMAIL", os.getenv("ADMIN_EMAIL", ""))
             if operator_email:
-                _send_agenda_email(operator_email, client, agenda)
-                client_manager.log_communication(client_id, "call_agenda",
-                                                f"Monthly call agenda for {date.today().strftime('%B %Y')}",
-                                                operator_email)
+                sent = _send_agenda_email(operator_email, client, agenda)
+                if sent:
+                    client_manager.log_communication(client_id, "call_agenda",
+                                                    f"Monthly call agenda for {date.today().strftime('%B %Y')}",
+                                                    operator_email)
+            else:
+                logger.warning(f"Call agenda: {client_id} — saved but OPERATOR_EMAIL not set, nobody notified")
 
             logger.info(f"Call agenda: {client_id} — generated for {date.today().strftime('%B')}")
         except Exception as e:
             logger.error(f"Call agenda error for {client.get('client_id', '?')}: {e}")
 
 
-def _send_agenda_email(operator_email, client, agenda):
-    """Send call agenda to operator."""
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-
-    smtp_host = os.getenv("SMTP_HOST")
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_pass = os.getenv("SMTP_PASS")
-    from_email = os.getenv("SMTP_FROM", "security@cybercomply.io")
-
-    if not smtp_host or not smtp_user or not smtp_pass:
-        return
+def _send_agenda_email(operator_email, client, agenda) -> bool:
+    """Send call agenda to operator. Returns True on success."""
+    from email_scheduler import send_email
 
     subject = f"Call Prep: {client.get('company_name', '')} — {date.today().strftime('%B %Y')}"
-
-    msg = MIMEMultipart()
-    msg["From"] = f"CyberComply <{from_email}>"
-    msg["To"] = operator_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(agenda, "plain"))
-
-    try:
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
-    except Exception as e:
-        logger.error(f"Agenda email failed for {operator_email}: {e}")
+    return send_email(operator_email, subject, agenda)
 
 
 def _auto_verify_tasks(client_id: str, scan_result: dict):
@@ -721,21 +675,10 @@ def _update_agent_timestamp(client_id: str, agent_name: str, agent_label: str):
 
 def _send_alert_email(client: dict, alert: dict):
     """Send alert email to client contact for CRITICAL/HIGH alerts."""
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
+    from email_scheduler import send_email
 
     contact_email = client.get("contact_email", "")
     if not contact_email:
-        return
-
-    smtp_host = os.getenv("SMTP_HOST")
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_pass = os.getenv("SMTP_PASS")
-    from_email = os.getenv("SMTP_FROM", "security@cybercomply.io")
-
-    if not smtp_host or not smtp_user or not smtp_pass:
-        logger.info(f"SMTP not configured — alert email skipped for {contact_email}")
         return
 
     severity_icon = {"CRITICAL": "\U0001f534", "HIGH": "\U0001f7e0"}.get(alert.get("severity", ""), "\u26a0\ufe0f")
@@ -761,22 +704,9 @@ View full details in your Security Command Center:
 11 AI Agents. Always On. Always Watching.
 """
 
-    msg = MIMEMultipart()
-    msg["From"] = f"CyberComply Security <{from_email}>"
-    msg["To"] = contact_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
-
-    try:
-        smtp_port = int(os.getenv("SMTP_PORT", "587"))
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.send_message(msg)
+    if send_email(contact_email, subject, body):
         alert["emailed"] = True
         logger.info(f"Alert email sent to {contact_email}: {alert.get('title', '')}")
-    except Exception as e:
-        logger.error(f"Alert email failed for {contact_email}: {e}")
 
 
 def init_scheduler(app=None):
@@ -786,8 +716,7 @@ def init_scheduler(app=None):
     scheduler = AsyncIOScheduler()
 
     # Every 6 hours: threat intel
-    scheduler.add_job(run_falcon_check, 'interval', hours=6, id='falcon_check',
-                      next_run_time=datetime.utcnow())
+    scheduler.add_job(run_falcon_check, 'interval', hours=6, id='falcon_check')
 
     # Daily: dark web check
     scheduler.add_job(run_shadow_check, 'interval', hours=24, id='shadow_check')

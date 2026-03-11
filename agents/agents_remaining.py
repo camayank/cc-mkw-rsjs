@@ -226,7 +226,7 @@ class ComplyAgent:
 
         try:
             return call_prompt(
-                "P57_COMPLIANCE_PROGRESS_UPDATE_EMAIL",
+                "P57_COMPLIANCE_UPDATE",
                 client_name=client_name,
                 frameworks="\n".join(framework_summary) if framework_summary else "No frameworks tracked",
                 overall_progress=str(sum(s.get("percentage", 0) for s in compliance_status.values() if isinstance(s, dict)) // max(len(compliance_status), 1)),

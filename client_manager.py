@@ -282,14 +282,19 @@ def update_task_status(client_id: str, task_id: str, status: str):
     save_tasks(client_id, tasks)
 
 
-def get_alerts(client_id: str, limit: int = 10) -> list:
+def get_alerts(client_id: str, limit: int = 10, alert_type: str = None) -> list:
     alerts_dir = _client_dir(client_id) / "alerts"
     if not alerts_dir.exists():
         return []
-    files = sorted(alerts_dir.glob("*.json"), reverse=True)[:limit]
+    files = sorted(alerts_dir.glob("*.json"), reverse=True)
     alerts = []
     for f in files:
-        alerts.append(json.loads(f.read_text()))
+        alert = json.loads(f.read_text())
+        if alert_type and alert.get("type") != alert_type:
+            continue
+        alerts.append(alert)
+        if len(alerts) >= limit:
+            break
     return alerts
 
 
@@ -309,7 +314,10 @@ def get_reports(client_id: str) -> list:
     reports_dir = _client_dir(client_id) / "reports"
     if not reports_dir.exists():
         return []
-    files = sorted(reports_dir.glob("*.pdf"), reverse=True)
+    files = sorted(
+        [f for f in reports_dir.iterdir() if f.suffix in (".pdf", ".json") and f.name != "INDEX.md"],
+        reverse=True,
+    )
     return [{"filename": f.name, "path": str(f), "date": f.stem[:10] if len(f.stem) >= 10 else ""} for f in files]
 
 
@@ -319,3 +327,11 @@ def get_policies(client_id: str) -> list:
         return []
     files = sorted(policies_dir.glob("*.*"))
     return [{"filename": f.name, "path": str(f)} for f in files]
+
+
+def get_scans(client_id: str) -> list:
+    scans_dir = _client_dir(client_id) / "scans"
+    if not scans_dir.exists():
+        return []
+    files = sorted(scans_dir.glob("*.json"), reverse=True)
+    return [{"filename": f.name, "path": str(f), "date": f.stem[:10] if len(f.stem) >= 10 else ""} for f in files]

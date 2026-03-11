@@ -54,7 +54,7 @@ class ChronicleAgent:
 
         try:
             narrative = call_prompt(
-                "P46_MONTHLY_SECURITY_REPORT",
+                "P46_MONTHLY_REPORT",
                 client_name=company,
                 current_score=str(score),
                 previous_score=str(prev_score),
