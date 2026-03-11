@@ -460,7 +460,7 @@ Sort by risk score (highest first). Be specific and actionable.
 # STEP 4: GENERATE PDF REPORT
 # ═══════════════════════════════════════════════════════════
 
-def generate_pdf_report(scan_data, forge_data, output_dir, executive_summary=None):
+def generate_pdf_report(scan_data, forge_data, output_dir, executive_summary=None, roadmap_data=None):
     """Generate the branded 9-page PDF assessment report."""
     from agents.report_generator import generate_report
 
@@ -478,7 +478,7 @@ def generate_pdf_report(scan_data, forge_data, output_dir, executive_summary=Non
         "executive_summary": executive_summary,
     }
 
-    generate_report(report_data, pdf_path)
+    generate_report(report_data, pdf_path, roadmap_data=roadmap_data)
     return pdf_path
 
 
@@ -868,10 +868,25 @@ def full_delivery(domain, company_name=None, industry="cpa", no_ai=False, employ
     else:
         print(f"\n⏭️  Skipping AI narratives (--no-ai mode)")
 
+    # Build roadmap data for PDF
+    roadmap_data = None
+    try:
+        from agents.report_generator import build_roadmap
+        shadow_data = None  # Shadow scan is optional; build_roadmap handles the absent-data case
+        roadmap_data = build_roadmap(
+            scan_data["archer"].get("findings", []),
+            forge_data["profile"],
+            shadow_data,
+            scan_data["score"],
+        )
+    except Exception as e:
+        print(f"  ⚠️  Roadmap generation failed: {e}")
+
     # Step 3: PDF Report (pass AI data)
     print(f"\n📄 Generating PDF report...")
     pdf_path = generate_pdf_report(scan_data, forge_data, client_dir,
-                                    executive_summary=executive_summary)
+                                    executive_summary=executive_summary,
+                                    roadmap_data=roadmap_data)
     print(f"  ✅ Report: {pdf_path}")
 
     # Step 4: Policy documents (AI-generated via policy_engine)

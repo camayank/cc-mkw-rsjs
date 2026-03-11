@@ -151,6 +151,22 @@ def create_styles():
         'Footer', fontName='Helvetica', fontSize=7,
         textColor=MID_GRAY, alignment=TA_CENTER
     ))
+    styles.add(ParagraphStyle(
+        'TaskItem', fontName='Helvetica', fontSize=9,
+        textColor=DARK_GRAY, spaceAfter=2, leading=12, leftIndent=12
+    ))
+    styles.add(ParagraphStyle(
+        'ProjectionText', fontName='Helvetica-Bold', fontSize=12,
+        textColor=ACCENT, alignment=TA_CENTER, spaceAfter=8
+    ))
+    styles.add(ParagraphStyle(
+        'CTAText', fontName='Helvetica', fontSize=10,
+        textColor=DARK_GRAY, alignment=TA_CENTER, spaceAfter=4
+    ))
+    styles.add(ParagraphStyle(
+        'CTALink', fontName='Helvetica-Bold', fontSize=10,
+        textColor=ACCENT, alignment=TA_CENTER, spaceAfter=4
+    ))
     return styles
 
 
@@ -185,7 +201,53 @@ def header_footer(canvas, doc):
     canvas.restoreState()
 
 
-def generate_report(scan_data: dict, output_path: str = "security_report.pdf"):
+def _build_roadmap_page(story, styles, roadmap_data):
+    """Add 90-Day Security Roadmap as page 10."""
+    story.append(PageBreak())
+    story.append(Paragraph("YOUR 90-DAY SECURITY ROADMAP", styles['SectionHead']))
+    story.append(HRFlowable(width="100%", thickness=2, color=ACCENT, spaceAfter=12))
+
+    sections = [
+        ("WEEK 1-2: QUICK WINS", roadmap_data.get("week_1_2", []), RED),
+        ("WEEK 3-4: POLICY FOUNDATION", roadmap_data.get("week_3_4", []), ORANGE),
+        ("MONTH 2: TECHNICAL HARDENING", roadmap_data.get("month_2", []), YELLOW),
+        ("MONTH 3: TRAINING & TESTING", roadmap_data.get("month_3", []), GREEN),
+    ]
+
+    for section_title, items, color in sections:
+        if not items:
+            continue
+        story.append(Paragraph(section_title, styles['SubHead']))
+        for item in items:
+            task_text = (
+                f"<b>&#x2610; {item['title']}</b>"
+                f"<br/><i>{item.get('why', '')[:80]}</i>"
+                f"<br/><font color='gray'>Owner: {item.get('owner', 'TBD')} | "
+                f"Time: {item.get('time', 'TBD')}</font>"
+            )
+            story.append(Paragraph(task_text, styles['TaskItem']))
+            story.append(Spacer(1, 4))
+        story.append(Spacer(1, 8))
+
+    current = roadmap_data.get("current_score", 0)
+    projected = roadmap_data.get("projected_score", 0)
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(
+        f"<b>PROJECTED IMPROVEMENT:</b> {current}/100 &rarr; {projected}/100",
+        styles['ProjectionText']
+    ))
+    story.append(Spacer(1, 20))
+    story.append(Paragraph(
+        "Need help implementing this roadmap? Schedule a call to discuss priorities.",
+        styles['CTAText']
+    ))
+    story.append(Paragraph(
+        '<link href="https://calendly.com/security-cybercomply/30min">calendly.com/security-cybercomply/30min</link>',
+        styles['CTALink']
+    ))
+
+
+def generate_report(scan_data: dict, output_path: str = "security_report.pdf", roadmap_data: dict = None):
     """
     Generate the complete 9-page security assessment PDF.
 
@@ -607,9 +669,132 @@ def generate_report(scan_data: dict, output_path: str = "security_report.pdf"):
         styles['Footer']
     ))
 
+    # ═══ PAGE 10: 90-DAY ROADMAP (optional) ═══
+    if roadmap_data:
+        _build_roadmap_page(story, styles, roadmap_data)
+
     # BUILD PDF
     doc.build(story, onFirstPage=header_footer, onLaterPages=header_footer)
     return output_path
+
+
+# ─── 90-DAY ROADMAP ─────────────────────────────────────
+
+CATEGORY_CAPS = {
+    "email_security": 35, "ssl_tls": 15, "security_headers": 15,
+    "network_exposure": 15, "technology": 10, "dns_security": 10,
+}
+
+TASK_EFFORT = {
+    "quick": ["Reset password", "Enable MFA", "Add DMARC", "Add SPF", "Enable DKIM",
+              "Sign WISP", "Sign IRP", "Sign AI Policy"],
+    "it_task": ["Add HSTS header", "Add CSP header", "Update SSL", "Configure DNSSEC",
+                "Add CAA record", "Update WordPress", "Close open port", "header"],
+    "project": ["Deploy endpoint protection", "Implement network segmentation",
+                "Replace firewall", "Set up SIEM", "Configure DLP"],
+    "we_provide": ["WISP", "Incident Response Plan", "AI Acceptable Use Policy",
+                   "Encryption Policy", "Password Policy", "Vendor Management Policy",
+                   "Data Classification Policy", "Remote Work Policy", "Written Information Security Plan"],
+}
+
+
+def categorize_task(title: str) -> tuple:
+    """Returns (effort_category, owner)."""
+    title_lower = title.lower()
+    for category, keywords in TASK_EFFORT.items():
+        if any(kw.lower() in title_lower for kw in keywords):
+            owners = {
+                "quick": "You (Managing Partner)",
+                "it_task": "Your IT Person / Provider",
+                "project": "IT Provider (requires budget)",
+                "we_provide": "CyberComply (included in your package)",
+            }
+            return category, owners[category]
+    return "it_task", "Your IT Person / Provider"
+
+
+def _estimate_time(effort):
+    return {"quick": "2-10 minutes", "it_task": "30-60 minutes",
+            "project": "Multi-day project", "we_provide": "30 min review"}[effort]
+
+
+def build_roadmap(findings, profile, shadow_data, current_score):
+    """Build 90-day roadmap from findings, profile gaps, and breach data."""
+    week_1_2 = []
+    week_3_4 = []
+    month_2 = []
+    month_3 = []
+
+    # Breach remediation first
+    if shadow_data and shadow_data.get("total_exposed", 0) > 0:
+        breach_results = shadow_data.get("results", shadow_data.get("breaches", []))
+        for breach in breach_results[:3]:
+            email = breach.get("email", "unknown")
+            week_1_2.append({
+                "title": f"Reset password for {email}", "why": "Credentials found in a data breach",
+                "how": "Reset in your email admin panel + enable MFA", "time": "2 minutes",
+                "owner": "You (Managing Partner)", "effort": "quick", "points": 0, "category": "breach",
+            })
+    else:
+        week_1_2.append({
+            "title": "Run dark web credential scan", "why": "Check if employee passwords are exposed",
+            "how": "Provide your employee email list — we'll check for free", "time": "5 minutes",
+            "owner": "CyberComply", "effort": "we_provide", "points": 0, "category": "breach",
+        })
+
+    for f in findings:
+        effort, owner = categorize_task(f.get("title", ""))
+        item = {
+            "title": f.get("title", "Unknown"), "why": f.get("description", "")[:100],
+            "severity": f.get("severity", "MEDIUM"), "time": _estimate_time(effort),
+            "owner": owner, "effort": effort, "points": abs(f.get("points", 3)),
+            "category": f.get("category", "general"),
+        }
+        if effort == "quick" and f.get("severity") in ("CRITICAL", "HIGH"):
+            week_1_2.append(item)
+        elif effort == "quick":
+            month_2.append(item)
+        elif effort == "it_task":
+            month_2.append(item)
+        elif effort == "project":
+            month_3.append(item)
+
+    frameworks = profile.get("applicable_frameworks", [])
+    for gap in profile.get("gaps", []):
+        week_3_4.append({
+            "title": f"Adopt {gap}",
+            "why": f"Required by {', '.join(frameworks[:2])}" if frameworks else "Best practice",
+            "how": "We provide this — just review and sign", "time": "30 min review",
+            "owner": "CyberComply + You", "effort": "we_provide", "points": 0, "category": "compliance",
+        })
+
+    month_3.append({
+        "title": "Complete employee security awareness training",
+        "why": "Required by most frameworks + reduces phishing risk by 70%",
+        "time": "1 hour (all employees)", "owner": "CyberComply conducts, you schedule",
+        "effort": "we_provide", "points": 0, "category": "training",
+    })
+
+    # Score projection with category caps
+    category_gains = {}
+    all_items = week_1_2 + week_3_4 + month_2 + month_3
+    for item in all_items:
+        cat = item.get("category", "general")
+        pts = item.get("points", 0)
+        if cat not in category_gains:
+            category_gains[cat] = 0
+        category_gains[cat] += pts
+
+    total_gain = sum(min(gained, CATEGORY_CAPS.get(cat, 15)) for cat, gained in category_gains.items())
+    projected = min(current_score + total_gain, 100)
+    projected = (projected // 5) * 5
+
+    return {
+        "week_1_2": week_1_2[:5], "week_3_4": week_3_4[:4],
+        "month_2": month_2[:5], "month_3": month_3[:4],
+        "current_score": current_score, "projected_score": projected,
+        "total_items": len(all_items),
+    }
 
 
 # ─── MAIN: GENERATE REPORT FROM LIVE SCAN ────────────────
