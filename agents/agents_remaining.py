@@ -167,6 +167,7 @@ class ComplyAgent:
             "monitoring": ["monitoring", "logging", "audit"],
             "vendor_management": ["vendor", "third party", "service provider"],
             "backup_recovery": ["backup", "recovery", "continuity", "contingency"],
+            "ai_governance": ["ai", "ai tool", "ai risk", "ai vendor", "automated", "shadow ai"],
         }
         
         mapping = {}

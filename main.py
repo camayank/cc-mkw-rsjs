@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from typing import Optional
 import json
 import os
+import time
 import asyncio
 import zipfile
 import tempfile
@@ -128,6 +129,9 @@ class PhishingCampaignRequest(BaseModel):
     template_key: str
     employee_emails: list
     campaign_name: Optional[str] = None
+
+class EmailBreachRequest(BaseModel):
+    emails: list  # List of email addresses to check
 
 class IncidentRequest(BaseModel):
     incident_type: str
@@ -292,6 +296,55 @@ async def create_phishing_campaign(request: PhishingCampaignRequest):
         request.template_key,
         request.employee_emails
     )
+
+# SHADOW — Standalone email breach check (no domain required)
+@app.post("/api/shadow/email-check")
+async def check_email_breaches(request: EmailBreachRequest):
+    """
+    Standalone dark web breach check — works without a domain/website.
+    Accepts a list of email addresses and checks each against HIBP.
+    Perfect for clients without websites (consultants, sole practitioners).
+    """
+    if not request.emails:
+        raise HTTPException(status_code=400, detail="At least one email address is required")
+    if len(request.emails) > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 emails per request")
+
+    results = []
+    total_breaches = 0
+    severity_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+
+    for email in request.emails:
+        email = email.strip().lower()
+        breaches = shadow.check_email_breaches(email)
+        time.sleep(shadow.rate_limit_delay)
+
+        email_result = {"email": email, "breaches_found": len(breaches), "breaches": []}
+        for b in breaches:
+            sev, reason = shadow._assess_severity(email, b)
+            severity_counts[sev] += 1
+            total_breaches += 1
+            email_result["breaches"].append({
+                "name": b.get("Name", "Unknown"),
+                "date": b.get("BreachDate", "Unknown"),
+                "data_exposed": b.get("DataClasses", []),
+                "severity": sev,
+                "severity_reason": reason,
+            })
+        results.append(email_result)
+
+    exposed_emails = [r for r in results if r["breaches_found"] > 0]
+
+    return {
+        "scan_date": datetime.utcnow().isoformat() + "Z",
+        "total_emails_checked": len(request.emails),
+        "total_exposed": len(exposed_emails),
+        "total_breaches": total_breaches,
+        "severity_summary": severity_counts,
+        "exposure_rate": f"{len(exposed_emails)/max(len(request.emails),1)*100:.0f}%",
+        "results": results,
+        "note": "HIBP-powered dark web intelligence. No website required.",
+    }
 
 # DISPATCH
 @app.get("/api/dispatch/playbooks")

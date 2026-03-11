@@ -43,6 +43,8 @@ FRAMEWORKS = {
             {"id": "4557-18", "name": "Data Disposal Procedures", "category": "Data Protection", "required": True},
             {"id": "4557-19", "name": "Monitoring and Logging", "category": "Monitoring", "required": True},
             {"id": "4557-20", "name": "Annual WISP Review", "category": "Governance", "required": True},
+            {"id": "4557-21", "name": "AI Acceptable Use Policy", "category": "Governance", "required": False},
+            {"id": "4557-22", "name": "AI Tool Data Input Controls (FTI prohibition)", "category": "Data Protection", "required": False},
         ]
     },
     "ftc_safeguards": {
@@ -64,6 +66,8 @@ FRAMEWORKS = {
             {"id": "FTC-12", "name": "Security Awareness Training", "category": "Training", "required": True},
             {"id": "FTC-13", "name": "Vendor Oversight", "category": "Third Party", "required": True},
             {"id": "FTC-14", "name": "Board Reporting", "category": "Governance", "required": True},
+            {"id": "FTC-15", "name": "AI and Automated Decision-Making Risk Controls", "category": "Risk Management", "required": False},
+            {"id": "FTC-16", "name": "AI Tool Data Protection (Customer Info Prohibition)", "category": "Data Protection", "required": False},
         ]
     },
     "nist_csf_2": {
@@ -97,6 +101,10 @@ FRAMEWORKS = {
             # RECOVER
             {"id": "RC.RP-01", "name": "Recovery Planning", "category": "Recover", "required": False},
             {"id": "RC.CO-01", "name": "Recovery Communication", "category": "Recover", "required": False},
+            # AI GOVERNANCE (maps to NIST AI RMF alignment)
+            {"id": "GV.AI-01", "name": "AI Risk Management Policy", "category": "Govern", "required": False},
+            {"id": "PR.AI-01", "name": "AI Tool Inventory and Data Flow Controls", "category": "Protect", "required": False},
+            {"id": "DE.AI-01", "name": "AI Usage Monitoring and Shadow AI Detection", "category": "Detect", "required": False},
         ]
     },
     "soc2": {
@@ -124,6 +132,8 @@ FRAMEWORKS = {
             {"id": "CC8.1", "name": "Change Management", "category": "Common Criteria", "required": True},
             {"id": "CC9.1", "name": "Risk Mitigation", "category": "Common Criteria", "required": True},
             {"id": "CC9.2", "name": "Vendor Risk Management", "category": "Common Criteria", "required": True},
+            {"id": "CC9.3", "name": "AI Vendor and Model Risk Assessment", "category": "Common Criteria", "required": False},
+            {"id": "CC2.2", "name": "AI Disclosure and Transparency Controls", "category": "Common Criteria", "required": False},
         ]
     },
     "hipaa": {
@@ -148,6 +158,8 @@ FRAMEWORKS = {
             {"id": "164.312(c)", "name": "Integrity Controls", "category": "Technical", "required": True},
             {"id": "164.312(d)", "name": "Person or Entity Authentication", "category": "Technical", "required": True},
             {"id": "164.312(e)", "name": "Transmission Security", "category": "Technical", "required": True},
+            {"id": "164.308(a)(9)", "name": "AI and Automated Processing of PHI Controls", "category": "Administrative", "required": False},
+            {"id": "164.312(f)", "name": "AI Tool Access Restrictions for PHI Systems", "category": "Technical", "required": False},
         ]
     }
 }
