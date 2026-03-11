@@ -180,15 +180,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="panel">
     <h2>&#x1f4cb; Remediation Tasks ({{ open_tasks|length }} open)</h2>
     {% for task in open_tasks[:8] %}
-    <div class="task-row">
-      <div>
+    <div class="task-row" id="task-{{ task.id }}">
+      <div style="flex:1">
         <span class="sev sev-{{ task.severity|lower }}">{{ task.severity }}</span>
         <span style="margin-left:8px;font-size:.9rem">{{ task.title }}</span>
+        {% if task.fix %}<div style="color:var(--muted);font-size:.8rem;margin-left:60px">Fix: {{ task.fix[:80] }}</div>{% endif %}
       </div>
-      <button class="status-btn"
-              hx-post="/portal/{{ client.client_id }}/task/{{ task.id }}/status"
-              hx-vals='{"status":"in_progress"}' hx-swap="outerHTML"
-              hx-confirm="Mark as in progress?">Start</button>
+      <button hx-post="/portal/{{ client.client_id }}/task/{{ task.id }}/resolve"
+              hx-target="#task-{{ task.id }}"
+              hx-swap="outerHTML"
+              class="btn btn-sm btn-success"
+              style="margin-left:8px;padding:4px 12px;background:var(--green);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:.8rem">
+        &#x2713; Done
+      </button>
     </div>
     {% endfor %}
     {% if resolved_tasks %}

@@ -593,6 +593,17 @@ def _generate_onboard_tasks(scan_data, forge_data):
         )
 
 
+def _build_tech_stack(profile):
+    """Extract tech stack from questionnaire answers for threat intel filtering."""
+    tech_stack = []
+    q6 = profile.get("q6", profile.get("raw_answers", {}).get("q6", ""))
+    if "Microsoft" in str(q6) or "365" in str(q6):
+        tech_stack.extend(["Microsoft Exchange", "Microsoft 365", "Outlook"])
+    elif "Google" in str(q6):
+        tech_stack.extend(["Google Workspace", "Gmail"])
+    return tech_stack
+
+
 # ═══════════════════════════════════════════════════════════
 # BATCH SCAN — Run against multiple CA4CPA clients at once
 # ═══════════════════════════════════════════════════════════

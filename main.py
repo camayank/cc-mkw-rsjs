@@ -1335,6 +1335,26 @@ async def update_task(client_id: str, task_id: str, request: Request):
     return {"status": "ok"}
 
 
+@app.post("/portal/{client_id}/task/{task_id}/resolve")
+async def resolve_portal_task(client_id: str, task_id: str, request: Request):
+    """One-click task resolution from portal or email link."""
+    token = request.query_params.get("token")
+    jwt_cookie = request.cookies.get("portal_token")
+
+    authenticated = False
+    if token:
+        authenticated = client_manager.verify_magic_token(client_id, token)
+    elif jwt_cookie:
+        jwt_client = client_manager.verify_jwt(jwt_cookie)
+        authenticated = (jwt_client == client_id)
+
+    if not authenticated:
+        raise HTTPException(status_code=403, detail="Authentication required. Use magic link or log in to portal.")
+
+    client_manager.update_task_status(client_id, task_id, "resolved")
+    return HTMLResponse('<span class="badge bg-success">Resolved &#x2713;</span>')
+
+
 @app.get("/portal/{client_id}/download/{doc_type}/{filename}")
 async def portal_download(client_id: str, doc_type: str, filename: str, request: Request):
     if not check_portal_auth(request, client_id):
@@ -1614,6 +1634,33 @@ async def trigger_client_scan(client_id: str, request: Request):
     from scheduler import run_weekly_scan
     asyncio.create_task(asyncio.to_thread(run_weekly_scan))
     return {"status": "started"}
+
+
+@app.post("/api/operator/call-notes/{client_id}")
+async def save_call_notes_endpoint(client_id: str, request: Request):
+    """Save notes after a monthly call."""
+    body = await request.json()
+    notes = body.get("notes", "")
+    if not notes:
+        raise HTTPException(status_code=400, detail="Notes required")
+    client_manager.save_call_notes(client_id, notes)
+    return {"status": "saved", "client_id": client_id}
+
+
+@app.put("/api/operator/client/{client_id}")
+async def update_client_endpoint(client_id: str, request: Request):
+    """Update client profile fields."""
+    body = await request.json()
+    allowed_fields = ["tier", "contact_name", "contact_email", "contact_title",
+                      "industry", "tech_stack", "employee_emails", "task_email_frequency"]
+    updated = []
+    for field in allowed_fields:
+        if field in body:
+            client_manager.update_field(client_id, field, body[field])
+            updated.append(field)
+    if not updated:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+    return {"status": "updated", "client_id": client_id, "updated_fields": updated}
 
 
 @app.post("/api/operator/phishing/launch/{client_id}")
