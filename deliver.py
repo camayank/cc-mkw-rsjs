@@ -517,6 +517,35 @@ UPSELLS:
     return proposal
 
 
+def _generate_onboard_tasks(scan_data, forge_data):
+    """Generate remediation tasks from scan findings + compliance gaps at onboarding."""
+    from scheduler import _generate_tasks_from_findings
+    import client_manager
+
+    domain = scan_data.get("domain", "")
+    client_id = domain.replace(".", "_")
+
+    client = client_manager.get_client(client_id)
+    if not client:
+        return
+
+    findings = scan_data.get("archer", {}).get("findings", [])
+    if findings:
+        _generate_tasks_from_findings(client_id, findings)
+
+    gaps = forge_data.get("profile", {}).get("gaps", [])
+    frameworks = forge_data.get("profile", {}).get("applicable_frameworks", [])
+    for gap in gaps:
+        client_manager.add_task(
+            client_id=client_id,
+            title=gap,
+            severity="HIGH",
+            category="Compliance",
+            description=f"Required by {', '.join(frameworks[:2])}",
+            fix=f"CyberComply provides this — review and adopt the {gap} document",
+        )
+
+
 # ═══════════════════════════════════════════════════════════
 # BATCH SCAN — Run against multiple CA4CPA clients at once
 # ═══════════════════════════════════════════════════════════
@@ -834,6 +863,9 @@ def full_delivery(domain, company_name=None, industry="cpa", no_ai=False, employ
                 "compliance": {k: v for k, v in forge_data["compliance"].items()},
             },
         }, f, indent=2, default=str)
+
+    # Step 7: Generate remediation tasks from findings
+    _generate_onboard_tasks(scan_data, forge_data)
 
     # Summary
     ai_line = ""
