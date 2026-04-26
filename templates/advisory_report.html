@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ client.company_name }} — Security &amp; Compliance Review</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --paper:#0b0c0f; --surface:#15171c; --surface-2:#1b1e25; --surface-3:#22262e;
+  --border:rgba(255,255,255,.06); --border-strong:rgba(255,255,255,.1);
+  --txt:#f4f4f5; --txt-2:#d4d4d8; --muted:#9ca3af; --dim:#6b7280;
+  --lime:#c8ff00; --lime-soft:rgba(200,255,0,.08);
+  --emerald:#34d399; --amber:#fbbf24; --orange:#fb923c; --red:#ef4444;
+  --serif:'Syne',sans-serif; --body:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--body);background:var(--paper);color:var(--txt);font-size:14.5px;line-height:1.65}
+
+.page{max-width:980px;margin:0 auto;padding:48px 32px 80px}
+.cover{
+  background:linear-gradient(180deg,var(--surface-2),var(--surface));
+  border:1px solid var(--border-strong);border-radius:16px;padding:48px 44px;
+  margin-bottom:32px;
+}
+.eyebrow{font-family:var(--mono);font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:2.4px;margin-bottom:12px}
+.title{font-family:var(--serif);font-size:34px;font-weight:800;letter-spacing:-.7px;line-height:1.15;margin-bottom:8px}
+.subtitle{font-size:15px;color:var(--muted);margin-bottom:24px}
+.cover-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;font-size:12px}
+.cover-meta-cell{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.cover-meta-key{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:1.4px;color:var(--dim);margin-bottom:4px}
+.cover-meta-val{font-size:13.5px;color:var(--txt-2);font-weight:600;overflow-wrap:anywhere}
+
+.toc{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:18px 22px;margin-bottom:32px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 24px;
+}
+.toc a{color:var(--muted);text-decoration:none;font-size:12.5px;display:flex;align-items:baseline;gap:6px}
+.toc a:hover{color:var(--lime)}
+.toc-num{font-family:var(--mono);font-size:10.5px;color:var(--dim);min-width:22px}
+
+section{margin-bottom:36px;scroll-margin-top:24px}
+.s-eyebrow{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.s-num{background:var(--lime-soft);color:var(--lime);padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:1.4px;font-size:10px}
+.s-title{font-family:var(--serif);font-size:22px;font-weight:700;letter-spacing:-.4px;margin-bottom:14px}
+.s-intro{font-size:14px;color:var(--muted);margin-bottom:14px;line-height:1.7}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:14px}
+
+/* Executive summary */
+.exec-grid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center}
+.exec-score{
+  width:128px;height:128px;border-radius:50%;border:3px solid var(--lime);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;
+}
+.exec-score.amber{border-color:var(--amber);color:var(--amber)}
+.exec-score.orange{border-color:var(--orange);color:var(--orange)}
+.exec-score.red{border-color:var(--red);color:var(--red)}
+.exec-score-num{font-family:var(--serif);font-size:42px;font-weight:800;color:var(--lime);line-height:1}
+.exec-score.amber .exec-score-num{color:var(--amber)}
+.exec-score.orange .exec-score-num{color:var(--orange)}
+.exec-score.red .exec-score-num{color:var(--red)}
+.exec-score-of{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:6px}
+.exec-headline{font-family:var(--serif);font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px}
+.exec-summary{font-size:14px;color:var(--txt-2);line-height:1.7}
+.exec-recommendation{margin-top:14px;padding:14px 16px;background:var(--lime-soft);border:1px solid rgba(200,255,0,.16);border-radius:10px;font-size:13.5px;color:var(--txt-2);line-height:1.65}
+.exec-recommendation-label{font-family:var(--mono);font-size:10px;color:var(--lime);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:6px;font-weight:700}
+
+/* Bullets */
+.bullets{list-style:none;display:flex;flex-direction:column;gap:8px}
+.bullets li{display:grid;grid-template-columns:18px 1fr;gap:10px;font-size:13.5px;color:var(--txt-2);line-height:1.65}
+.bullets li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--lime);margin-top:9px}
+
+/* Severity counts row */
+.sev-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 14px}
+.sev-cell{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center}
+.sev-num{font-family:var(--serif);font-size:24px;font-weight:800;line-height:1}
+.sev-label{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:1.4px;color:var(--dim);margin-top:6px}
+.sev-CRITICAL .sev-num{color:var(--red)}
+.sev-HIGH .sev-num{color:var(--orange)}
+.sev-MEDIUM .sev-num{color:var(--amber)}
+.sev-LOW .sev-num{color:var(--emerald)}
+
+/* Technical findings table */
+.findings-list{display:flex;flex-direction:column}
+.finding{padding:14px 0;border-bottom:1px solid var(--border)}
+.finding:last-child{border-bottom:none}
+.finding-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sev-pill{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:4px}
+.sev-pill.CRITICAL{background:rgba(239,68,68,.12);color:var(--red)}
+.sev-pill.HIGH{background:rgba(251,146,60,.12);color:var(--orange)}
+.sev-pill.MEDIUM{background:rgba(251,191,36,.12);color:var(--amber)}
+.sev-pill.LOW{background:rgba(52,211,153,.12);color:var(--emerald)}
+.finding-title{font-weight:600;font-size:14px}
+.finding-desc{font-size:13px;color:var(--muted);margin-top:4px}
+.finding-fix{font-size:13px;color:var(--txt-2);margin-top:4px;padding-left:12px;border-left:2px solid var(--lime);padding-top:2px;padding-bottom:2px}
+
+/* Compliance table */
+.cf-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);align-items:center}
+.cf-row:last-child{border-bottom:none}
+.cf-name{font-weight:600}
+.cf-impl{font-size:12.5px;color:var(--muted);margin-top:4px}
+.cf-pct{font-family:var(--mono);font-weight:700;font-size:13px}
+.cf-bar{width:120px;height:6px;background:var(--surface-3);border-radius:3px;overflow:hidden}
+.cf-bar-fill{height:100%;background:linear-gradient(90deg,var(--lime),var(--emerald));border-radius:3px}
+
+/* Roadmap */
+.road{display:flex;flex-direction:column;gap:10px}
+.road-row{display:grid;grid-template-columns:auto 110px 1fr auto;gap:14px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;align-items:center}
+.road-window{font-family:var(--mono);font-size:11px;color:var(--lime);font-weight:600;letter-spacing:.4px}
+.road-text{min-width:0}
+.road-title{font-weight:600;font-size:13.5px}
+.road-fix{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.55}
+.road-meta{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-align:right}
+
+/* Evidence */
+.evi-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.evi-row:last-child{border-bottom:none}
+.evi-type{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--lime);background:var(--lime-soft);padding:2px 8px;border-radius:4px}
+.evi-name{color:var(--txt-2);overflow-wrap:anywhere}
+.evi-date{color:var(--dim);font-family:var(--mono);font-size:11.5px}
+
+/* Advisor recs */
+.advisor-card{background:linear-gradient(180deg,rgba(200,255,0,.06),var(--surface));border:1px solid rgba(200,255,0,.18);border-radius:12px;padding:22px 24px}
+.advisor-meta{font-family:var(--mono);font-size:10.5px;color:var(--lime);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:8px}
+.advisor-primary{font-size:15px;color:var(--txt);font-weight:600;line-height:1.6;margin-bottom:10px}
+.advisor-supporting{font-size:13.5px;color:var(--txt-2);line-height:1.7}
+.advisor-pending{font-style:italic;color:var(--muted)}
+
+/* Appendix */
+.appendix-box{background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:10px;padding:16px 18px;font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.7;overflow-x:auto}
+
+/* Disclaimers */
+.disclaimers{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:22px 24px}
+.disclaimer{padding:12px 0;border-bottom:1px solid var(--border)}
+.disclaimer:last-child{border-bottom:none}
+.disclaimer-title{font-weight:700;font-size:13px;color:var(--txt);margin-bottom:6px;font-family:var(--serif);letter-spacing:-.2px}
+.disclaimer-body{font-size:12.5px;color:var(--muted);line-height:1.7}
+
+footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);font-size:11.5px;color:var(--dim);text-align:center}
+
+/* Print */
+@media print{
+  body{background:#fff;color:#111;font-size:11pt}
+  .page{padding:0 24pt}
+  .cover,.card,.advisor-card,.disclaimers,.appendix-box,.road-row,.sev-cell{
+    background:#f9fafb;border-color:#d1d5db;color:#111
+  }
+  .cover-meta-val,.exec-summary,.advisor-supporting,.bullets li,
+  .finding-title,.finding-desc,.finding-fix,.cf-name,.cf-impl,
+  .road-title,.road-fix,.evi-name,.disclaimer-body{color:#111 !important}
+  .muted,.cover-meta-key,.s-eyebrow,.advisor-meta,.disclaimer-title,
+  .road-window,.road-meta,.evi-type,.evi-date,.appendix-box{color:#374151 !important}
+  .lime,.exec-recommendation,.advisor-card{color:#1f2937}
+  a{color:#0f766e !important;text-decoration:underline}
+}
+/* Anti-clip universals */
+*{word-wrap:break-word}
+.cover-meta-val,.finding-title,.finding-desc,.road-title,.road-fix,
+.cf-name,.cf-impl,.evi-name,.advisor-supporting,.exec-summary,
+.disclaimer-body,.appendix-box{overflow-wrap:anywhere;word-break:break-word}
+.exec-score-num,.sev-num,.cf-pct{font-variant-numeric:tabular-nums;line-height:1}
+.title{overflow-wrap:break-word;word-break:break-word}
+
+/* Wide desktop */
+@media (min-width:1280px){
+  .page{max-width:1080px;padding:56px 40px 96px}
+}
+
+/* Tablet */
+@media (max-width:900px){
+  .page{padding:40px 24px 80px}
+  .cover{padding:36px 28px}
+  .title{font-size:30px}
+  .toc{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px}
+}
+
+@media (max-width:760px){
+  .exec-grid{grid-template-columns:1fr}
+  .exec-score{margin:0 auto}
+  .road-row{grid-template-columns:1fr;gap:6px}
+  .cf-row{grid-template-columns:1fr}
+  .toc{grid-template-columns:1fr}
+}
+
+/* Phone (430 / 375) */
+@media (max-width:600px){
+  body{font-size:13.5px}
+  .page{padding:24px 14px 60px}
+  .cover{padding:28px 18px;border-radius:12px}
+  .title{font-size:24px;letter-spacing:-.4px}
+  .subtitle{font-size:13.5px}
+  .cover-meta{grid-template-columns:1fr 1fr;gap:8px}
+  .cover-meta-cell{padding:10px 12px}
+  .cover-meta-val{font-size:12.5px}
+  .toc{padding:14px 16px}
+  .toc a{font-size:12px}
+  .s-title{font-size:18px}
+  .s-intro{font-size:13px}
+  .card{padding:18px 16px}
+  .exec-score{width:104px;height:104px}
+  .exec-score-num{font-size:34px}
+  .exec-headline{font-size:17px}
+  .exec-summary{font-size:13px}
+  .exec-recommendation{padding:12px 14px;font-size:13px}
+
+  .sev-row{grid-template-columns:1fr 1fr;gap:8px}
+  .sev-cell{padding:10px}
+  .sev-num{font-size:22px}
+  .sev-label{font-size:9px}
+
+  .finding{padding:12px 0}
+  .finding-title{font-size:13.5px}
+  .finding-desc,.finding-fix{font-size:12.5px}
+  .finding-fix{padding-left:10px}
+
+  .cf-row{padding:12px 0;gap:6px}
+  .cf-name{font-size:13.5px}
+  .cf-impl{font-size:12px}
+  .cf-bar{width:100%;max-width:none}
+  .cf-pct{font-size:13px}
+
+  .road-row{padding:12px;gap:8px}
+  .road-window{font-size:10px}
+  .road-title{font-size:13px}
+  .road-fix{font-size:12px}
+  .road-meta{font-size:10px;text-align:left;margin-top:2px}
+
+  .evi-row{grid-template-columns:auto 1fr;gap:6px 10px;padding:8px 0}
+  .evi-date{grid-column:1/-1;text-align:left;color:var(--dim)}
+
+  .advisor-card{padding:18px 16px}
+  .advisor-primary{font-size:14px}
+  .advisor-supporting{font-size:13px}
+
+  .disclaimers{padding:18px 16px}
+  .disclaimer-title{font-size:13px}
+  .disclaimer-body{font-size:12px}
+
+  .appendix-box{font-size:11px;padding:14px;line-height:1.6}
+}
+
+/* Smallest phones */
+@media (max-width:380px){
+  .page{padding:20px 12px 56px}
+  .cover{padding:24px 16px}
+  .title{font-size:21px}
+  .subtitle{font-size:13px}
+  .cover-meta{grid-template-columns:1fr}
+  .cover-meta-val{font-size:12px}
+  .s-title{font-size:17px}
+  .sev-row{grid-template-columns:1fr 1fr}
+  .exec-score{width:92px;height:92px}
+  .exec-score-num{font-size:28px}
+  .toc-num{min-width:18px}
+}
+
+@media (max-width:340px){
+  .page{padding:16px 10px 48px}
+  .title{font-size:19px}
+  .sev-row{grid-template-columns:1fr;gap:6px}
+  .road-row{padding:10px}
+  .road-title{font-size:12.5px}
+  .cover-meta-cell{padding:9px 10px}
+  .toc a{font-size:11.5px}
+  .exec-recommendation-label{font-size:9px}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ─── Cover ─── -->
+  <div class="cover">
+    <div class="eyebrow">Security &amp; Compliance Review</div>
+    <h1 class="title">{{ client.company_name }}</h1>
+    <p class="subtitle">Advisor-reviewed assessment of your external security posture, compliance program, and remediation progress.</p>
+
+    <div class="cover-meta">
+      <div class="cover-meta-cell">
+        <div class="cover-meta-key">Domain</div>
+        <div class="cover-meta-val">{{ client.domain }}</div>
+      </div>
+      <div class="cover-meta-cell">
+        <div class="cover-meta-key">Industry</div>
+        <div class="cover-meta-val">{{ client.industry or '—' }}</div>
+      </div>
+      <div class="cover-meta-cell">
+        <div class="cover-meta-key">Report date</div>
+        <div class="cover-meta-val">{{ report_date }}</div>
+      </div>
+      <div class="cover-meta-cell">
+        <div class="cover-meta-key">Score</div>
+        <div class="cover-meta-val">{{ executive_summary.score }} / 100 — Grade {{ executive_summary.grade }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <nav class="toc" aria-label="Contents">
+    <a href="#exec"><span class="toc-num">01</span> Executive summary</a>
+    <a href="#impact"><span class="toc-num">02</span> Business risk impact</a>
+    <a href="#findings"><span class="toc-num">03</span> Technical findings</a>
+    <a href="#compliance"><span class="toc-num">04</span> Compliance implications</a>
+    <a href="#roadmap"><span class="toc-num">05</span> Priority remediation roadmap</a>
+    <a href="#evidence"><span class="toc-num">06</span> Evidence collected</a>
+    <a href="#advisor"><span class="toc-num">07</span> Advisor recommendations</a>
+    <a href="#changed"><span class="toc-num">08</span> What changed since last report</a>
+    <a href="#client"><span class="toc-num">09</span> What you need to do</a>
+    <a href="#provider"><span class="toc-num">10</span> What CyberComply handled</a>
+    <a href="#appendix"><span class="toc-num">11</span> Appendix — raw scan details</a>
+    <a href="#disclaimers"><span class="toc-num">12</span> Disclaimers</a>
+  </nav>
+
+  <!-- ─── 01 Executive summary ─── -->
+  <section id="exec">
+    <div class="s-eyebrow"><span class="s-num">01</span> Executive summary</div>
+    <h2 class="s-title">{{ executive_summary.headline }}</h2>
+    <div class="card">
+      {% set _cls = 'red' if executive_summary.score < 40 else ('orange' if executive_summary.score < 60 else ('amber' if executive_summary.score < 80 else '')) %}
+      <div class="exec-grid">
+        <div class="exec-score {{ _cls }}">
+          <div class="exec-score-num">{{ executive_summary.score if executive_summary.score else '—' }}</div>
+          <div class="exec-score-of">/ 100 · {{ executive_summary.grade }}</div>
+        </div>
+        <div>
+          <div class="exec-headline">{{ executive_summary.risk_label }}</div>
+          <div class="exec-summary">{{ executive_summary.summary }}</div>
+        </div>
+      </div>
+      {% if executive_summary.advisor_recommendation %}
+      <div class="exec-recommendation">
+        <div class="exec-recommendation-label">Advisor recommendation</div>
+        <div>{{ executive_summary.advisor_recommendation }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ─── 02 Business risk impact ─── -->
+  <section id="impact">
+    <div class="s-eyebrow"><span class="s-num">02</span> Business risk impact</div>
+    <h2 class="s-title">{{ business_risk_impact.headline }}</h2>
+    <div class="card">
+      <p class="s-intro" style="margin:0 0 12px">{{ business_risk_impact.intro }}</p>
+      <ul class="bullets">
+        {% for b in business_risk_impact['bullets'] %}<li>{{ b }}</li>{% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── 03 Technical findings ─── -->
+  <section id="findings">
+    <div class="s-eyebrow"><span class="s-num">03</span> Technical findings</div>
+    <h2 class="s-title">External assessment results</h2>
+
+    <div class="sev-row">
+      {% for sev in ['CRITICAL','HIGH','MEDIUM','LOW'] %}
+      <div class="sev-cell sev-{{ sev }}">
+        <div class="sev-num">{{ technical_findings['counts'].get(sev, 0) }}</div>
+        <div class="sev-label">{{ sev|capitalize }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if technical_findings['findings'] %}
+    <div class="card">
+      <div class="findings-list">
+        {% for f in technical_findings['findings'][:20] %}
+        <div class="finding">
+          <div class="finding-head">
+            <span class="sev-pill {{ (f.severity or 'MEDIUM')|upper }}">{{ (f.severity or 'MEDIUM')|upper }}</span>
+            <span class="finding-title">{{ f.title }}</span>
+          </div>
+          {% if f.description %}<div class="finding-desc">{{ f.description }}</div>{% endif %}
+          {% if f.fix %}<div class="finding-fix"><strong>Recommended fix:</strong> {{ f.fix }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% if technical_findings['findings']|length > 20 %}
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">+ {{ technical_findings['findings']|length - 20 }} additional finding(s) in the appendix.</div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="s-intro" style="margin:0">No technical findings to report from this cycle's external assessment.</div>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ─── 04 Compliance implications ─── -->
+  <section id="compliance">
+    <div class="s-eyebrow"><span class="s-num">04</span> Compliance implications</div>
+    <h2 class="s-title">Framework readiness — implication for your audit posture</h2>
+    <div class="card">
+      {% if compliance_implications['rows'] %}
+      {% for row in compliance_implications['rows'] %}
+      <div class="cf-row">
+        <div>
+          <div class="cf-name">{{ row.name }}</div>
+          <div class="cf-impl">{{ row.implication }}</div>
+        </div>
+        <div class="cf-bar"><div class="cf-bar-fill" style="width:{{ row.pct }}%"></div></div>
+        <div class="cf-pct">{{ row.pct }}%</div>
+      </div>
+      {% endfor %}
+      <div style="margin-top:14px;font-size:12.5px;color:var(--dim);font-family:var(--mono)">Average across frameworks: {{ compliance_implications.overall_pct }}%</div>
+      {% else %}
+      <div class="s-intro" style="margin:0">No frameworks selected yet. Your advisor will scope frameworks during the next onboarding step.</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ─── 05 Priority remediation roadmap ─── -->
+  <section id="roadmap">
+    <div class="s-eyebrow"><span class="s-num">05</span> Priority remediation roadmap</div>
+    <h2 class="s-title">What to close, in what order</h2>
+    <div class="card">
+      {% if remediation_roadmap['items'] %}
+      <div class="road">
+        {% for item in remediation_roadmap['items'] %}
+        <div class="road-row">
+          <span class="sev-pill {{ item.severity }}">{{ item.severity }}</span>
+          <div class="road-window">{{ item.window }}</div>
+          <div class="road-text">
+            <div class="road-title">{{ item.title }}</div>
+            {% if item.fix %}<div class="road-fix">{{ item.fix }}</div>{% endif %}
+          </div>
+          <div class="road-meta">
+            Owner: {{ item.owner }}{% if item.due_date %}<br>Due: {{ item.due_date }}{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if remediation_roadmap.more_count %}
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">+ {{ remediation_roadmap.more_count }} additional item(s) tracked in your portal.</div>
+      {% endif %}
+      {% else %}
+      <div class="s-intro" style="margin:0">No open remediation items at this time. Your advisor will surface new items as they appear.</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ─── 06 Evidence collected ─── -->
+  <section id="evidence">
+    <div class="s-eyebrow"><span class="s-num">06</span> Evidence collected</div>
+    <h2 class="s-title">Audit-ready artifacts on file</h2>
+    <div class="card">
+      <p class="s-intro" style="margin:0 0 10px">{{ evidence_collected.summary }}</p>
+      {% if evidence_collected['items'] %}
+      {% for it in evidence_collected['items'] %}
+      <div class="evi-row">
+        <span class="evi-type">{{ it.type }}</span>
+        <span class="evi-name">{{ it.label }}</span>
+        <span class="evi-date">{{ it.date or '—' }}</span>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="s-intro" style="margin:0">Evidence will be collected during the next review cycle.</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ─── 07 Advisor recommendations ─── -->
+  <section id="advisor">
+    <div class="s-eyebrow"><span class="s-num">07</span> Advisor recommendations</div>
+    <h2 class="s-title">From your named advisor</h2>
+    <div class="advisor-card">
+      {% if advisor_recommendations.is_signed_off %}
+      <div class="advisor-meta">
+        ✓ {{ advisor_recommendations.advisor }}{% if advisor_recommendations.credential %}, {{ advisor_recommendations.credential }}{% endif %} · reviewed {{ advisor_recommendations.reviewed_on }}
+      </div>
+      {% else %}
+      <div class="advisor-meta">Review pending — composer-generated guidance shown below</div>
+      {% endif %}
+      <div class="advisor-primary {% if not advisor_recommendations.is_signed_off %}advisor-pending{% endif %}">
+        {{ advisor_recommendations.primary }}
+      </div>
+      {% if advisor_recommendations.supporting %}
+      <div class="advisor-supporting">{{ advisor_recommendations.supporting }}</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ─── 08 What changed ─── -->
+  <section id="changed">
+    <div class="s-eyebrow"><span class="s-num">08</span> What changed since last report</div>
+    <h2 class="s-title">Cycle-over-cycle change</h2>
+    <div class="card">
+      <ul class="bullets">
+        {% for x in what_changed['items'] %}<li>{{ x }}</li>{% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── 09 What client needs to do ─── -->
+  <section id="client">
+    <div class="s-eyebrow"><span class="s-num">09</span> What you need to do</div>
+    <h2 class="s-title">Items that benefit from your sign-off or input</h2>
+    <div class="card">
+      <p class="s-intro" style="margin:0 0 12px">{{ client_actions.intro }}</p>
+
+      {% if client_actions['tasks'] %}
+      <div class="findings-list">
+        {% for t in client_actions['tasks'] %}
+        <div class="finding">
+          <div class="finding-head">
+            <span class="sev-pill {{ t.severity or 'MEDIUM' }}">{{ t.severity or 'MEDIUM' }}</span>
+            <span class="finding-title">{{ t.title }}</span>
+          </div>
+          {% if t.summary %}<div class="finding-desc">{{ t.summary }}</div>{% endif %}
+          {% if t.by %}<div class="finding-desc"><strong>Target date:</strong> {{ t.by }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if client_actions['pending_setup'] %}
+      <div style="margin-top:14px;font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1.4px">Pending setup</div>
+      <ul class="bullets" style="margin-top:8px">
+        {% for p in client_actions['pending_setup'] %}
+        <li><strong>{{ p.item }}</strong> — {{ p.note }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if not client_actions['tasks'] and not client_actions['pending_setup'] %}
+      <div class="s-intro" style="margin:0">No outstanding items requiring your input this cycle.</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ─── 10 What CyberComply handled ─── -->
+  <section id="provider">
+    <div class="s-eyebrow"><span class="s-num">10</span> What CyberComply handled</div>
+    <h2 class="s-title">Work completed on your behalf this cycle</h2>
+    <div class="card">
+      {% if provider_handled.summary %}<p class="s-intro" style="margin:0 0 10px">{{ provider_handled.summary }}</p>{% endif %}
+      <ul class="bullets">
+        {% for b in provider_handled['bullets'] %}<li>{{ b }}</li>{% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── 11 Appendix ─── -->
+  <section id="appendix">
+    <div class="s-eyebrow"><span class="s-num">11</span> Appendix</div>
+    <h2 class="s-title">Raw scan details — for technical reviewers</h2>
+    <div class="appendix-box">
+      <div>Scan date: {{ appendix.scan_date or '—' }}</div>
+      <div>Domain: {{ appendix.domain or client.domain }}</div>
+      {% if appendix['score_breakdown'] %}
+      <div style="margin-top:10px">Score breakdown:</div>
+      {% for cat, info in appendix['score_breakdown'].items() %}
+      <div>&nbsp;&nbsp;{{ cat|replace('_', ' ')|title }}: {{ info.score }}/{{ info.max }}</div>
+      {% endfor %}
+      {% endif %}
+      {% if appendix['raw_findings'] %}
+      <div style="margin-top:10px">Raw findings ({{ appendix['raw_findings']|length }}):</div>
+      {% for f in appendix['raw_findings'][:50] %}
+      <div>&nbsp;&nbsp;[{{ (f.severity or 'MEDIUM')|upper }}] {{ f.title or f.name or '—' }}{% if f.category %} ({{ f.category }}){% endif %}</div>
+      {% endfor %}
+      {% if appendix['raw_findings']|length > 50 %}
+      <div>&nbsp;&nbsp;… {{ appendix['raw_findings']|length - 50 }} more recorded in your portal.</div>
+      {% endif %}
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ─── 12 Disclaimers ─── -->
+  <section id="disclaimers">
+    <div class="s-eyebrow"><span class="s-num">12</span> Disclaimers</div>
+    <h2 class="s-title">Important context for this report</h2>
+    <div class="disclaimers">
+      {% for d in disclaimers %}
+      <div class="disclaimer">
+        <div class="disclaimer-title">{{ d.title }}</div>
+        <div class="disclaimer-body">{{ d.body }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <footer>
+    Issued by DigComply Solutions Private Limited (in association with CA4CPA Global LLC) for {{ client.company_name }} on {{ report_date }}.<br>
+    Delivered through the CyberComply platform. This document does not constitute legal advice and does not guarantee certification, audit, or breach-prevention outcomes.
+  </footer>
+</div>
+</body>
+</html>

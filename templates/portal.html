@@ -3,354 +3,1410 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ client.company_name }} — Security Command Center</title>
+<title>{{ client.company_name }} — Managed Assurance Portal</title>
 <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
---bg:#09090b;--surface:#18181b;--surface2:#1e1e22;
---border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
---lime:#c8ff00;--lime-dim:rgba(200,255,0,.08);--lime-glow:rgba(200,255,0,.25);
---red:#ff4757;--orange:#ff6b35;--amber:#fbbf24;--emerald:#34d399;
---txt:#fafaf9;--txt2:#d4d4d8;--muted:#a1a1aa;--dim:#52525b;
---head:'Syne',sans-serif;--body:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+  --bg:#0b0c0f;
+  --surface:#15171c;
+  --surface-2:#1b1e25;
+  --surface-3:#22262e;
+  --border:rgba(255,255,255,.06);
+  --border-strong:rgba(255,255,255,.1);
+  --txt:#f4f4f5;
+  --txt-2:#d4d4d8;
+  --muted:#9ca3af;
+  --dim:#6b7280;
+  --lime:#c8ff00;
+  --lime-soft:rgba(200,255,0,.08);
+  --emerald:#34d399;
+  --emerald-soft:rgba(52,211,153,.1);
+  --amber:#fbbf24;
+  --amber-soft:rgba(251,191,36,.1);
+  --orange:#fb923c;
+  --red:#ef4444;
+  --red-soft:rgba(239,68,68,.1);
+  --serif:'Syne',sans-serif;
+  --body:'Inter',sans-serif;
+  --mono:'JetBrains Mono',monospace;
 }
 html{-webkit-font-smoothing:antialiased}
-body{font-family:var(--body);background:var(--bg);color:var(--txt);min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(200,255,0,.03) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0}
-body::after{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.35}
+body{
+  font-family:var(--body);
+  background:var(--bg);
+  color:var(--txt);
+  min-height:100vh;
+  font-size:14.5px;
+  line-height:1.55;
+}
 
-.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
-.header h1{font-family:var(--head);font-size:1.125rem;color:var(--lime);display:flex;align-items:center;gap:8px}
-.header .company{font-size:1rem;color:var(--txt);font-weight:400}
-.header .score-badge{font-family:var(--head);background:var(--bg);border:2px solid var(--lime);border-radius:12px;padding:8px 20px;font-size:1.25rem;font-weight:700;color:var(--lime);position:relative;overflow:hidden}
-.header .score-badge::after{content:'';position:absolute;top:0;left:-100%;width:80%;height:100%;background:linear-gradient(90deg,transparent,rgba(200,255,0,.15),transparent);animation:shimmer 3s ease-in-out infinite}
-@keyframes shimmer{0%{left:-100%}40%{left:150%}100%{left:150%}}
-.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;padding:24px 32px;position:relative;z-index:1}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;transition:all .3s;opacity:0;animation:fadeUp .5s ease forwards}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent);opacity:.4}
-.stat-card:hover{border-color:rgba(200,255,0,.3);box-shadow:0 0 20px rgba(200,255,0,.06)}
-.stat-card:nth-child(1){animation-delay:.05s}
-.stat-card:nth-child(2){animation-delay:.1s}
-.stat-card:nth-child(3){animation-delay:.15s}
-.stat-card:nth-child(4){animation-delay:.2s}
-.stat-card:nth-child(5){animation-delay:.25s}
-.stat-card:nth-child(6){animation-delay:.3s}
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.stat-card .label{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-.stat-card .value{font-size:2rem;font-weight:700;margin-top:4px;font-family:var(--mono)}
-.stat-card .sub{font-size:.8rem;margin-top:4px}
-.stat-card{cursor:pointer}
-.main{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 32px 32px;position:relative;z-index:1}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;position:relative;overflow:hidden}
-.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent);opacity:.3}
-.panel h2{font-family:var(--head);font-size:1rem;color:var(--lime);margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.score-up{color:var(--emerald)}.score-down{color:var(--red)}
-.agent-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
-.agent-row:last-child{border:none}
-.agent-name{font-weight:600;font-size:.9rem}
-.agent-status{font-size:.8rem;color:var(--muted)}
-.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px}
-.dot.active{background:var(--emerald);animation:pulse 2s infinite}
-.dot.standby{background:var(--amber)}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}50%{box-shadow:0 0 0 6px rgba(52,211,153,0)}}
-.task-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
-.task-row:last-child{border:none}
-.sev{font-size:.7rem;padding:2px 8px;border-radius:4px;font-weight:600;text-transform:uppercase;font-family:var(--mono)}
-.sev-critical{background:rgba(255,71,87,.15);color:var(--red)}
-.sev-high{background:rgba(255,107,53,.15);color:var(--orange)}
-.sev-medium{background:rgba(251,191,36,.15);color:var(--amber)}
-.sev-low{background:rgba(52,211,153,.15);color:var(--emerald)}
-.doc-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
-.doc-row:last-child{border:none}
-.doc-row a{color:var(--lime);text-decoration:none;font-size:.9rem}
-.doc-row a:hover{text-decoration:underline}
-.doc-icon{font-size:1.2rem}
-.bar{height:6px;background:var(--border);border-radius:3px;margin-top:8px;overflow:hidden}
-.bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--lime),var(--emerald))}
-.trend{display:flex;gap:4px;align-items:flex-end;height:80px;margin-top:12px}
-.trend-bar{flex:1;background:var(--lime);border-radius:3px 3px 0 0;min-height:4px;position:relative;animation:barGrow .6s ease forwards}
-@keyframes barGrow{from{height:0}to{height:var(--h,4px)}}
-.trend-label{font-size:.65rem;color:var(--muted);text-align:center;margin-top:4px}
-.status-btn{padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;font-size:.75rem}
-.status-btn:hover{border-color:var(--lime);color:var(--lime)}
-.alert-detail{max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease,padding .3s ease;opacity:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:0 32px 0;position:relative;z-index:1;padding:0 24px}
-.alert-detail.open{max-height:600px;opacity:1;padding:24px;margin-bottom:16px}
-.alert-detail h3{color:var(--lime);font-size:.9rem;margin-bottom:12px}
-.report-banner{background:var(--surface);border:1px solid var(--lime);border-radius:12px;padding:24px;margin:0 32px 16px;position:relative;z-index:1}
-.report-banner h2{font-family:var(--head);font-size:1rem;color:var(--lime);margin-bottom:12px}
-.cissp-badge{display:inline-flex;align-items:center;gap:4px;background:var(--lime-dim);color:var(--lime);font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid rgba(200,255,0,.2);text-transform:uppercase;letter-spacing:.5px}
-.advisor-info{display:flex;align-items:center;gap:12px;font-size:.85rem;color:var(--muted)}
-.book-call{display:inline-flex;align-items:center;gap:6px;background:var(--lime);color:var(--bg);font-size:.8rem;font-weight:600;padding:8px 16px;border-radius:8px;text-decoration:none;font-family:var(--head);transition:all .3s}
-.book-call:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--lime-glow)}
-.narrative-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin:0 32px 16px;position:relative;z-index:1}
-.narrative-box h2{font-family:var(--head);font-size:1rem;color:var(--lime);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.roadmap-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px}
-.roadmap-panel h2{font-family:var(--head);font-size:1rem;color:var(--lime);margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.roadmap-step{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
-.roadmap-step:last-child{border:none}
-.step-num{width:28px;height:28px;border-radius:50%;background:var(--lime-dim);color:var(--lime);display:flex;align-items:center;justify-content:center;font-family:var(--head);font-weight:700;font-size:.85rem;flex-shrink:0}
-.fw-badge{display:inline-block;background:var(--lime-dim);color:var(--lime);font-size:.7rem;font-weight:600;padding:3px 8px;border-radius:4px;margin-right:4px;margin-top:4px;font-family:var(--mono)}
-.benchmark-row{display:flex;align-items:center;gap:6px;font-size:.8rem;margin-top:6px}
-.done-btn{margin-left:8px;padding:4px 12px;background:var(--emerald);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:.8rem;transition:all .3s}
-.done-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(52,211,153,.3)}
-@media(max-width:1200px){.grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.main{grid-template-columns:1fr}}
-@media(max-width:600px){.grid{grid-template-columns:1fr}.header{flex-direction:column;gap:12px;text-align:center}}
+/* ─── Layout ───────────────────────────────── */
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+
+/* ─── Sidebar ──────────────────────────────── */
+.sidebar{
+  position:sticky;top:0;align-self:start;
+  height:100vh;overflow-y:auto;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  padding:28px 18px;
+  display:flex;flex-direction:column;gap:24px;
+}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--txt);padding:0 8px}
+.brand svg{flex-shrink:0}
+.brand-name{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:1.5px;color:var(--lime)}
+.brand-sub{display:block;font-size:10.5px;color:var(--dim);font-weight:400;letter-spacing:.3px;margin-top:2px;font-family:var(--body)}
+.client-card{
+  background:var(--surface-2);border:1px solid var(--border);
+  border-radius:10px;padding:14px;
+}
+.client-card .name{font-family:var(--serif);font-weight:700;font-size:15px;letter-spacing:-.2px;line-height:1.3;overflow-wrap:anywhere}
+.client-card .domain{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
+.client-card .plan{margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--lime);background:var(--lime-soft);padding:4px 9px;border-radius:6px;letter-spacing:.2px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav-section{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.6px;padding:6px 10px;margin-top:8px}
+.nav a{
+  display:flex;align-items:center;gap:11px;
+  padding:9px 10px;border-radius:8px;
+  text-decoration:none;color:var(--txt-2);font-size:13.5px;font-weight:500;
+  transition:background .15s,color .15s;
+}
+.nav a:hover{background:var(--surface-2);color:var(--txt)}
+.nav a.active{background:var(--surface-3);color:var(--lime)}
+.nav .dot{width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0}
+.nav a.active .dot{background:var(--lime)}
+.sidebar-foot{margin-top:auto;padding:0 8px;font-size:11px;color:var(--dim);line-height:1.5}
+.sidebar-foot a{color:var(--muted);text-decoration:none}
+.sidebar-foot a:hover{color:var(--lime)}
+
+/* ─── Main column ──────────────────────────── */
+main{padding:32px 44px 80px;max-width:1180px}
+.section{margin-bottom:56px;scroll-margin-top:24px}
+.section-eyebrow{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+.section-title{font-family:var(--serif);font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.15;margin-bottom:8px}
+.section-lede{font-size:14.5px;color:var(--muted);max-width:680px;margin-bottom:24px}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:24px;
+}
+.card + .card{margin-top:14px}
+.card-title{font-family:var(--serif);font-weight:700;font-size:16px;letter-spacing:-.2px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title .meta{font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-left:auto}
+
+/* ─── Overview hero ────────────────────────── */
+.overview-grid{
+  display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;
+}
+.risk-card{
+  background:linear-gradient(180deg,var(--surface-2),var(--surface));
+  border:1px solid var(--border-strong);border-radius:16px;padding:32px;
+  display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center;
+}
+.risk-score{
+  width:128px;height:128px;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border:3px solid var(--lime);
+}
+.risk-score.amber{border-color:var(--amber)}
+.risk-score.orange{border-color:var(--orange)}
+.risk-score.red{border-color:var(--red)}
+.risk-score .num{font-family:var(--serif);font-size:42px;font-weight:800;line-height:1;color:var(--lime)}
+.risk-score.amber .num{color:var(--amber)}
+.risk-score.orange .num{color:var(--orange)}
+.risk-score.red .num{color:var(--red)}
+.risk-score .of{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:6px}
+.risk-info{min-width:0}
+.risk-eyebrow{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px}
+.risk-headline{font-family:var(--serif);font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:8px;line-height:1.2}
+.risk-narrative{font-size:14.5px;color:var(--txt-2);line-height:1.6}
+.risk-meta-row{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px;font-size:13px;color:var(--muted)}
+.risk-meta-row strong{color:var(--txt);font-weight:600}
+
+/* Quick-glance answers panel */
+.glance{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:24px;display:flex;flex-direction:column;gap:18px;
+}
+.glance-row{padding-bottom:16px;border-bottom:1px solid var(--border)}
+.glance-row:last-child{border-bottom:none;padding-bottom:0}
+.glance-label{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.glance-value{font-size:14px;color:var(--txt-2);line-height:1.5}
+.glance-value strong{color:var(--txt);font-weight:600}
+.glance-value a{color:var(--lime);text-decoration:none}
+.glance-value a:hover{text-decoration:underline}
+.glance-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+.glance-list li{font-size:13.5px;color:var(--txt-2);padding-left:14px;position:relative}
+.glance-list li::before{content:'';position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--emerald)}
+.glance-list.muted li::before{background:var(--amber)}
+.glance-list.due li::before{background:var(--lime)}
+
+/* ─── Action items (compliance workflow) ─── */
+.action-list{display:flex;flex-direction:column;gap:14px}
+.action-card{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px;display:flex;flex-direction:column;gap:14px;
+  transition:border-color .15s;
+}
+.action-card:hover{border-color:var(--border-strong)}
+.action-header{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+.sev-pill{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:5px;text-transform:uppercase}
+.sev-CRITICAL{background:var(--red-soft);color:var(--red)}
+.sev-HIGH{background:rgba(251,146,60,.12);color:var(--orange)}
+.sev-MEDIUM{background:var(--amber-soft);color:var(--amber)}
+.sev-LOW{background:var(--emerald-soft);color:var(--emerald)}
+.action-title-block{min-width:0}
+.action-title{font-family:var(--serif);font-weight:700;font-size:15.5px;letter-spacing:-.2px;margin-bottom:3px;overflow-wrap:anywhere}
+.action-impact{font-size:12.5px;color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
+.action-meta{display:flex;flex-wrap:wrap;gap:6px}
+.meta-chip{font-size:11.5px;color:var(--txt-2);background:var(--surface-3);padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+.meta-chip .meta-k{font-family:var(--mono);font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1.2px;margin-right:6px}
+.action-section-label{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:5px}
+.action-fix-block{padding:10px 12px;background:var(--surface-3);border-radius:8px}
+.action-fix{font-size:13px;color:var(--txt-2);line-height:1.55;overflow-wrap:anywhere}
+.action-evidence{padding:10px 12px;background:rgba(200,255,0,.03);border:1px solid var(--border);border-radius:8px}
+.evidence-list,.evidence-attached-list{margin:0;padding-left:18px;font-size:12.5px;color:var(--txt-2);line-height:1.65}
+.evidence-list li,.evidence-attached-list li{margin-bottom:2px}
+.action-notes{padding:10px 12px;background:var(--surface);border-radius:8px;border:1px solid var(--border)}
+.action-notes-advisor{border-left:2px solid #e879f9}
+.note-row{font-size:12.5px;color:var(--txt-2);line-height:1.55;margin-bottom:6px}
+.note-row:last-child{margin-bottom:0}
+.note-meta{font-family:var(--mono);font-size:10.5px;color:var(--dim);display:block;margin-bottom:2px}
+.action-submit-block{display:flex;flex-direction:column;gap:8px;padding-top:8px;border-top:1px solid var(--border)}
+.submit-notes,.submit-evidence{
+  width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;color:var(--txt);font-family:var(--body);font-size:13px;outline:none;
+  resize:vertical;
+}
+.submit-notes:focus,.submit-evidence:focus{border-color:var(--lime)}
+.submit-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+.action-submit{
+  background:var(--lime);color:var(--bg);border:none;
+  font-family:var(--body);font-weight:600;font-size:13px;
+  padding:10px 18px;border-radius:8px;cursor:pointer;white-space:nowrap;
+  transition:transform .15s;
+}
+.action-submit:hover{transform:translateY(-1px)}
+.submit-disclaimer{font-size:11.5px;color:var(--dim);line-height:1.5}
+.action-pending{
+  padding:12px 14px;background:var(--amber-soft);border:1px solid rgba(251,191,36,.22);
+  border-radius:8px;font-size:13px;color:var(--amber);
+}
+.action-deferred{background:rgba(156,163,175,.08);border-color:rgba(156,163,175,.2);color:var(--muted)}
+
+/* status pill colors used in the action header */
+.status-Inprogress{background:rgba(96,165,250,.12);color:#60a5fa}
+.status-Submittedforreview{background:var(--amber-soft);color:var(--amber)}
+.status-Verified{background:var(--emerald-soft);color:var(--emerald)}
+.status-Deferred{background:rgba(156,163,175,.12);color:var(--muted)}
+.status-Open{background:var(--lime-soft);color:var(--lime)}
+.status-open{background:var(--lime-soft);color:var(--lime)}
+.status-in_progress,.status-inprogress{background:rgba(96,165,250,.12);color:#60a5fa}
+.status-submitted_for_review,.status-submittedforreview{background:var(--amber-soft);color:var(--amber)}
+.status-verified{background:var(--emerald-soft);color:var(--emerald)}
+.status-deferred{background:rgba(156,163,175,.12);color:var(--muted)}
+.empty-state{padding:36px 20px;text-align:center;color:var(--muted);background:var(--surface-2);border-radius:10px;border:1px solid var(--border);font-size:13.5px}
+
+/* ─── Value Delivered dashboard ─────────── */
+.value-summary{
+  display:grid;grid-template-columns:1fr auto 1fr auto 1fr;
+  gap:0;align-items:center;
+  background:linear-gradient(180deg,var(--surface-2),var(--surface));
+  border:1px solid var(--border-strong);border-radius:14px;
+  padding:24px 28px;margin-bottom:18px;
+}
+.value-summary-cell{text-align:center;padding:6px 12px}
+.vs-num{font-family:var(--serif);font-size:38px;font-weight:800;line-height:1;color:var(--lime);letter-spacing:-1px}
+.vs-label{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);margin-top:8px;line-height:1.45}
+.value-summary-divider{width:1px;height:48px;background:var(--border-strong);margin:0 auto}
+
+.value-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+}
+.value-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:20px 22px;display:flex;flex-direction:column;gap:8px;min-height:124px;
+  transition:border-color .15s;
+}
+.value-card:hover{border-color:var(--border-strong)}
+.vc-label{
+  font-family:var(--mono);font-size:10.5px;color:var(--dim);
+  text-transform:uppercase;letter-spacing:1.4px;line-height:1.4;
+}
+.vc-display{
+  font-family:var(--serif);font-size:36px;font-weight:800;line-height:1;letter-spacing:-1px;
+  color:var(--lime);
+}
+.vc-support{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:auto}
+
+/* Empty-state styling — visibly different from delivered */
+.value-card.value-empty .vc-display,
+.value-card.value-pending_first_review .vc-display,
+.value-card.value-waiting_setup .vc-display,
+.value-card.value-not_included .vc-display{
+  font-family:var(--body);font-size:14.5px;font-weight:500;color:var(--muted);
+  letter-spacing:0;line-height:1.45;
+}
+.value-card.value-empty{border-color:var(--border)}
+.value-card.value-pending_first_review{
+  background:linear-gradient(180deg,var(--amber-soft),var(--surface));
+  border-color:rgba(251,191,36,.18);
+}
+.value-card.value-pending_first_review .vc-display{color:var(--amber)}
+.value-card.value-waiting_setup{border-color:rgba(156,163,175,.16);background:var(--surface)}
+.value-card.value-waiting_setup .vc-display{color:var(--dim);font-style:italic}
+.value-card.value-not_included{opacity:.55}
+.value-card.value-not_included .vc-display{color:var(--dim);font-style:italic}
+
+@media (max-width:720px){
+  .value-summary{grid-template-columns:1fr;gap:14px;padding:20px}
+  .value-summary-divider{width:48px;height:1px;margin:0 auto}
+}
+
+/* ─── Coverage table (rich model) ────────── */
+.cov-table{display:flex;flex-direction:column}
+.cov-row{
+  display:grid;grid-template-columns:minmax(0,2fr) minmax(170px,1fr) minmax(0,1.4fr);
+  gap:24px;padding:20px 24px;border-bottom:1px solid var(--border);align-items:start;
+}
+.cov-row:last-child{border-bottom:none}
+.cov-row-muted{opacity:.55}
+.cov-cell{min-width:0}
+.cov-service-name{font-family:var(--serif);font-weight:700;font-size:15px;letter-spacing:-.2px;margin-bottom:4px}
+.cov-service-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;color:var(--muted);margin-bottom:6px;align-items:center}
+.cov-plan{font-family:var(--mono);font-size:10.5px;color:var(--lime);background:var(--lime-soft);padding:2px 8px;border-radius:4px;letter-spacing:.4px;text-transform:uppercase}
+.cov-sep{color:var(--dim)}
+.cov-owner{font-family:var(--mono);font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;padding:2px 8px;border-radius:4px}
+.cov-owner-client{background:rgba(96,165,250,.12);color:#60a5fa}
+.cov-owner-advisor{background:rgba(232,121,249,.12);color:#e879f9}
+.cov-owner-system{background:rgba(156,163,175,.12);color:var(--muted)}
+.cov-note{font-size:13px;color:var(--txt-2);line-height:1.5;margin-bottom:6px}
+.cov-source{font-size:11.5px;color:var(--dim);font-family:var(--mono)}
+
+.cov-cell-status{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.cov-last{font-size:11.5px;color:var(--muted);line-height:1.5}
+.cov-last strong{color:var(--txt);font-family:var(--mono);font-size:12.5px;font-weight:600}
+.cov-last-empty{color:var(--dim);font-style:italic}
+
+.cov-action-label{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:4px}
+.cov-action-text{font-size:13px;color:var(--txt-2);line-height:1.5}
+.cov-action-none{color:var(--emerald)}
+
+.status-pill{
+  font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.6px;
+  padding:5px 10px;border-radius:6px;white-space:nowrap;text-transform:uppercase;
+}
+.status-Active{background:var(--emerald-soft);color:var(--emerald)}
+.status-Pendingsetup{background:var(--amber-soft);color:var(--amber)}
+.status-Notconnected{background:rgba(156,163,175,.12);color:var(--muted)}
+.status-Notincluded{background:rgba(156,163,175,.08);color:var(--dim)}
+.status-Needsattention{background:var(--red-soft);color:var(--red)}
+.status-Approved{background:var(--emerald-soft);color:var(--emerald)}
+.status-Reviewpending{background:var(--amber-soft);color:var(--amber)}
+
+@media (max-width:900px){
+  .cov-row{grid-template-columns:1fr;gap:14px;padding:18px 18px}
+  .cov-cell-status{flex-direction:row;align-items:center;gap:14px;flex-wrap:wrap}
+}
+
+/* ─── Alerts ───────────────────────────────── */
+.alert-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px}
+.alert-tile{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px;
+  cursor:pointer;transition:border-color .15s;
+}
+.alert-tile:hover{border-color:var(--border-strong)}
+.alert-tile .label{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.alert-tile .num{font-family:var(--serif);font-size:28px;font-weight:700;line-height:1}
+.alert-tile .sub{font-size:12px;color:var(--muted);margin-top:6px}
+.alert-tile .num.ok{color:var(--emerald)}
+.alert-tile .num.amber{color:var(--amber)}
+.alert-tile .num.red{color:var(--red)}
+.alert-tile .num.muted{color:var(--dim)}
+.alert-detail{
+  max-height:0;overflow:hidden;
+  transition:max-height .35s ease,opacity .25s ease,padding .25s ease,margin .25s ease;
+  opacity:0;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  padding:0 20px;margin:0;
+}
+.alert-detail.open{max-height:600px;opacity:1;padding:20px;margin-top:8px;margin-bottom:14px}
+
+/* ─── Document Library (Reports + Policies) ─ */
+.doclib-list{display:flex;flex-direction:column}
+.doclib-row{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:18px;
+  padding:18px 22px;border-bottom:1px solid var(--border);align-items:start;
+}
+.doclib-row:last-child{border-bottom:none}
+.doclib-row-pending{background:rgba(251,191,36,.025)}
+.doclib-row-muted{opacity:.55}
+.doclib-icon{
+  width:38px;height:38px;border-radius:9px;background:var(--surface-3);
+  display:grid;place-items:center;color:var(--lime);flex-shrink:0;
+}
+.doclib-main{min-width:0}
+.doclib-title{
+  font-family:var(--serif);font-weight:700;font-size:15.5px;letter-spacing:-.2px;
+  margin-bottom:4px;line-height:1.3;
+}
+.doclib-type{font-size:12px;color:var(--muted);margin-bottom:8px}
+.doclib-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.doclib-meta-chip{
+  font-size:11.5px;color:var(--txt-2);
+  background:var(--surface-3);padding:3px 10px;border-radius:6px;border:1px solid var(--border);
+}
+.doclib-meta-chip .meta-k{
+  font-family:var(--mono);font-size:9.5px;color:var(--dim);
+  text-transform:uppercase;letter-spacing:1.2px;margin-right:5px;
+}
+.doclib-meta-reviewed{background:var(--emerald-soft);border-color:rgba(52,211,153,.15)}
+.doclib-meta-reviewed .meta-k{color:var(--emerald)}
+.doclib-frameworks{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.doclib-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.doclib-download{
+  font-size:12.5px;font-weight:600;
+  background:var(--lime);color:var(--bg);
+  padding:7px 14px;border-radius:7px;text-decoration:none;
+  transition:transform .15s;
+}
+.doclib-download:hover{transform:translateY(-1px)}
+.doclib-download-disabled{
+  font-family:var(--mono);font-size:10.5px;color:var(--dim);
+  text-transform:uppercase;letter-spacing:1.2px;padding:7px 14px;
+}
+@media (max-width:720px){
+  .doclib-row{grid-template-columns:auto 1fr;gap:12px}
+  .doclib-side{grid-column:1/-1;flex-direction:row;align-items:center;gap:10px}
+}
+
+/* ─── Reports + Policies + Vault ───────────── */
+.doc-row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.doc-row:last-child{border-bottom:none}
+.doc-icon{width:34px;height:34px;border-radius:8px;background:var(--surface-3);display:grid;place-items:center;color:var(--lime)}
+.doc-name{font-weight:500;font-size:13.5px;overflow-wrap:anywhere}
+.doc-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.doc-action{
+  font-family:var(--body);font-size:12.5px;font-weight:500;
+  background:transparent;color:var(--txt-2);
+  border:1px solid var(--border-strong);padding:7px 12px;border-radius:7px;
+  text-decoration:none;transition:all .15s;
+}
+.doc-action:hover{background:var(--lime);color:var(--bg);border-color:var(--lime)}
+.vault-cta{
+  display:block;text-align:center;margin-bottom:24px;
+  background:var(--lime-soft);color:var(--lime);border:1px solid rgba(200,255,0,.18);
+  padding:14px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13.5px;
+  transition:all .15s;
+}
+.vault-cta:hover{background:var(--lime);color:var(--bg)}
+
+.vault-category{margin-bottom:24px}
+.vault-cat-header{
+  display:flex;align-items:baseline;justify-content:space-between;
+  padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:12px;
+}
+.vault-cat-title{
+  font-family:var(--serif);font-size:18px;font-weight:700;letter-spacing:-.3px;
+}
+.vault-cat-count{
+  font-family:var(--mono);font-size:11px;color:var(--dim);
+  text-transform:uppercase;letter-spacing:1.4px;
+}
+.vault-list{display:flex;flex-direction:column;gap:10px}
+.vault-item{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:16px 18px;
+  transition:border-color .15s;
+}
+.vault-item:hover{border-color:var(--border-strong)}
+.vault-item-main{min-width:0}
+.vault-item-title{
+  font-family:var(--serif);font-weight:700;font-size:15px;letter-spacing:-.2px;
+  margin-bottom:8px;line-height:1.3;
+}
+.vault-item-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.vault-meta-chip{
+  font-size:11.5px;color:var(--txt-2);
+  background:var(--surface-2);padding:3px 10px;border-radius:6px;border:1px solid var(--border);
+}
+.vault-meta-chip .meta-k{
+  font-family:var(--mono);font-size:9.5px;color:var(--dim);
+  text-transform:uppercase;letter-spacing:1.2px;margin-right:5px;
+}
+.vault-meta-reviewed{background:var(--emerald-soft);border-color:rgba(52,211,153,.15)}
+.vault-meta-reviewed .meta-k{color:var(--emerald)}
+.vault-frameworks{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.vault-fw-chip{
+  font-family:var(--mono);font-size:10px;color:var(--lime);
+  background:var(--lime-soft);padding:3px 8px;border-radius:5px;letter-spacing:.4px;
+}
+.vault-item-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.vault-status{white-space:nowrap}
+.vault-download{
+  font-size:12.5px;font-weight:600;
+  background:var(--lime);color:var(--bg);
+  padding:7px 14px;border-radius:7px;text-decoration:none;
+  transition:transform .15s;
+}
+.vault-download:hover{transform:translateY(-1px)}
+.vault-download-disabled{
+  font-family:var(--mono);font-size:10.5px;color:var(--dim);
+  text-transform:uppercase;letter-spacing:1.2px;padding:7px 14px;
+}
+.vault-empty{
+  font-size:13px;color:var(--muted);
+  background:var(--surface-2);border:1px dashed var(--border);
+  padding:14px 16px;border-radius:10px;line-height:1.5;
+}
+
+/* status pills used in the vault */
+.status-Draft{background:rgba(156,163,175,.12);color:var(--muted)}
+.status-Ready{background:var(--lime-soft);color:var(--lime)}
+.status-Reviewpending{background:var(--amber-soft);color:var(--amber)}
+.status-Advisorreviewed{background:var(--emerald-soft);color:var(--emerald)}
+.status-Expired{background:var(--red-soft);color:var(--red)}
+
+@media (max-width:720px){
+  .vault-item{grid-template-columns:1fr;gap:12px}
+  .vault-item-side{align-items:flex-start;flex-direction:row;gap:10px}
+}
+
+/* ─── Security Validation card ─────────────── */
+.validation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.validation-tile{
+  background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px;
+}
+.validation-tile .v-label{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.validation-tile .v-status{font-size:14px;font-weight:600}
+.validation-disclaimer{margin-top:18px;font-size:12.5px;color:var(--muted);padding:14px 16px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border);line-height:1.6}
+
+/* ─── Advisor card ─────────────────────────── */
+.advisor-grid{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+.advisor-photo{
+  width:88px;height:88px;border-radius:50%;
+  background:linear-gradient(135deg,var(--lime-soft),var(--surface-3));
+  border:2px solid var(--border-strong);
+  display:grid;place-items:center;font-family:var(--serif);font-size:32px;font-weight:700;color:var(--lime);
+}
+.advisor-name{font-family:var(--serif);font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
+.advisor-role{font-size:13px;color:var(--muted);margin-bottom:10px}
+.advisor-cta{
+  display:inline-flex;align-items:center;gap:8px;background:var(--lime);color:var(--bg);
+  text-decoration:none;font-weight:600;font-size:13px;padding:10px 18px;border-radius:8px;
+  transition:transform .15s;
+}
+.advisor-cta:hover{transform:translateY(-1px)}
+
+/* ─── Plan & Scope ─────────────────────────── */
+.plan-header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.plan-name{font-family:var(--serif);font-size:22px;font-weight:700;letter-spacing:-.3px}
+.plan-billing{font-family:var(--mono);font-size:11px;color:var(--lime);background:var(--lime-soft);padding:4px 10px;border-radius:5px;text-transform:uppercase;letter-spacing:1px}
+.plan-services{display:flex;flex-direction:column;gap:8px}
+.plan-services li{display:grid;grid-template-columns:18px 1fr;gap:10px;font-size:14px;color:var(--txt-2);line-height:1.55;list-style:none}
+.plan-services li::before{content:'✓';color:var(--lime);font-weight:700}
+
+/* ─── Score trend ─────────────────────────── */
+.trend{display:flex;gap:8px;align-items:flex-end;height:90px;margin-top:14px}
+.trend-bar{flex:1;background:linear-gradient(180deg,var(--lime),var(--emerald));border-radius:4px 4px 0 0;min-height:4px;position:relative}
+.trend-label{font-size:10.5px;color:var(--dim);text-align:center;margin-top:6px;font-family:var(--mono)}
+
+/* ─── Mobile ───────────────────────────────── */
+/* ── Universal anti-clip rules (apply at all widths) ── */
+*{word-wrap:break-word}
+.dc-domain,.client-domain,.client-company,.cov-source,.doclib-meta-chip,
+.vault-meta-chip,.action-fix,.action-impact,.alert-narrative,
+.advisor-supporting,.evi-name,.doc-name{overflow-wrap:anywhere;word-break:break-word}
+.section-title{overflow-wrap:break-word}
+.dc-summary-num,.vs-num,.vc-display,.exec-score-num,.dc-health-num,
+.alert-report-score,.bento-num{font-variant-numeric:tabular-nums;
+  white-space:nowrap;line-height:1}
+button{min-height:32px}
+a{word-break:break-word}
+
+/* ── Wide desktop (≥1280): give content room without stretching ── */
+@media (min-width:1280px){
+  main{padding:32px 56px 96px;max-width:1280px}
+  .alert-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+
+/* ── Tablet / small laptop (≤1024) ── */
+@media (max-width:1024px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:16px 20px}
+  .nav{flex-direction:row;flex-wrap:wrap;gap:6px}
+  .nav-section{display:none}
+  .nav a{padding:8px 12px;font-size:12.5px}
+  .sidebar-foot{display:none}
+  main{padding:24px 20px 64px}
+  .overview-grid{grid-template-columns:1fr}
+  .risk-card{grid-template-columns:1fr;text-align:center;padding:24px;gap:16px}
+  .risk-score{margin:0 auto}
+  .advisor-grid{grid-template-columns:1fr;text-align:center}
+  .advisor-photo{margin:0 auto}
+  .value-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+}
+
+/* ── Phone / 430px / 375px ── */
+@media (max-width:600px){
+  body{font-size:14px}
+  main{padding:18px 14px 48px}
+  .section{margin-bottom:40px}
+  .section-title{font-size:22px;line-height:1.2}
+  .section-lede{font-size:13.5px}
+  .card{padding:18px 16px;border-radius:12px}
+  .client-card{padding:12px}
+
+  /* Risk hero */
+  .risk-card{padding:20px 18px}
+  .risk-score{width:108px;height:108px}
+  .risk-score .num{font-size:34px}
+  .risk-headline{font-size:18px}
+  .risk-meta-row{gap:10px;font-size:12px}
+
+  /* Glance panel */
+  .glance{padding:18px 16px;gap:14px}
+  .glance-list li{font-size:12.5px;padding-left:12px}
+  .glance-value{font-size:13px}
+
+  /* Value Delivered */
+  .value-summary{padding:18px;grid-template-columns:1fr;gap:14px}
+  .value-summary-divider{display:none}
+  .value-summary-cell{padding:8px}
+  .vs-num{font-size:30px}
+  .value-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .value-card{padding:16px;min-height:auto}
+  .vc-display{font-size:28px}
+  .value-card.value-empty .vc-display,
+  .value-card.value-pending_first_review .vc-display,
+  .value-card.value-waiting_setup .vc-display,
+  .value-card.value-not_included .vc-display{font-size:13px}
+
+  /* Action items */
+  .action-card{padding:16px 14px;gap:12px}
+  .action-header{grid-template-columns:1fr;gap:6px}
+  .action-header .status-pill{justify-self:start}
+  .action-title{font-size:14px}
+  .action-meta{gap:5px}
+  .meta-chip{font-size:11px;padding:3px 8px}
+  .submit-row{grid-template-columns:1fr;gap:6px}
+  .action-submit{width:100%;padding:12px}
+  .submit-evidence,.submit-notes{font-size:14px}
+
+  /* Coverage table */
+  .cov-row{grid-template-columns:1fr;gap:10px;padding:16px}
+  .cov-cell-status{flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px}
+  .cov-service-name{font-size:14px}
+  .cov-note,.cov-source{font-size:12px}
+  .cov-action-text{font-size:12.5px}
+
+  /* Alerts */
+  .alert-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .alert-tile{padding:14px 12px}
+  .alert-tile .num{font-size:24px}
+  .alert-tile .label{font-size:10px}
+  .alert-detail.open{padding:16px 14px}
+
+  /* Document library (reports + policies) */
+  .doclib-row{grid-template-columns:auto 1fr;gap:12px;padding:16px 14px}
+  .doclib-side{grid-column:1/-1;flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px}
+  .doclib-icon{width:34px;height:34px}
+  .doclib-title{font-size:14px;line-height:1.35}
+  .doclib-type{font-size:11.5px}
+  .doclib-meta-chip,.vault-meta-chip{font-size:11px;padding:3px 8px;white-space:normal}
+  .doclib-download,.vault-download{padding:9px 14px;font-size:12px}
+
+  /* Evidence vault */
+  .vault-cat-title{font-size:16px}
+  .vault-item{grid-template-columns:1fr;gap:10px;padding:14px}
+  .vault-item-side{flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px}
+  .vault-item-title{font-size:14px}
+  .vault-cta{padding:12px;font-size:13px}
+
+  /* Security validation */
+  .validation-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .validation-tile{padding:14px}
+  .validation-tile .v-status{font-size:13px}
+  .validation-disclaimer{font-size:12px;padding:12px 14px}
+
+  /* Advisor card */
+  .advisor-photo{width:72px;height:72px;font-size:26px}
+  .advisor-name{font-size:18px}
+  .advisor-cta{padding:11px 18px;font-size:13px}
+
+  /* Plan & Scope */
+  .plan-name{font-size:18px}
+  .plan-services li{font-size:13px}
+
+  /* Sidebar nav as horizontal pills */
+  .sidebar{padding:14px 14px}
+  .nav a{padding:7px 10px;font-size:12px}
+  .client-card .name{font-size:14px}
+  .client-card .domain{font-size:10.5px}
+  .plan{font-size:10px}
+}
+
+/* ── 430px (iPhone Pro Max class) ── */
+@media (max-width:430px){
+  .alert-grid{grid-template-columns:1fr}
+  .alert-tile .num{font-size:22px}
+  .validation-grid{grid-template-columns:1fr}
+  .sev-row{grid-template-columns:1fr 1fr}
+}
+
+/* ── 375px (iPhone class) ── */
+@media (max-width:380px){
+  body{font-size:13.5px}
+  main{padding:14px 12px 40px}
+  .section-title{font-size:20px}
+  .risk-score{width:92px;height:92px}
+  .risk-score .num{font-size:28px}
+  .risk-card{padding:18px 14px}
+  .value-grid{grid-template-columns:1fr}
+  .value-card{padding:14px}
+  .vs-num{font-size:26px}
+  .glance{padding:14px}
+  .meta-chip,.doclib-meta-chip,.vault-meta-chip{font-size:10.5px;padding:3px 7px}
+  .action-card{padding:14px 12px}
+  .doclib-row,.vault-item{padding:14px 12px}
+  .doclib-icon{width:30px;height:30px}
+  .doclib-side .status-pill{font-size:9.5px}
+  .alert-panel-meta{flex-direction:column;align-items:flex-start;gap:4px}
+  .alert-panel-source{width:100%}
+  .doclib-download,.vault-download{padding:10px 12px;width:100%;text-align:center}
+  .doclib-download-disabled,.vault-download-disabled{padding:8px 12px}
+  .stats-section,.glance-list li{font-size:12px}
+  /* Sidebar pills wrap onto multiple short rows */
+  .sidebar{padding:12px}
+  .nav a{padding:6px 9px;font-size:11.5px}
+  .nav a .dot{display:none}
+  .brand-sub{display:none}
+}
+
+/* ── 320px (smallest in-spec phone) ── */
+@media (max-width:340px){
+  main{padding:12px 10px 36px}
+  .section-title{font-size:18px}
+  .risk-score{width:80px;height:80px;border-width:2px}
+  .risk-score .num{font-size:24px}
+  .risk-meta-row{flex-direction:column;align-items:flex-start;gap:6px}
+  .risk-meta-row span{font-size:11.5px}
+  .vs-num{font-size:24px}
+  .vault-fw-chip{font-size:9.5px;padding:2px 6px}
+  .doclib-meta,.vault-item-meta{gap:4px}
+  .meta-chip,.doclib-meta-chip,.vault-meta-chip{font-size:10px;padding:2px 6px}
+  .meta-chip .meta-k,.doclib-meta-chip .meta-k,.vault-meta-chip .meta-k{display:block;margin-bottom:1px;margin-right:0}
+  .action-meta{flex-direction:column;align-items:flex-start}
+  .alert-tile .label{font-size:9.5px;letter-spacing:1px}
+  .alert-tile .num{font-size:20px}
+  .vault-cat-header{flex-direction:column;align-items:flex-start;gap:4px}
+  .nav a{font-size:11px;padding:5px 8px}
+  .client-card{padding:10px}
+  .client-card .name{font-size:13px}
+}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <h1>
-      <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<div class="shell">
+
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar">
+    <a class="brand" href="/">
+      <svg width="28" height="28" viewBox="0 0 36 36" fill="none">
         <path d="M18 3L5 9.5v9c0 9 5.5 17 13 19 7.5-2 13-10 13-19v-9L18 3z" fill="#c8ff00" opacity=".15" stroke="#c8ff00" stroke-width="1.5"/>
         <path d="M18 8L9 12.5v6c0 6 3.8 11.5 9 13 5.2-1.5 9-7 9-13v-6L18 8z" fill="#c8ff00" opacity=".08"/>
-        <text x="18" y="23.5" text-anchor="middle" font-family="Syne,sans-serif" font-weight="800" font-size="15" fill="#c8ff00">C</text>
       </svg>
-      CyberComply <span class="company">&mdash; {{ client.company_name }}</span>
-    </h1>
-    <div class="advisor-info" style="margin-top:6px">
-      <span class="cissp-badge">&#x2713; CISSP-Reviewed</span>
-      <span>{{ advisor_name }}</span>
-      {% if next_call_date %}<span>&middot; Next call: {{ next_call_date }}</span>{% endif %}
-      {% if calendly_link %}<a href="{{ calendly_link }}" target="_blank" class="book-call">&#x1f4c5; Book a Call</a>{% endif %}
-    </div>
-  </div>
-  <div class="score-badge"><span id="scoreBadgeNum">{{ current_score }}</span>/100 {{ current_grade }}</div>
-</div>
-
-<div class="grid">
-  <div class="stat-card">
-    <div class="label">Security Score</div>
-    <div class="value" style="color:var(--lime)"><span class="count-up" data-target="{{ current_score }}">0</span></div>
-    <div class="sub">
-      {% if score_history|length > 1 %}
-        {% set delta = current_score - score_history[-2].score %}
-        {% if delta > 0 %}<span class="score-up">&#x25b2; +{{ delta }} from last month</span>
-        {% elif delta < 0 %}<span class="score-down">&#x25bc; {{ delta }} from last month</span>
-        {% else %}&#x2192; No change{% endif %}
-      {% else %}Baseline assessment{% endif %}
-    </div>
-    {% if industry_avg_score %}
-    <div class="benchmark-row">
-      {% if current_score >= industry_avg_score %}
-        <span style="color:var(--emerald)">&#x25b2;</span>
-        <span style="color:var(--emerald)">{{ current_score - industry_avg_score }} pts above</span>
-      {% else %}
-        <span style="color:var(--orange)">&#x25bc;</span>
-        <span style="color:var(--orange)">{{ industry_avg_score - current_score }} pts below</span>
-      {% endif %}
-      <span style="color:var(--muted)">industry avg ({{ industry_avg_score }})</span>
-    </div>
-    {% endif %}
-  </div>
-  <div class="stat-card" onclick="toggleAlert('darkweb')">
-    <div class="label">Dark Web Alerts</div>
-    <div class="value" style="color:{% if dark_web_alerts > 0 %}var(--red){% else %}var(--emerald){% endif %}">{{ dark_web_alerts }}</div>
-    <div class="sub">{% if dark_web_alerts > 0 %}&#x26a0; Click to view details{% else %}&#x2713; No new exposures{% endif %}</div>
-  </div>
-  <div class="stat-card">
-    <div class="label">Compliance</div>
-    <div class="value" style="color:var(--lime)">{{ compliance_pct }}%</div>
-    <div class="bar"><div class="bar-fill" style="width:{{ compliance_pct }}%"></div></div>
-    {% if frameworks %}
-    <div style="margin-top:8px">
-      {% for fw in frameworks[:4] %}
-        <span class="fw-badge">{{ fw if fw is string else fw.id|default(fw.name, '') }}</span>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
-  <div class="stat-card" onclick="toggleAlert('threats')">
-    <div class="label">Threats Monitored</div>
-    <div class="value" style="color:var(--emerald)">{{ threats_blocked }}</div>
-    <div class="sub">Click to view CVE details</div>
-  </div>
-  <div class="stat-card" onclick="toggleAlert('vulns')">
-    <div class="label">Vulnerability Scan</div>
-    <div class="value" style="color:{% if vuln_findings > 0 %}var(--orange){% else %}var(--emerald){% endif %}">{{ vuln_findings }}</div>
-    <div class="sub">Click to view scan results</div>
-  </div>
-  <div class="stat-card" onclick="toggleAlert('phishing')">
-    <div class="label">Phishing Tests</div>
-    <div class="value" style="color:var(--lime)">{{ phishing_tests }}</div>
-    <div class="sub">Click to view results</div>
-  </div>
-</div>
-
-<div class="alert-detail" id="darkweb-detail">
-  <h3>&#x1f576;&#xfe0f; Dark Web Exposure Details</h3>
-  <div id="darkweb-content" hx-get="/portal/{{ client.client_id }}/alerts/darkweb" hx-trigger="revealed" hx-swap="innerHTML">
-    <p style="color:var(--muted)">Loading...</p>
-  </div>
-</div>
-<div class="alert-detail" id="threats-detail">
-  <h3>&#x1f6a8; Threat Intelligence Details</h3>
-  <div id="threats-content" hx-get="/portal/{{ client.client_id }}/alerts/threats" hx-trigger="revealed" hx-swap="innerHTML">
-    <p style="color:var(--muted)">Loading...</p>
-  </div>
-</div>
-<div class="alert-detail" id="vulns-detail">
-  <h3>&#x1f50d; Vulnerability Scan Results</h3>
-  <div id="vulns-content" hx-get="/portal/{{ client.client_id }}/alerts/vulns" hx-trigger="revealed" hx-swap="innerHTML">
-    <p style="color:var(--muted)">Loading...</p>
-  </div>
-</div>
-<div class="alert-detail" id="phishing-detail">
-  <h3>&#x1f3a3; Phishing Test Results</h3>
-  <div id="phishing-content" hx-get="/portal/{{ client.client_id }}/alerts/phishing" hx-trigger="revealed" hx-swap="innerHTML">
-    <p style="color:var(--muted)">Loading...</p>
-  </div>
-</div>
-<div class="alert-detail" id="monitoring-detail">
-  <h3>&#x1f441;&#xfe0f; Monitoring Activity</h3>
-  <div id="monitoring-content" hx-get="/portal/{{ client.client_id }}/alerts/monitoring" hx-trigger="revealed" hx-swap="innerHTML">
-    <p style="color:var(--muted)">Loading...</p>
-  </div>
-</div>
-
-{% if monthly_narrative %}
-<div class="narrative-box">
-  <h2>&#x1f4dd; This Month's Summary</h2>
-  <div style="color:var(--txt);font-size:.9rem;line-height:1.6;margin-bottom:12px">{{ monthly_narrative[:800] }}</div>
-  <div style="display:flex;align-items:center;gap:8px">
-    <span class="cissp-badge">&#x2713; CISSP-Reviewed</span>
-    <span style="color:var(--muted);font-size:.8rem">{{ advisor_name }}</span>
-  </div>
-</div>
-{% endif %}
-
-{% if reports %}
-<div class="report-banner">
-  <h2>&#x1f4ca; Latest Monthly Report</h2>
-  <div id="report-content" hx-get="/portal/{{ client.client_id }}/alerts/report" hx-trigger="load" hx-swap="innerHTML">
-    <p style="color:var(--muted)">Loading report...</p>
-  </div>
-</div>
-{% endif %}
-
-<div class="main">
-  <div class="panel">
-    <h2>&#x1f4c8; Score Trend</h2>
-    {% if score_history %}
-    <div class="trend">
-      {% for entry in score_history[-6:] %}
-      <div style="flex:1;text-align:center">
-        <div class="trend-bar" style="height:{{ entry.score * 0.8 }}px;--h:{{ entry.score * 0.8 }}px;{% if loop.last %}background:var(--emerald){% endif %};animation-delay:{{ loop.index0 * 0.1 }}s"></div>
-        <div class="trend-label">{{ entry.score }}<br>{{ entry.date[5:7] }}/{{ entry.date[8:10] }}</div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <p style="color:var(--muted)">Score history will appear after your first monthly scan.</p>
-    {% endif %}
-  </div>
-
-  <div class="panel">
-    <h2 style="cursor:pointer" onclick="toggleAlert('monitoring')">&#x1f916; Active Agents (24/7) <span style="font-size:.7rem;color:var(--muted)">&#x25be; details</span></h2>
-    {% for agent in agent_status %}
-    <div class="agent-row">
       <div>
-        <span class="dot {{ agent.status }}"></span>
-        <span class="agent-name">{{ agent.name }}</span>
-        <span style="color:var(--muted);font-size:.8rem"> &mdash; {{ agent.label }}</span>
+        <div class="brand-name">CYBERCOMPLY</div>
+        <span class="brand-sub">Managed Assurance</span>
       </div>
-      <div class="agent-status">{{ agent.last_run }}</div>
-    </div>
-    {% endfor %}
-  </div>
+    </a>
 
-  <div class="panel">
-    <h2>&#x1f4cb; Remediation Tasks ({{ open_tasks|length }} open)</h2>
-    {% for task in open_tasks[:8] %}
-    <div class="task-row" id="task-{{ task.id }}">
-      <div style="flex:1">
-        <span class="sev sev-{{ task.severity|lower }}">{{ task.severity }}</span>
-        <span style="margin-left:8px;font-size:.9rem">{{ task.title }}</span>
-        {% if task.fix %}<div style="color:var(--muted);font-size:.8rem;margin-left:60px">Fix: {{ task.fix[:80] }}</div>{% endif %}
+    <div class="client-card">
+      <div class="name">{{ client.company_name }}</div>
+      <div class="domain">{{ client.domain }}</div>
+      <span class="plan">{{ tier.label }}</span>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">Today</div>
+      <a href="#overview" class="active"><span class="dot"></span>Overview</a>
+      <a href="#value"><span class="dot"></span>This Month's Value</a>
+      <a href="#actions"><span class="dot"></span>Action Items{% if open_tasks %} ({{ open_tasks|length }}){% endif %}</a>
+
+      <div class="nav-section">Program</div>
+      <a href="#coverage"><span class="dot"></span>Service Coverage</a>
+      <a href="#alerts"><span class="dot"></span>Alerts</a>
+      <a href="#validation"><span class="dot"></span>Security Validation</a>
+
+      <div class="nav-section">Documents</div>
+      <a href="#reports"><span class="dot"></span>Reports</a>
+      <a href="#policies"><span class="dot"></span>Policies</a>
+      <a href="#vault"><span class="dot"></span>Evidence Vault</a>
+
+      <div class="nav-section">Engagement</div>
+      <a href="#advisor"><span class="dot"></span>Advisor</a>
+      <a href="#plan"><span class="dot"></span>Plan &amp; Scope</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      Need something handled?<br>
+      {% if calendly_link %}<a href="{{ calendly_link }}" target="_blank" rel="noopener">Schedule with your advisor →</a>{% endif %}
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:10.5px;color:var(--dim);line-height:1.5">
+        Issued by DigComply Solutions Private Limited<br>(in association with CA4CPA Global LLC)
       </div>
-      <button hx-post="/portal/{{ client.client_id }}/task/{{ task.id }}/resolve"
-              hx-target="#task-{{ task.id }}"
-              hx-swap="outerHTML"
-              class="done-btn">
-        &#x2713; Done
-      </button>
     </div>
-    {% endfor %}
-    {% if resolved_tasks %}
-    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
-      <div style="color:var(--emerald);font-size:.85rem;font-weight:600">&#x2713; {{ resolved_tasks|length }} resolved</div>
-    </div>
-    {% endif %}
-    {% if not open_tasks and not resolved_tasks %}
-    <p style="color:var(--muted)">No tasks yet. Tasks will be created from scan findings.</p>
-    {% endif %}
-  </div>
+  </aside>
 
-  <div class="roadmap-panel">
-    <h2>&#x1f6a9; Path to Compliance</h2>
-    {% set priority_tasks = open_tasks[:3] %}
-    {% if priority_tasks %}
-      {% for task in priority_tasks %}
-      <div class="roadmap-step">
-        <div class="step-num">{{ loop.index }}</div>
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="sev sev-{{ task.severity|lower }}">{{ task.severity }}</span>
-            <span style="font-weight:600;font-size:.9rem">{{ task.title }}</span>
+  <!-- ─── Main ─── -->
+  <main>
+
+    <!-- ───── 1 · OVERVIEW ─────────────────────────────────── -->
+    <section class="section" id="overview">
+      <div class="section-eyebrow">Overview</div>
+      <h1 class="section-title">Good to see you, {{ client.company_name }}.</h1>
+      <p class="section-lede">A calm, executive view of your security and compliance program. Your advisor has reviewed everything you see here.</p>
+
+      <div class="overview-grid">
+
+        <!-- Risk card -->
+        <div class="risk-card">
+          {% set _risk_class = 'red' if current_score < 40 else ('orange' if current_score < 60 else ('amber' if current_score < 80 else '')) %}
+          <div class="risk-score {{ _risk_class }}">
+            <div class="num">{{ current_score if current_score else '—' }}</div>
+            <div class="of">/100 · Grade {{ current_grade }}</div>
           </div>
-          {% if task.fix %}<div style="color:var(--muted);font-size:.8rem;margin-top:4px">{{ task.fix[:120] }}</div>{% endif %}
+          <div class="risk-info">
+            <div class="risk-eyebrow">Current business risk</div>
+            <div class="risk-headline">{{ risk_label }}</div>
+            <div class="risk-narrative">{{ risk_narrative }}</div>
+            {% if industry_avg_score %}
+            <div class="risk-meta-row">
+              <span>{% if current_score >= industry_avg_score %}<strong>+{{ current_score - industry_avg_score }} pts</strong> above {% else %}<strong>{{ industry_avg_score - current_score }} pts</strong> below {% endif %}industry average ({{ industry_avg_score }})</span>
+              {% if score_history|length > 1 %}{% set _delta = current_score - score_history[-2].score %}<span>{% if _delta > 0 %}<strong>+{{ _delta }}</strong> from last month{% elif _delta < 0 %}<strong>{{ _delta }}</strong> from last month{% else %}No change from last month{% endif %}</span>{% endif %}
+            </div>
+            {% endif %}
+            {% if frameworks %}
+            <div class="risk-meta-row" style="margin-top:10px;gap:6px">
+              {% for fw in frameworks[:6] %}
+              <span style="font-family:var(--mono);font-size:10.5px;color:var(--lime);background:var(--lime-soft);padding:3px 8px;border-radius:5px;letter-spacing:.4px">{{ fw if fw is string else fw.id|default(fw.name, '') }}</span>
+              {% endfor %}
+              <span style="color:var(--dim);font-size:12px">{{ compliance_pct }}% compliant</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Glance answers -->
+        <div class="glance">
+
+          <div class="glance-row">
+            <div class="glance-label">What needs your attention</div>
+            <div class="glance-value">
+              {% if needs_attention %}
+              <strong>{{ open_tasks|length }} open item{% if open_tasks|length != 1 %}s{% endif %}.</strong>
+              Top priority: {{ needs_attention[0].title }}.
+              <a href="#actions">Review action items →</a>
+              {% else %}
+              <strong>Nothing urgent today.</strong> Your advisor is monitoring; new findings will appear here.
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="glance-row">
+            <div class="glance-label">What we handled this month</div>
+            <ul class="glance-list">
+              {% for line in this_month_handled %}<li>{{ line }}</li>{% endfor %}
+            </ul>
+          </div>
+
+          <div class="glance-row">
+            <div class="glance-label">Pending setup</div>
+            {% if pending_setup %}
+            <ul class="glance-list muted">
+              {% for p in pending_setup %}<li><strong>{{ p.item }}</strong> — {{ p.note }}</li>{% endfor %}
+            </ul>
+            {% else %}
+            <div class="glance-value">Everything in your plan is connected.</div>
+            {% endif %}
+          </div>
+
+          <div class="glance-row">
+            <div class="glance-label">Due next</div>
+            {% if due_next %}
+            <ul class="glance-list due">
+              {% for d in due_next %}<li><strong>{{ d.when }}</strong> — {{ d.what }}</li>{% endfor %}
+            </ul>
+            {% else %}
+            <div class="glance-value">No scheduled milestones in the next two weeks.</div>
+            {% endif %}
+          </div>
+
+          <div class="glance-row">
+            <div class="glance-label">Included in your plan</div>
+            <div class="glance-value">
+              <strong>{{ tier.label }}.</strong>
+              {{ tier.included_services|length }} services covered.
+              <a href="#plan">View plan →</a>
+            </div>
+          </div>
+
         </div>
       </div>
+    </section>
+
+    <!-- ───── 1b · THIS MONTH'S VALUE DELIVERED ───────────── -->
+    <section class="section" id="value">
+      <div class="section-eyebrow">This Month's Value Delivered · {{ value_dashboard.month_label }}</div>
+      <h2 class="section-title">Tangible work, this cycle.</h2>
+      <p class="section-lede">A live record of what's been done on your behalf and by your team in the past {{ value_dashboard.window_days }} days.</p>
+
+      <div class="value-summary">
+        <div class="value-summary-cell">
+          <div class="vs-num">{{ value_dashboard.summary.advisor_actions }}</div>
+          <div class="vs-label">Advisor &amp; system<br>actions</div>
+        </div>
+        <div class="value-summary-divider"></div>
+        <div class="value-summary-cell">
+          <div class="vs-num">{{ value_dashboard.summary.client_actions }}</div>
+          <div class="vs-label">Client actions<br>completed</div>
+        </div>
+        <div class="value-summary-divider"></div>
+        <div class="value-summary-cell">
+          <div class="vs-num">{{ value_dashboard.summary.advisor_actions + value_dashboard.summary.client_actions }}</div>
+          <div class="vs-label">Total<br>movements</div>
+        </div>
+      </div>
+
+      <div class="value-grid">
+        {% for m in value_dashboard.metrics %}
+        <div class="value-card value-{{ m.state }}">
+          <div class="vc-label">{{ m.label }}</div>
+          <div class="vc-display">{{ m.display }}</div>
+          {% if m.supporting_text %}<div class="vc-support">{{ m.supporting_text }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ───── 2 · ACTION ITEMS ─────────────────────────────── -->
+    <section class="section" id="actions">
+      <div class="section-eyebrow">Action Items</div>
+      <h2 class="section-title">What needs your attention</h2>
+      <p class="section-lede">Items that benefit from your sign-off or input. Your advisor handles everything else in the background.</p>
+
+      <div class="action-list">
+        {% for task in open_tasks[:8] %}
+        <div class="action-card" id="task-{{ task.id }}">
+          <div class="action-header">
+            <span class="sev-pill sev-{{ task.severity|upper }}">{{ task.severity|title }}</span>
+            <div class="action-title-block">
+              <div class="action-title">{{ task.title }}</div>
+              {% if task.business_impact %}<div class="action-impact">{{ task.business_impact }}</div>{% endif %}
+            </div>
+            <span class="status-pill status-{{ (task.status or 'open')|replace('_','')|replace(' ','') }}">{{ task.status_label or task.status }}</span>
+          </div>
+
+          <div class="action-meta">
+            {% if task.category %}<span class="meta-chip"><span class="meta-k">Category</span> {{ task.category }}</span>{% endif %}
+            {% if task.owner %}<span class="meta-chip"><span class="meta-k">Owner</span> {{ task.owner }}</span>{% endif %}
+            {% if task.due_date %}<span class="meta-chip"><span class="meta-k">Due</span> {{ task.due_date }}</span>{% endif %}
+            {% if task.verification_method %}<span class="meta-chip"><span class="meta-k">Verification</span> {{ task.verification_method|replace('_',' ') }}</span>{% endif %}
+          </div>
+
+          {% if task.fix %}
+          <div class="action-fix-block">
+            <div class="action-section-label">Recommended fix</div>
+            <div class="action-fix">{{ task.fix }}</div>
+          </div>
+          {% endif %}
+
+          {% if task.evidence_required %}
+          <div class="action-evidence">
+            <div class="action-section-label">Evidence required</div>
+            <ul class="evidence-list">
+              {% for ev in task.evidence_required %}<li>{{ ev }}</li>{% endfor %}
+            </ul>
+            {% if task.evidence_attached %}
+            <div class="action-section-label" style="margin-top:8px">Evidence on file</div>
+            <ul class="evidence-attached-list">
+              {% for ea in task.evidence_attached %}
+              <li><strong>{{ ea.filename }}</strong> <span style="color:var(--dim)">— {{ ea.uploaded_at[:10] }}</span></li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {% if task.advisor_notes %}
+          <div class="action-notes action-notes-advisor">
+            <div class="action-section-label">From your advisor</div>
+            {% for n in task.advisor_notes[-2:] %}
+            <div class="note-row"><span class="note-meta">{{ n.at[:10] }} · {{ n.by }}</span><div>{{ n.note }}</div></div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if task.status not in ['submitted_for_review', 'verified', 'deferred'] %}
+          <div class="action-submit-block">
+            <textarea class="submit-notes" id="task-{{ task.id }}-notes" placeholder="Optional: a brief note for your advisor (what changed, where to verify)" rows="2"></textarea>
+            <div class="submit-row">
+              <input class="submit-evidence" id="task-{{ task.id }}-evidence" placeholder="Evidence filename (optional, e.g. dmarc-screenshot.png)">
+              <button class="action-submit"
+                      onclick="submitTask('{{ client.client_id }}','{{ task.id }}')">
+                Submit for review
+              </button>
+            </div>
+            <div class="submit-disclaimer">Your submission goes to your advisor for verification. Tasks are only marked <strong>Verified</strong> after advisor sign-off.</div>
+          </div>
+          {% elif task.status == 'submitted_for_review' %}
+          <div class="action-pending">
+            ⏳ <strong>Submitted for review</strong> on {{ (task.submitted_at or '')[:10] }} — awaiting advisor verification.
+          </div>
+          {% elif task.status == 'deferred' %}
+          <div class="action-pending action-deferred">
+            ⏸ <strong>Deferred</strong>{% if task.deferred_until %} until {{ task.deferred_until }}{% endif %}{% if task.deferral_reason %} — {{ task.deferral_reason }}{% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% if not open_tasks %}
+        <div class="empty-state">
+          No open action items. Your advisor will notify you here when something needs your sign-off.
+        </div>
+        {% endif %}
+      </div>
+
+      {% if resolved_tasks %}
+      <div style="margin-top:14px;font-size:12.5px;color:var(--muted)">
+        ✓ {{ resolved_tasks|length }} item{% if resolved_tasks|length != 1 %}s{% endif %} verified this program cycle.
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- ───── 3 · SERVICE COVERAGE ─────────────────────────── -->
+    <section class="section" id="coverage">
+      <div class="section-eyebrow">Service Coverage</div>
+      <h2 class="section-title">What's running in the background</h2>
+      <p class="section-lede">Every service area, what it does, who owns it, and the last time it ran successfully. Status reflects live system state — never assumed.</p>
+
+      <div class="card" style="padding:0">
+        <div class="cov-table">
+          {% for c in coverage %}
+          <div class="cov-row {% if not c.included_in_plan %}cov-row-muted{% endif %}">
+
+            <div class="cov-cell cov-cell-service">
+              <div class="cov-service-name">{{ c.service }}</div>
+              <div class="cov-service-meta">
+                <span class="cov-plan">{{ c.plan_availability }}</span>
+                <span class="cov-sep">·</span>
+                <span class="cov-owner cov-owner-{{ c.owner|lower }}">Owner: {{ c.owner }}</span>
+              </div>
+              <div class="cov-note">{{ c.coverage_note }}</div>
+              <div class="cov-source">Source: {{ c.data_source }}</div>
+            </div>
+
+            <div class="cov-cell cov-cell-status">
+              <span class="status-pill status-{{ c.status|replace(' ','') }}">{{ c.status }}</span>
+              {% if c.last_successful_check %}
+              <div class="cov-last">Last successful check<br><strong>{{ c.last_successful_check[:10] }}</strong></div>
+              {% else %}
+              <div class="cov-last cov-last-empty">No successful check on file yet</div>
+              {% endif %}
+            </div>
+
+            <div class="cov-cell cov-cell-action">
+              {% if c.next_action %}
+              <div class="cov-action-label">Next required action</div>
+              <div class="cov-action-text">{{ c.next_action }}</div>
+              {% else %}
+              <div class="cov-action-label">Next required action</div>
+              <div class="cov-action-text cov-action-none">No action required from you</div>
+              {% endif %}
+            </div>
+
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── 4 · ALERTS ──────────────────────────────────── -->
+    <section class="section" id="alerts">
+      <div class="section-eyebrow">Alerts</div>
+      <h2 class="section-title">What we've spotted recently</h2>
+      <p class="section-lede">Each tile shows the most recent results from the matching service. Tap any tile to see the detail your advisor has reviewed.</p>
+
+      <div class="alert-grid">
+
+        <div class="alert-tile" onclick="toggleAlert('darkweb')">
+          <div class="label">Dark-web exposure</div>
+          {% if not client.hibp_configured %}
+          <div class="num muted">—</div>
+          <div class="sub">Pending setup · HIBP key required</div>
+          {% elif dark_web_alerts > 0 %}
+          <div class="num red">{{ dark_web_alerts }}</div>
+          <div class="sub">Click for details</div>
+          {% elif client.last_darkweb_check_at %}
+          <div class="num ok">{{ dark_web_alerts }}</div>
+          <div class="sub">Last check {{ client.last_darkweb_check_at[:10] }}</div>
+          {% else %}
+          <div class="num muted">—</div>
+          <div class="sub">Check pending</div>
+          {% endif %}
+        </div>
+
+        <div class="alert-tile" onclick="toggleAlert('threats')">
+          <div class="label">Threat intel matches</div>
+          <div class="num ok">{{ threats_blocked }}</div>
+          <div class="sub">CISA KEV · click for details</div>
+        </div>
+
+        <div class="alert-tile" onclick="toggleAlert('vulns')">
+          <div class="label">Vulnerability scan</div>
+          {% if not client.nuclei_available %}
+          <div class="num muted">—</div>
+          <div class="sub">Pending setup · scanner not connected</div>
+          {% else %}
+          <div class="num {% if vuln_findings > 0 %}amber{% else %}ok{% endif %}">{{ vuln_findings }}</div>
+          <div class="sub">Click to view results</div>
+          {% endif %}
+        </div>
+
+        <div class="alert-tile" onclick="toggleAlert('phishing')">
+          <div class="label">Phishing tests</div>
+          {% if not client.gophish_configured %}
+          <div class="num muted">—</div>
+          <div class="sub">Not connected · GoPhish required to send</div>
+          {% else %}
+          <div class="num">{{ phishing_tests }}</div>
+          <div class="sub">Click to view results</div>
+          {% endif %}
+        </div>
+
+        <div class="alert-tile" onclick="toggleAlert('monitoring')">
+          <div class="label">Configuration monitoring</div>
+          <div class="num ok">{{ alerts|selectattr('type','equalto','monitoring')|list|length }}</div>
+          <div class="sub">Drift events · click for details</div>
+        </div>
+
+      </div>
+
+      <div class="alert-detail" id="darkweb-detail">
+        <div id="darkweb-content" hx-get="/portal/{{ client.client_id }}/alerts/darkweb" hx-trigger="revealed" hx-swap="innerHTML"><p style="color:var(--muted)">Loading…</p></div>
+      </div>
+      <div class="alert-detail" id="threats-detail">
+        <div id="threats-content" hx-get="/portal/{{ client.client_id }}/alerts/threats" hx-trigger="revealed" hx-swap="innerHTML"><p style="color:var(--muted)">Loading…</p></div>
+      </div>
+      <div class="alert-detail" id="vulns-detail">
+        <div id="vulns-content" hx-get="/portal/{{ client.client_id }}/alerts/vulns" hx-trigger="revealed" hx-swap="innerHTML"><p style="color:var(--muted)">Loading…</p></div>
+      </div>
+      <div class="alert-detail" id="phishing-detail">
+        <div id="phishing-content" hx-get="/portal/{{ client.client_id }}/alerts/phishing" hx-trigger="revealed" hx-swap="innerHTML"><p style="color:var(--muted)">Loading…</p></div>
+      </div>
+      <div class="alert-detail" id="monitoring-detail">
+        <div id="monitoring-content" hx-get="/portal/{{ client.client_id }}/alerts/monitoring" hx-trigger="revealed" hx-swap="innerHTML"><p style="color:var(--muted)">Loading…</p></div>
+      </div>
+    </section>
+
+    <!-- ───── 5 · REPORTS ─────────────────────────────────── -->
+    <section class="section" id="reports">
+      <div class="section-eyebrow">Reports</div>
+      <h2 class="section-title">Your professional report library</h2>
+      <p class="section-lede">Eight canonical reports tailored to your engagement. Each item shows generated date, version, advisor review state, and the next review due date.</p>
+
+      <div class="card" style="padding:0">
+        <div class="doclib-list">
+          {% for d in document_library['reports'] %}
+          <div class="doclib-row {% if not d.present %}doclib-row-pending{% endif %}{% if not d.available_in_plan %} doclib-row-muted{% endif %}">
+            <div class="doclib-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+            </div>
+            <div class="doclib-main">
+              <div class="doclib-title">{{ d.business_title }}</div>
+              <div class="doclib-type">{{ d.type }} · {{ d.frequency_label }}</div>
+              <div class="doclib-meta">
+                <span class="doclib-meta-chip"><span class="meta-k">Generated</span> {{ d.generated_date or '—' }}</span>
+                <span class="doclib-meta-chip"><span class="meta-k">Version</span> {{ d.version }}</span>
+                {% if d.review_due_date %}<span class="doclib-meta-chip"><span class="meta-k">Review due</span> {{ d.review_due_date }}</span>{% endif %}
+                {% if d.reviewed_by %}<span class="doclib-meta-chip doclib-meta-reviewed"><span class="meta-k">Reviewed</span> {{ d.reviewed_by }} · {{ d.reviewed_on }}</span>{% endif %}
+              </div>
+              {% if d.framework_mapping %}
+              <div class="doclib-frameworks">
+                {% for fw in d.framework_mapping[:6] %}<span class="vault-fw-chip">{{ fw }}</span>{% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="doclib-side">
+              {% if not d.available_in_plan %}
+              <span class="status-pill status-Notincluded">Not in plan</span>
+              {% else %}
+              <span class="status-pill status-{{ d.review_status|replace(' ','') }}">{{ d.review_status }}</span>
+              {% endif %}
+              {% if d.download_url %}
+              <a class="doclib-download" href="{{ d.download_url }}">Download</a>
+              {% else %}
+              <span class="doclib-download-disabled">Pending</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if monthly_narrative %}
+      <div class="card" style="margin-top:14px">
+        <div class="card-title">This month's executive summary
+          {% if monthly_summary_signed_off %}
+          <span class="meta" style="color:var(--emerald)">✓ {{ monthly_summary_review.reviewed_by }}{% if monthly_summary_review.reviewer_credential %}, {{ monthly_summary_review.reviewer_credential }}{% endif %} · {{ monthly_summary_review.reviewed_on[:10] }}</span>
+          {% else %}
+          <span class="meta">Review pending</span>
+          {% endif %}
+        </div>
+        {% if monthly_summary_review.client_facing_recommendation %}
+        <div style="font-size:13px;color:var(--lime);font-weight:600;margin-bottom:10px;padding:10px 12px;background:var(--lime-soft);border-radius:8px">{{ monthly_summary_review.client_facing_recommendation }}</div>
+        {% endif %}
+        <div style="font-size:14px;color:var(--txt-2);line-height:1.7">{{ monthly_narrative[:1000] }}</div>
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- ───── 6 · POLICIES ────────────────────────────────── -->
+    <section class="section" id="policies">
+      <div class="section-eyebrow">Policies</div>
+      <h2 class="section-title">Your policy library</h2>
+      <p class="section-lede">Eight canonical policies kept current to your profile. Each is reviewed annually or whenever your environment changes; expired and review-due dates are tracked here.</p>
+
+      <div class="card" style="padding:0">
+        <div class="doclib-list">
+          {% for d in document_library['policies'] %}
+          <div class="doclib-row {% if not d.present %}doclib-row-pending{% endif %}">
+            <div class="doclib-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="doclib-main">
+              <div class="doclib-title">{{ d.business_title }}</div>
+              <div class="doclib-type">{{ d.type }} · {{ d.frequency_label }}</div>
+              <div class="doclib-meta">
+                <span class="doclib-meta-chip"><span class="meta-k">Generated</span> {{ d.generated_date or '—' }}</span>
+                <span class="doclib-meta-chip"><span class="meta-k">Version</span> {{ d.version }}</span>
+                {% if d.review_due_date %}<span class="doclib-meta-chip"><span class="meta-k">Next review</span> {{ d.review_due_date }}</span>{% endif %}
+                {% if d.reviewed_by %}<span class="doclib-meta-chip doclib-meta-reviewed"><span class="meta-k">Reviewed</span> {{ d.reviewed_by }} · {{ d.reviewed_on }}</span>{% endif %}
+              </div>
+              {% if d.framework_mapping %}
+              <div class="doclib-frameworks">
+                {% for fw in d.framework_mapping[:6] %}<span class="vault-fw-chip">{{ fw }}</span>{% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="doclib-side">
+              <span class="status-pill status-{{ d.review_status|replace(' ','') }}">{{ d.review_status }}</span>
+              {% if d.download_url %}
+              <a class="doclib-download" href="{{ d.download_url }}">Download</a>
+              {% else %}
+              <span class="doclib-download-disabled">Drafting</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── 7 · EVIDENCE VAULT ──────────────────────────── -->
+    <section class="section" id="vault">
+      <div class="section-eyebrow">Evidence Vault</div>
+      <h2 class="section-title">Audit-ready evidence, organized.</h2>
+      <p class="section-lede">Every document an auditor, insurer, or enterprise buyer typically asks for — categorized, version-tracked, and labeled by what it actually is. Download the full package as a ZIP, or pull individual items below.</p>
+
+      {% if reports or policies %}
+      <a class="vault-cta" href="/portal/{{ client.client_id }}/download/audit-package">📦 Download full audit package (ZIP)</a>
+      {% endif %}
+
+      {% for cat in vault.categories %}
+      <div class="vault-category">
+        <div class="vault-cat-header">
+          <h3 class="vault-cat-title">{{ cat.label }}</h3>
+          <span class="vault-cat-count">{{ cat.count }} item{% if cat.count != 1 %}s{% endif %}</span>
+        </div>
+
+        {% if cat['items'] %}
+        <div class="vault-list">
+          {% for item in cat['items'] %}
+          <div class="vault-item">
+            <div class="vault-item-main">
+              <div class="vault-item-title">{{ item.business_title }}</div>
+              <div class="vault-item-meta">
+                <span class="vault-meta-chip"><span class="meta-k">Type</span> {{ item.type }}</span>
+                {% if item.date %}<span class="vault-meta-chip"><span class="meta-k">Date</span> {{ item.date }}</span>{% endif %}
+                <span class="vault-meta-chip"><span class="meta-k">Version</span> {{ item.version }}</span>
+                <span class="vault-meta-chip"><span class="meta-k">Source</span> {{ item.uploaded_by }}</span>
+                {% if item.reviewed_by %}
+                <span class="vault-meta-chip vault-meta-reviewed"><span class="meta-k">Reviewed</span> {{ item.reviewed_by }} · {{ item.reviewed_on }}</span>
+                {% endif %}
+              </div>
+              {% if item.framework_mapping %}
+              <div class="vault-frameworks">
+                {% for fw in item.framework_mapping[:6] %}<span class="vault-fw-chip">{{ fw }}</span>{% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="vault-item-side">
+              <span class="status-pill vault-status status-{{ item.status|replace(' ','') }}">{{ item.status }}</span>
+              {% if item.download_url %}
+              <a class="vault-download" href="{{ item.download_url }}">Download</a>
+              {% else %}
+              <span class="vault-download-disabled">On request</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="vault-empty">{{ cat.empty_state }}</div>
+        {% endif %}
+      </div>
       {% endfor %}
-    {% else %}
-      <p style="color:var(--emerald);font-size:.9rem">&#x2713; No open compliance tasks. You are on track.</p>
-    {% endif %}
-  </div>
+    </section>
 
-  <div class="panel">
-    <h2>&#x1f4c4; Reports &amp; Policies</h2>
-    {% for report in reports[:5] %}
-    <div class="doc-row">
-      <span class="doc-icon">&#x1f4ca;</span>
-      <a href="/portal/{{ client.client_id }}/download/reports/{{ report.filename }}">{{ report.filename }}</a>
-    </div>
-    {% endfor %}
-    {% for policy in policies[:5] %}
-    <div class="doc-row">
-      <span class="doc-icon">&#x1f4dd;</span>
-      <a href="/portal/{{ client.client_id }}/download/policies/{{ policy.filename }}">{{ policy.filename }}</a>
-    </div>
-    {% endfor %}
-    {% if not reports and not policies %}
-    <p style="color:var(--muted)">Documents will appear here as they are generated.</p>
-    {% endif %}
-    {% if reports or policies %}
-    <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border)">
-      <a href="/portal/{{ client.client_id }}/download/audit-package" style="width:100%;text-align:center;display:block;background:var(--lime-dim);color:var(--lime);padding:10px;border-radius:8px;text-decoration:none;font-family:var(--head);font-weight:600;font-size:.9rem;transition:all .3s;border:1px solid rgba(200,255,0,.2)">&#x1f4e6; Download Audit Package (ZIP)</a>
-    </div>
-    {% endif %}
-  </div>
+    <!-- ───── 8 · SECURITY VALIDATION ─────────────────────── -->
+    <section class="section" id="validation">
+      <div class="section-eyebrow">Security Validation</div>
+      <h2 class="section-title">What's authorized to run on your environment</h2>
+      <p class="section-lede">Active security validation only runs when every legal precondition is in place: signed engagement, scoped targets, named representative, and your advisor's counter-approval.</p>
 
-  <div class="panel">
-    <h2>&#x1f4de; Monthly Review Notes</h2>
-    {% if call_notes %}
-    {% for note in call_notes|reverse %}
-    <div style="margin-bottom:12px; padding-bottom:12px; {% if not loop.last %}border-bottom:1px solid var(--border){% endif %}">
-      <div style="color:var(--lime); font-size:.8rem; font-weight:600; margin-bottom:4px">{{ note.date }}</div>
-      <div style="color:var(--muted); font-size:.9rem; white-space:pre-line">{{ note.notes }}</div>
-    </div>
-    {% endfor %}
-    {% else %}
-    <p style="color:var(--muted)">Notes from your monthly review calls will appear here.</p>
-    {% endif %}
-  </div>
+      <div class="card">
+        <div class="validation-grid">
+          <div class="validation-tile">
+            <div class="v-label">MSA</div>
+            <div class="v-status">{{ legal_view.documents.msa }}</div>
+          </div>
+          <div class="validation-tile">
+            <div class="v-label">SOW</div>
+            <div class="v-status">{{ legal_view.documents.sow }}</div>
+          </div>
+          <div class="validation-tile">
+            <div class="v-label">NDA</div>
+            <div class="v-status">{{ legal_view.documents.nda }}</div>
+          </div>
+          <div class="validation-tile">
+            <div class="v-label">DPA</div>
+            <div class="v-status">{{ legal_view.documents.dpa }}</div>
+          </div>
+          <div class="validation-tile">
+            <div class="v-label">Authorized representative</div>
+            <div class="v-status">{% if legal_view.authorized_representative_recorded %}On file{% else %}Pending setup{% endif %}</div>
+          </div>
+          <div class="validation-tile">
+            <div class="v-label">Domain ownership</div>
+            <div class="v-status">{% if legal_view.ownership_confirmed %}Confirmed{% else %}Pending setup{% endif %}</div>
+          </div>
+          <div class="validation-tile">
+            <div class="v-label">Passive scan authorization</div>
+            <div class="v-status">{{ legal_view.passive_scan }}</div>
+          </div>
+          <div class="validation-tile">
+            <div class="v-label">Active validation authorization</div>
+            <div class="v-status">{{ legal_view.active_validation }}</div>
+          </div>
+        </div>
+
+        <div class="validation-disclaimer">
+          Active security validation is offered on Professional and Enterprise+ plans. Your advisor coordinates scope, scheduling, and a 24×7 emergency contact before any run. CyberComply does not guarantee certification outcomes or breach prevention.
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── 9 · ADVISOR ─────────────────────────────────── -->
+    <section class="section" id="advisor">
+      <div class="section-eyebrow">Advisor</div>
+      <h2 class="section-title">Your named security advisor</h2>
+      <p class="section-lede">A single point of contact who reviews every deliverable and runs your monthly check-in.</p>
+
+      <div class="card">
+        <div class="advisor-grid">
+          <div class="advisor-photo">{{ advisor_name[:1]|upper }}</div>
+          <div>
+            <div class="advisor-name">{{ advisor_name }}</div>
+            <div class="advisor-role">Security Advisor — CyberComply</div>
+            {% if next_call_date %}<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Next scheduled call: <strong style="color:var(--txt)">{{ next_call_date }}</strong></div>{% endif %}
+            {% if calendly_link %}<a class="advisor-cta" href="{{ calendly_link }}" target="_blank" rel="noopener">📅 Book a call</a>{% endif %}
+          </div>
+        </div>
+
+        {% if call_notes %}
+        <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border)">
+          <div class="card-title" style="margin-bottom:12px">Recent review notes</div>
+          {% for note in call_notes|reverse %}
+          <div style="margin-bottom:14px;padding-bottom:14px;{% if not loop.last %}border-bottom:1px solid var(--border){% endif %}">
+            <div style="font-family:var(--mono);font-size:11px;color:var(--lime);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px">{{ note.date }}</div>
+            <div style="font-size:13.5px;color:var(--txt-2);white-space:pre-line;line-height:1.6">{{ note.notes }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- ───── 10 · PLAN & SCOPE ───────────────────────────── -->
+    <section class="section" id="plan">
+      <div class="section-eyebrow">Plan &amp; Scope</div>
+      <h2 class="section-title">What's included</h2>
+      <p class="section-lede">The full scope of your engagement. Anything outside your plan is offered as a separate engagement — talk to your advisor first.</p>
+
+      <div class="card">
+        <div class="plan-header">
+          <div class="plan-name">{{ tier.label }}</div>
+          {% if tier.billing_model == 'annual_prepaid' %}<span class="plan-billing">Annual prepaid</span>{% elif tier.billing_model == 'one_time' %}<span class="plan-billing">One-time engagement</span>{% endif %}
+        </div>
+        <ul class="plan-services">
+          {% for svc in tier.included_services %}<li>{{ svc }}</li>{% endfor %}
+        </ul>
+      </div>
+    </section>
+
+  </main>
 </div>
 
 <script>
+async function submitTask(clientId, taskId){
+  const notesEl = document.getElementById('task-' + taskId + '-notes');
+  const evEl = document.getElementById('task-' + taskId + '-evidence');
+  const card = document.getElementById('task-' + taskId);
+  const btn = card.querySelector('.action-submit');
+  if (btn){ btn.disabled = true; btn.textContent = 'Submitting…'; }
+  try {
+    const res = await fetch('/portal/' + encodeURIComponent(clientId) + '/task/' + encodeURIComponent(taskId) + '/submit', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        notes: (notesEl ? notesEl.value : '').trim(),
+        evidence: (evEl && evEl.value.trim()) ? [evEl.value.trim()] : [],
+      }),
+    });
+    if (!res.ok) throw new Error('Submission failed');
+    const html = await res.text();
+    // Replace the submit block with the submitted-for-review notice.
+    const submitBlock = card.querySelector('.action-submit-block');
+    if (submitBlock) submitBlock.outerHTML =
+      '<div class="action-pending">⏳ <strong>Submitted for review</strong> — awaiting advisor verification.</div>';
+    // Update header pill to "Submitted for review".
+    const pill = card.querySelector('.action-header .status-pill');
+    if (pill){
+      pill.textContent = 'Submitted for review';
+      pill.className = 'status-pill status-Submittedforreview';
+    }
+  } catch (e) {
+    if (btn){ btn.disabled = false; btn.textContent = 'Submit for review'; }
+    alert('Sorry, that did not go through. Please try again or contact your advisor.');
+  }
+}
+
 function toggleAlert(type){
   const el=document.getElementById(type+'-detail');
   const isOpen=el.classList.contains('open');
@@ -361,19 +1417,26 @@ function toggleAlert(type){
   }
 }
 
-// Count-up animation
-document.addEventListener('DOMContentLoaded',()=>{
-  document.querySelectorAll('.count-up').forEach(el=>{
-    const target=parseInt(el.dataset.target)||0;
-    let current=0;
-    const step=Math.max(1,Math.ceil(target/40));
-    const interval=setInterval(()=>{
-      current+=step;
-      if(current>=target){current=target;clearInterval(interval)}
-      el.textContent=current;
-    },30);
+// Sidebar active state on scroll
+const links = document.querySelectorAll('.nav a[href^="#"]');
+const sections = Array.from(links).map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
   });
-});
+}, {rootMargin: '-30% 0px -60% 0px', threshold: 0});
+sections.forEach(s => observer.observe(s));
+
+// Smooth scroll
+links.forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  const t = document.querySelector(a.getAttribute('href'));
+  if (t) t.scrollIntoView({behavior:'smooth', block:'start'});
+}));
 </script>
 </body>
 </html>

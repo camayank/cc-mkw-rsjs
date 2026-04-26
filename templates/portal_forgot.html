@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forgot password — CyberComply</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090b;--surface:#15171c;--surface-2:#1b1e25;
+  --border:rgba(255,255,255,.06);--border-strong:rgba(255,255,255,.1);
+  --txt:#f4f4f5;--txt-2:#d4d4d8;--muted:#9ca3af;--dim:#6b7280;
+  --lime:#c8ff00;--lime-soft:rgba(200,255,0,.08);
+  --emerald:#34d399;--amber:#fbbf24;--red:#ef4444;
+  --serif:'Syne',sans-serif;--body:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--body);background:var(--bg);color:var(--txt);
+     min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+     font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.shell{width:100%;max-width:440px}
+.brand{text-align:center;margin-bottom:24px}
+.brand-name{font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:1.5px;color:var(--lime)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px clamp(24px,4vw,36px);position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent);opacity:.4}
+.eyebrow{font-family:var(--mono);font-size:10.5px;color:var(--lime);text-transform:uppercase;letter-spacing:2.4px;margin-bottom:10px}
+h1{font-family:var(--serif);font-size:24px;font-weight:800;letter-spacing:-.4px;line-height:1.2;margin-bottom:8px}
+.lede{font-size:13.5px;color:var(--muted);margin-bottom:22px;line-height:1.6}
+label{display:block;font-size:12px;font-weight:600;color:var(--txt-2);margin-bottom:6px}
+input{width:100%;background:var(--bg);border:1px solid var(--border-strong);border-radius:8px;padding:12px 14px;color:var(--txt);font-size:14px;outline:none;transition:border .15s}
+input:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,255,0,.08)}
+.field{margin-bottom:14px}
+.btn{width:100%;background:var(--lime);color:var(--bg);border:none;padding:14px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(200,255,0,.2)}
+.btn:disabled{opacity:.7;cursor:wait;transform:none}
+.spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,.25);border-top-color:var(--bg);border-radius:50%;animation:spin .8s linear infinite;display:none}
+.btn.loading .spinner{display:inline-block}
+.btn.loading .btn-label{opacity:.6}
+@keyframes spin{to{transform:rotate(360deg)}}
+.success{display:none;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.18);color:var(--emerald);padding:14px 16px;border-radius:10px;margin-bottom:14px;line-height:1.55;font-size:13px}
+.success.on{display:block}
+.foot{text-align:center;margin-top:18px;font-size:11px;color:var(--dim)}
+.foot a{color:var(--muted);text-decoration:none}.foot a:hover{color:var(--lime)}
+.support{margin-top:18px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.support a{color:var(--lime);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="brand"><div class="brand-name">CYBERCOMPLY</div></div>
+  <div class="card">
+    <div class="eyebrow">Reset password</div>
+    <h1>Forgot your password?</h1>
+    <p class="lede">Enter your client ID. If we recognize the account, we'll send a secure reset link to the email on file. The link expires in 30 minutes and can be used once.</p>
+
+    <div id="success" class="success">
+      <strong>If an account exists for that client ID, a reset email has been sent.</strong>
+      Check your inbox (and spam folder). Didn't receive it within 5 minutes? Contact your advisor.
+    </div>
+
+    <form id="forgotForm">
+      <div class="field">
+        <label for="clientId">Client ID</label>
+        <input type="text" id="clientId" required spellcheck="false" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="email">Email on file (optional)</label>
+        <input type="email" id="email" autocomplete="email" placeholder="you@company.com">
+      </div>
+      <button type="submit" class="btn" id="forgotBtn">
+        <span class="spinner"></span>
+        <span class="btn-label">Send reset link</span>
+      </button>
+    </form>
+
+    <div class="support">
+      Need help? Email <a href="mailto:support@cybercomply.io">support@cybercomply.io</a> or contact your named advisor.
+    </div>
+  </div>
+
+  <div class="foot"><a href="/portal/login">← Back to sign in</a></div>
+</div>
+<script>
+const form = document.getElementById('forgotForm');
+const success = document.getElementById('success');
+const btn = document.getElementById('forgotBtn');
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  btn.classList.add('loading'); btn.disabled = true;
+  try {
+    await fetch('/portal/forgot', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        client_id: document.getElementById('clientId').value.trim(),
+        email: document.getElementById('email').value.trim(),
+      }),
+    });
+    success.classList.add('on');
+    form.style.display = 'none';
+  } catch(err) {
+    success.classList.add('on');  // same opaque message — never leak existence
+    form.style.display = 'none';
+  }
+});
+</script>
+</body>
+</html>

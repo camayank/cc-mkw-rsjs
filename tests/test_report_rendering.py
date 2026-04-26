@@ -46,7 +46,11 @@ def test_report_shows_critical_count(authed_client, fresh_client_manager):
     assert "3 critical" in resp.text
 
 
-def test_report_shows_cissp_badge(authed_client, fresh_client_manager):
+def test_report_shows_advisor_review_badge_only_with_signed_off_record(
+    authed_client, fresh_client_manager,
+):
+    """The static 'CISSP-Reviewed' badge has been removed. The advisor-reviewed
+    pill renders only when a signed-off review record exists for the report."""
     _write_monthly_report("test_co", {
         "narrative": "Good progress.",
         "score": 60,
@@ -54,8 +58,25 @@ def test_report_shows_cissp_badge(authed_client, fresh_client_manager):
         "score_delta": 3,
         "findings_summary": {"total": 8, "resolved": 6, "critical": 0},
     })
+    # No review record yet → must NOT render the static reviewed claim.
     resp = authed_client.get("/portal/test_co/alerts/report")
-    assert "CISSP-Reviewed" in resp.text
+    assert "CISSP-Reviewed" not in resp.text
+    assert "Review pending" in resp.text
+
+    # Once a sign-off exists, the badge appears with the advisor's identity.
+    import advisor_review as ar
+    ar.set_review(
+        "test_co", ar.report_key("monthly_security"),
+        prepared_by="System",
+        reviewed_by="Alice", reviewed_on="2026-04-12",
+        review_status=ar.REVIEW_APPROVED,
+        sign_off_timestamp="2026-04-12T12:00:00+00:00",
+        reviewer_credential="CISSP",
+    )
+    resp = authed_client.get("/portal/test_co/alerts/report")
+    assert "Alice" in resp.text
+    assert "CISSP" in resp.text
+    assert "2026-04-12" in resp.text
 
 
 def test_report_shows_industry_benchmark(authed_client, fresh_client_manager):

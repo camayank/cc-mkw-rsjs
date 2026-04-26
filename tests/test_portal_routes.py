@@ -90,7 +90,7 @@ def test_portal_renders_industry_benchmark(authed_client):
 def test_portal_no_benchmark_unknown_industry(test_app, fresh_client_manager):
     from starlette.testclient import TestClient
 
-    fresh_client_manager.create_client("widget_co", "Widget Corp", "widget.com", industry="widgets")
+    fresh_client_manager.create_client("widget_co", "Widget Corp", "widget.com", industry="widgets", tier="essentials")
     fresh_client_manager.set_portal_password("widget_co", "Pass123!")
     token = fresh_client_manager.create_jwt("widget_co")
 
@@ -165,17 +165,19 @@ def test_portal_roadmap_shows_severity_badges(authed_client, fresh_client_manage
 
 
 def test_resolve_task_via_portal(authed_client, fresh_client_manager):
+    """Legacy /resolve endpoint now routes to Submit for review and never marks
+    the task verified. Verification is operator-only."""
     task = fresh_client_manager.add_task(
         "test_co", "Fix DMARC", "HIGH", "Email", "Add record", "DNS fix",
     )
     task_id = task["id"]
     resp = authed_client.post(f"/portal/test_co/task/{task_id}/resolve")
     assert resp.status_code == 200
-    assert "Resolved" in resp.text
-    # Verify task actually changed
+    assert "Submitted for review" in resp.text
     tasks = fresh_client_manager.get_tasks("test_co")
-    resolved = [t for t in tasks if t["id"] == task_id]
-    assert resolved[0]["status"] == "resolved"
+    submitted = [t for t in tasks if t["id"] == task_id][0]
+    assert submitted["status"] == fresh_client_manager.TASK_STATUS_SUBMITTED
+    assert submitted["status"] != fresh_client_manager.TASK_STATUS_VERIFIED
 
 
 def test_resolve_task_unauthorized(test_client, fresh_client_manager):

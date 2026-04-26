@@ -1,0 +1,145 @@
+{#
+  Alert panel partial — renders one of the five customer alert categories.
+  Autoescape is on (set in main.py via Jinja Environment), so every {{ }}
+  expression below is HTML-escaped. Do NOT use the |safe filter on any
+  alert-derived field — those originate from external feeds and untrusted
+  agent output.
+
+  Required context:
+    category_label   : str  (e.g., "Dark-web exposure")
+    source_label     : str  (e.g., "HaveIBeenPwned API")
+    state            : str  ("not_connected" | "pending_first_check" |
+                              "success_no_findings" | "success_with_findings")
+    last_checked     : str  ISO date or empty
+    next_action      : str  Customer-facing next action
+    setup_action     : str  (only for not_connected state)
+    cadence_label    : str  (e.g., "Weekly")
+    alerts           : list of alert dicts (only for success_with_findings)
+    extras_kind      : str  ("threats" | "vulns" | "monitoring" | "phishing" | "darkweb" | "")
+#}
+
+<div class="alert-panel">
+  <div class="alert-panel-header">
+    <div class="alert-panel-meta">
+      <div class="alert-panel-source">
+        <span class="alert-panel-key">Source</span> {{ source_label }}
+      </div>
+      <div class="alert-panel-source">
+        <span class="alert-panel-key">Cadence</span> {{ cadence_label }}
+      </div>
+      {% if state in ("success_no_findings", "success_with_findings") and last_checked %}
+      <div class="alert-panel-source">
+        <span class="alert-panel-key">Last successful check</span> {{ last_checked[:10] }}
+      </div>
+      {% else %}
+      <div class="alert-panel-source alert-panel-source-warning">
+        <span class="alert-panel-key">Last successful check</span> No successful check on file yet
+      </div>
+      {% endif %}
+    </div>
+
+    {% if state == "not_connected" %}
+    <div class="alert-panel-state alert-panel-state-warning">
+      <strong>Pending setup.</strong>
+      This category isn't connected yet, so we have not been able to run any check.
+      {% if setup_action %}<br><span class="alert-panel-next">Next step: {{ setup_action }}</span>{% endif %}
+    </div>
+    {% elif state == "pending_first_check" %}
+    <div class="alert-panel-state alert-panel-state-info">
+      <strong>First check scheduled.</strong>
+      We have not yet run a successful check on this category — your first cycle is queued.
+      {% if next_action %}<br><span class="alert-panel-next">Next step: {{ next_action }}</span>{% endif %}
+    </div>
+    {% elif state == "success_no_findings" %}
+    <div class="alert-panel-state alert-panel-state-ok">
+      <strong>No findings on record from the last successful check.</strong>
+      We checked {{ source_label }} on {{ last_checked[:10] }} and found nothing requiring attention.
+      We will continue checking on the {{ cadence_label|lower }} schedule.
+      {% if next_action %}<br><span class="alert-panel-next">Next step: {{ next_action }}</span>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if state == "success_with_findings" %}
+  <div class="alert-panel-list">
+    {% for a in alerts %}
+    <div class="alert-row">
+      <div class="alert-row-head">
+        <span class="alert-sev alert-sev-{{ (a.severity or 'MEDIUM')|upper }}">{{ (a.severity or 'MEDIUM')|upper }}</span>
+        <span class="alert-date">{{ (a.date or '')[:10] }}</span>
+        {% if a.status == "resolved" %}<span class="alert-resolved">&#x2713; Resolved</span>{% endif %}
+      </div>
+      <div class="alert-title">{{ a.title or category_label }}</div>
+      <div class="alert-narrative">{{ a.narrative or a.summary or '' }}</div>
+
+      {# Category-specific extras — every field is escaped via {{ }} #}
+      {% if extras_kind == "threats" and a.threats %}
+        {% for t in a.threats[:3] %}
+        <div class="alert-extra">&#x2022; {{ t.cve_id or t.cveID or '' }}: {{ t.name or t.vulnerabilityName or '' }}</div>
+        {% endfor %}
+      {% endif %}
+
+      {% if extras_kind == "vulns" and a.findings %}
+        <div class="alert-extra-label">Findings ({{ a.total or a.findings|length }} total):</div>
+        {% for f in a.findings[:5] %}
+        <div class="alert-extra-row">
+          <span class="alert-sev alert-sev-{{ (f.severity or '')|upper }}">{{ (f.severity or '')|upper }}</span>
+          <span class="alert-extra-name">{{ f.name or '' }}</span>
+          {% if f.cve_id %}<span class="alert-extra-cve">{{ f.cve_id }}</span>{% endif %}
+          {% if f.matched_at %}<div class="alert-extra-meta">{{ f.matched_at }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      {% if extras_kind == "monitoring" and a.anomalies %}
+        {% for an in a.anomalies[:5] %}
+        <div class="alert-extra">&#x2022; {{ an.type or '' }}: {{ an.user or 'N/A' }} from {{ an.location or 'unknown' }}{% if an.app %} ({{ an.app }}){% endif %}</div>
+        {% endfor %}
+      {% endif %}
+
+      {% if a.actions %}
+      <ul class="alert-actions">
+        {% for act in a.actions %}<li>{{ act }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.alert-panel{font-size:13.5px}
+.alert-panel-header{margin-bottom:14px}
+.alert-panel-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.alert-panel-source{font-size:11.5px;color:var(--txt-2);background:var(--surface-3);padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+.alert-panel-source-warning{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.18);color:var(--amber)}
+.alert-panel-key{font-family:var(--mono);font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1.2px;margin-right:6px}
+.alert-panel-state{padding:12px 14px;border-radius:8px;line-height:1.55;font-size:13px}
+.alert-panel-state-warning{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.18);color:var(--amber)}
+.alert-panel-state-info{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.18);color:#60a5fa}
+.alert-panel-state-ok{background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.16);color:var(--emerald)}
+.alert-panel-state strong{font-weight:700}
+.alert-panel-next{display:inline-block;margin-top:6px;color:var(--txt-2);font-weight:500}
+.alert-panel-list{display:flex;flex-direction:column;gap:0}
+.alert-row{padding:14px 0;border-bottom:1px solid var(--border)}
+.alert-row:last-child{border-bottom:none}
+.alert-row-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.alert-sev{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:4px}
+.alert-sev-CRITICAL{background:var(--red-soft);color:var(--red)}
+.alert-sev-HIGH{background:rgba(251,146,60,.12);color:var(--orange)}
+.alert-sev-MEDIUM{background:var(--amber-soft);color:var(--amber)}
+.alert-sev-LOW{background:var(--emerald-soft);color:var(--emerald)}
+.alert-date{font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.alert-resolved{color:var(--emerald);font-size:11.5px}
+.alert-title{font-weight:600;font-size:14px;margin-bottom:4px}
+.alert-narrative{color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:6px}
+.alert-extra{font-size:12px;color:var(--muted);margin-top:4px}
+.alert-extra-label{font-size:11.5px;font-weight:600;color:var(--txt-2);margin:8px 0 4px;font-family:var(--mono);text-transform:uppercase;letter-spacing:1px}
+.alert-extra-row{padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.alert-extra-row:last-child{border-bottom:none}
+.alert-extra-name{margin:0 6px;color:var(--txt-2)}
+.alert-extra-cve{font-family:var(--mono);font-size:11px;color:var(--lime)}
+.alert-extra-meta{color:var(--dim);font-size:11px;margin-top:2px}
+.alert-actions{margin:10px 0 0 18px;color:var(--txt-2);font-size:12.5px;line-height:1.6}
+</style>

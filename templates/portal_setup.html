@@ -3,109 +3,217 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CyberComply — Set Up Your Portal</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Set up your portal — CyberComply</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
+*{box-sizing:border-box;margin:0;padding:0}
 :root{
---bg:#09090b;--surface:#18181b;--surface2:#1e1e22;
---border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
---lime:#c8ff00;--lime-dim:rgba(200,255,0,.08);--lime-glow:rgba(200,255,0,.25);
---red:#ff4757;--orange:#ff6b35;--amber:#fbbf24;--emerald:#34d399;
---txt:#fafaf9;--txt2:#d4d4d8;--muted:#a1a1aa;--dim:#52525b;
---head:'Syne',sans-serif;--body:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+  --bg:#09090b;--surface:#15171c;--surface-2:#1b1e25;
+  --border:rgba(255,255,255,.06);--border-strong:rgba(255,255,255,.1);
+  --txt:#f4f4f5;--txt-2:#d4d4d8;--muted:#9ca3af;--dim:#6b7280;
+  --lime:#c8ff00;--lime-soft:rgba(200,255,0,.08);
+  --emerald:#34d399;--amber:#fbbf24;--red:#ef4444;
+  --serif:'Syne',sans-serif;--body:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
 }
-html{-webkit-font-smoothing:antialiased}
-body{font-family:var(--body);background:var(--bg);color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center}
-body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(200,255,0,.03) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0}
-body::after{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.35}
-.orb{position:fixed;width:500px;height:500px;border-radius:50%;background:rgba(200,255,0,.04);filter:blur(140px);pointer-events:none;z-index:0;top:50%;left:50%;transform:translate(-50%,-50%)}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px;width:100%;max-width:420px;box-shadow:0 25px 50px rgba(0,0,0,.5);position:relative;z-index:1;overflow:hidden;animation:cardEntry .6s cubic-bezier(.16,1,.3,1) both}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent)}
-@keyframes cardEntry{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-.logo{text-align:center;margin-bottom:24px}
-.logo svg{margin-bottom:8px;filter:drop-shadow(0 0 8px rgba(200,255,0,.3))}
-.logo h1{font-family:var(--head);font-size:1.5rem;color:var(--lime)}
-.logo p{color:var(--muted);font-size:.875rem;margin-top:8px}
-label{display:block;font-size:.875rem;color:var(--muted);margin-bottom:6px;margin-top:20px}
-input[type="password"]{width:100%;padding:12px 16px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--txt);font-size:1rem;font-family:var(--mono);outline:none;transition:border .2s,box-shadow .2s}
-input[type="password"]:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,255,0,.1)}
-input[type="password"]::placeholder{color:var(--dim)}
-.strength-bar{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
-.strength-fill{height:100%;border-radius:2px;width:0;transition:width .3s,background .3s}
-.strength-label{font-size:.7rem;font-family:var(--mono);margin-top:4px;color:var(--dim);transition:color .3s}
-.match-indicator{font-size:.75rem;font-family:var(--mono);margin-top:6px;height:18px}
-button{width:100%;padding:14px;background:var(--lime);color:var(--bg);border:none;border-radius:8px;font-size:1rem;font-family:var(--head);font-weight:700;cursor:pointer;margin-top:28px;transition:all .3s}
-button:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--lime-glow)}
-.error{color:var(--red);font-size:.875rem;margin-top:12px;text-align:center;max-height:0;overflow:hidden;transition:max-height .3s ease,opacity .3s ease;opacity:0}
-.error.show{max-height:60px;opacity:1}
+body{font-family:var(--body);background:var(--bg);color:var(--txt);
+     min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+     font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.shell{width:100%;max-width:480px}
+.brand{text-align:center;margin-bottom:24px}
+.brand-name{font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:1.5px;color:var(--lime)}
+.brand-sub{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.4px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px clamp(24px,4vw,36px);position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent);opacity:.4}
+.eyebrow{font-family:var(--mono);font-size:10.5px;color:var(--lime);text-transform:uppercase;letter-spacing:2.4px;margin-bottom:10px}
+h1{font-family:var(--serif);font-size:24px;font-weight:800;letter-spacing:-.4px;line-height:1.2;margin-bottom:8px}
+.lede{font-size:13.5px;color:var(--muted);margin-bottom:22px;line-height:1.6}
+.company-context{
+  display:flex;align-items:center;gap:10px;background:var(--lime-soft);
+  border:1px solid rgba(200,255,0,.16);border-radius:10px;padding:12px 14px;margin-bottom:18px;
+}
+.company-context-dot{width:8px;height:8px;border-radius:50%;background:var(--lime);flex-shrink:0}
+.company-context-text{font-size:13px;color:var(--txt-2)}
+.company-context-text strong{color:var(--lime)}
+label{display:block;font-size:12px;font-weight:600;color:var(--txt-2);margin-bottom:6px;letter-spacing:.2px}
+input[type=password],input[type=text]{
+  width:100%;background:var(--bg);border:1px solid var(--border-strong);border-radius:8px;
+  padding:12px 14px;color:var(--txt);font-family:var(--body);font-size:14px;outline:none;
+  transition:border .15s,box-shadow .15s;
+}
+input:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,255,0,.08)}
+.field{margin-bottom:14px}
+.btn{
+  width:100%;background:var(--lime);color:var(--bg);border:none;
+  padding:14px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s,box-shadow .15s;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(200,255,0,.2)}
+.btn:disabled{opacity:.7;cursor:wait;transform:none}
+.spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,.25);border-top-color:var(--bg);border-radius:50%;animation:spin .8s linear infinite;display:none}
+.btn.loading .spinner{display:inline-block}
+.btn.loading .btn-label{opacity:.6}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.error{display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
+       color:var(--red);font-size:12.5px;padding:10px 12px;border-radius:8px;margin-bottom:14px;line-height:1.5}
+.error.on{display:block}
+
+.policy-list{font-size:12px;color:var(--muted);margin:8px 0 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 8px}
+.policy-list .check{color:var(--dim);font-family:var(--mono);font-size:13px;line-height:1.2}
+.policy-list .check.ok{color:var(--emerald)}
+.policy-list .item{font-size:12px;line-height:1.5}
+
+.strength-bar{height:5px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin:6px 0 4px}
+.strength-bar-fill{height:100%;background:var(--red);width:0%;transition:width .25s,background .25s}
+.strength-label{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px}
+
+.security-note{
+  font-size:12px;color:var(--muted);margin-top:14px;padding:12px 14px;
+  background:var(--surface-2);border:1px solid var(--border);border-radius:10px;line-height:1.55;
+}
+.security-note strong{color:var(--txt-2)}
+
+.foot{text-align:center;margin-top:18px;font-size:11px;color:var(--dim);line-height:1.6}
 </style>
 </head>
 <body>
-<div class="orb"></div>
-<div class="card">
-  <div class="logo">
-    <svg width="48" height="48" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M18 3L5 9.5v9c0 9 5.5 17 13 19 7.5-2 13-10 13-19v-9L18 3z" fill="#c8ff00" opacity=".15" stroke="#c8ff00" stroke-width="1.5"/>
-      <path d="M18 8L9 12.5v6c0 6 3.8 11.5 9 13 5.2-1.5 9-7 9-13v-6L18 8z" fill="#c8ff00" opacity=".08"/>
-      <text x="18" y="23.5" text-anchor="middle" font-family="Syne,sans-serif" font-weight="800" font-size="15" fill="#c8ff00">C</text>
-    </svg>
-    <h1>Welcome to CyberComply</h1>
-    <p>Set a password to access your Security Command Center</p>
+<div class="shell">
+  <div class="brand">
+    <div class="brand-name">CYBERCOMPLY</div>
+    <div class="brand-sub">Secure Account Setup</div>
   </div>
-  <form id="setupForm">
-    <input type="hidden" id="client_id" value="{{ client_id }}">
-    <input type="hidden" id="token" value="{{ token }}">
-    <label for="password">Create Password</label>
-    <input type="password" id="password" placeholder="Min 8 characters" required minlength="8">
-    <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
-    <div class="strength-label" id="strengthLabel"></div>
-    <label for="confirm">Confirm Password</label>
-    <input type="password" id="confirm" placeholder="Repeat password" required>
-    <div class="match-indicator" id="matchIndicator"></div>
-    <button type="submit">Activate Portal</button>
-    <div class="error" id="errorMsg"></div>
-  </form>
+
+  <div class="card">
+    <div class="eyebrow">Account setup</div>
+    <h1>Set your secure password.</h1>
+    <p class="lede">This password protects your portal — your evidence, scans, advisor notes, and audit package.</p>
+
+    {% if company %}
+    <div class="company-context">
+      <span class="company-context-dot"></span>
+      <div class="company-context-text">
+        Setting up access for <strong>{{ company }}</strong>.
+      </div>
+    </div>
+    {% endif %}
+
+    <div id="setupError" class="error">
+      <div id="setupErrorText"></div>
+    </div>
+
+    <form id="setupForm">
+      <div class="field">
+        <label for="password">New password</label>
+        <input type="password" id="password" name="password"
+               autocomplete="new-password" required minlength="{{ min_password_length }}"
+               placeholder="At least {{ min_password_length }} characters">
+        <div class="strength-bar"><div class="strength-bar-fill" id="strengthFill"></div></div>
+        <div class="strength-label" id="strengthLabel">—</div>
+      </div>
+      <div class="field">
+        <label for="password2">Confirm password</label>
+        <input type="password" id="password2" autocomplete="new-password" required minlength="{{ min_password_length }}">
+      </div>
+
+      <div class="policy-list" id="policyList">
+        <span class="check" id="c-len">○</span><span class="item">At least {{ min_password_length }} characters</span>
+        <span class="check" id="c-cls">○</span><span class="item">Three of: lowercase, uppercase, digit, symbol</span>
+        <span class="check" id="c-com">○</span><span class="item">Not a common or reused password</span>
+      </div>
+
+      <button type="submit" class="btn" id="setupBtn">
+        <span class="spinner"></span>
+        <span class="btn-label">Save password &amp; sign in</span>
+      </button>
+    </form>
+
+    <div class="security-note">
+      <strong>Why this matters.</strong>
+      Customer multi-factor authentication is on our roadmap and not yet
+      enforced — please choose a long, unique password and store it in a
+      password manager. Your activity in the portal is logged for audit.
+    </div>
+  </div>
+
+  <div class="foot">
+    Need help? Contact your advisor or <a href="mailto:support@cybercomply.io" style="color:var(--muted)">support@cybercomply.io</a>
+  </div>
 </div>
+
 <script>
-const pw=document.getElementById('password');
-const conf=document.getElementById('confirm');
-const fill=document.getElementById('strengthFill');
-const sLabel=document.getElementById('strengthLabel');
-const match=document.getElementById('matchIndicator');
+const pw = document.getElementById('password');
+const pw2 = document.getElementById('password2');
+const fill = document.getElementById('strengthFill');
+const label = document.getElementById('strengthLabel');
+const cLen = document.getElementById('c-len');
+const cCls = document.getElementById('c-cls');
+const cCom = document.getElementById('c-com');
+const minLen = {{ min_password_length }};
+const COMMON = new Set(['password','password1','password123','qwerty','letmein','welcome','admin','admin123','changeme']);
 
-pw.addEventListener('input',()=>{
-  const v=pw.value;
-  let s=0;
-  if(v.length>=8)s++;if(v.length>=12)s++;
-  if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
-  const pct=Math.min(s/5*100,100);
-  const colors=['var(--red)','var(--orange)','var(--amber)','var(--lime)','var(--emerald)'];
-  const labels=['Weak','Fair','Good','Strong','Excellent'];
-  const i=Math.max(0,Math.min(s-1,4));
-  fill.style.width=pct+'%';
-  fill.style.background=v?colors[i]:'transparent';
-  sLabel.textContent=v?labels[i]:'';
-  sLabel.style.color=v?colors[i]:'var(--dim)';
-  checkMatch();
-});
-
-conf.addEventListener('input',checkMatch);
-function checkMatch(){
-  if(!conf.value)return match.textContent='';
-  if(pw.value===conf.value){match.innerHTML='<span style="color:var(--emerald)">&#x2713; Passwords match</span>'}
-  else{match.innerHTML='<span style="color:var(--red)">&#x2717; Passwords do not match</span>'}
+function classes(s){
+  let n=0;
+  if(/[a-z]/.test(s))n++;
+  if(/[A-Z]/.test(s))n++;
+  if(/\d/.test(s))n++;
+  if(/[^A-Za-z0-9]/.test(s))n++;
+  return n;
 }
 
-document.getElementById('setupForm').addEventListener('submit',async(e)=>{
+function update(){
+  const v = pw.value;
+  const lenOk = v.length >= minLen;
+  const clsOk = classes(v) >= 3;
+  const comOk = !COMMON.has(v.toLowerCase());
+  cLen.textContent = lenOk?'✓':'○';cLen.classList.toggle('ok',lenOk);
+  cCls.textContent = clsOk?'✓':'○';cCls.classList.toggle('ok',clsOk);
+  cCom.textContent = comOk?'✓':'○';cCom.classList.toggle('ok',comOk);
+  let pct = 0, color = 'var(--red)', txt = 'Too short';
+  if(v.length>=4){pct=20;txt='Very weak'}
+  if(v.length>=8){pct=40}
+  if(lenOk && clsOk){pct=70;color='var(--amber)';txt='Good'}
+  if(lenOk && classes(v)>=4 && comOk){pct=100;color='var(--emerald)';txt='Excellent'}
+  fill.style.width=pct+'%';fill.style.background=color;label.textContent=txt;
+}
+pw.addEventListener('input', update);
+
+const form = document.getElementById('setupForm');
+const errEl = document.getElementById('setupError');
+const errTxt = document.getElementById('setupErrorText');
+const btn = document.getElementById('setupBtn');
+
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const err=document.getElementById('errorMsg');
-  if(pw.value!==conf.value){err.textContent='Passwords do not match';err.classList.add('show');return}
-  err.classList.remove('show');
-  const res=await fetch('/portal/setup',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({client_id:document.getElementById('client_id').value,token:document.getElementById('token').value,password:pw.value})});
-  const data=await res.json();
-  if(data.status==='ok'){window.location=data.redirect}else{err.textContent=data.message||'Error';err.classList.add('show')}
+  errEl.classList.remove('on');
+  if (pw.value !== pw2.value){
+    errTxt.textContent='The two passwords do not match.';errEl.classList.add('on');return;
+  }
+  if (pw.value.length < minLen){
+    errTxt.textContent='Password must be at least '+minLen+' characters.';errEl.classList.add('on');return;
+  }
+  if (classes(pw.value) < 3){
+    errTxt.textContent='Use at least three of: lowercase, uppercase, digit, symbol.';errEl.classList.add('on');return;
+  }
+  btn.classList.add('loading'); btn.disabled = true;
+  try {
+    const resp = await fetch('/portal/setup', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id:'{{ client_id }}', token:'{{ token }}', password: pw.value}),
+    });
+    if (!resp.ok){
+      let msg='That link is invalid or expired. Ask your advisor for a fresh setup link.';
+      try {const data = await resp.json(); if(data.message) msg = data.message;} catch(_){}
+      errTxt.textContent = msg;errEl.classList.add('on');
+      btn.classList.remove('loading'); btn.disabled = false;
+      return;
+    }
+    const data = await resp.json();
+    location.href = data.redirect || '/portal/{{ client_id }}';
+  } catch(err){
+    errTxt.textContent='Network error. Please try again or contact support.';
+    errEl.classList.add('on');
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
 });
 </script>
 </body>

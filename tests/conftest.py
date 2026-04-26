@@ -14,6 +14,10 @@ def fresh_client_manager(tmp_path, monkeypatch):
     """Get a fresh client_manager with isolated CLIENTS_DIR."""
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     monkeypatch.setenv("JWT_SECRET", "test-secret-key-for-testing")
+    # Test harness uses short fixture passwords; bypass the production policy.
+    # The new auth_security tests opt back in by deleting this env var.
+    monkeypatch.setenv("BYPASS_PASSWORD_POLICY", "1")
+    monkeypatch.setenv("OPERATOR_MFA_DISABLED", "1")
     if "client_manager" in sys.modules:
         del sys.modules["client_manager"]
     import client_manager
@@ -28,6 +32,8 @@ def test_app(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     monkeypatch.setenv("JWT_SECRET", "test-secret-key-for-testing")
     monkeypatch.setenv("DASHBOARD_PASSWORD", "testpass")
+    monkeypatch.setenv("BYPASS_PASSWORD_POLICY", "1")
+    monkeypatch.setenv("OPERATOR_MFA_DISABLED", "1")
 
     # Mock scheduler before importing main
     from unittest.mock import MagicMock
@@ -64,7 +70,8 @@ def authed_client(test_app, fresh_client_manager):
     from starlette.testclient import TestClient
 
     cm = fresh_client_manager
-    cm.create_client("test_co", "Test Corp", "test.com", industry="cpa")
+    # Paid tier — diagnostic clients do not get the live customer portal.
+    cm.create_client("test_co", "Test Corp", "test.com", industry="cpa", tier="essentials")
     cm.set_portal_password("test_co", "Secure123!")
     token = cm.create_jwt("test_co")
 

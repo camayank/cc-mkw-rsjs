@@ -32,7 +32,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:3px;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;gap:8px}
 .dot-pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.5)}50%{box-shadow:0 0 0 10px rgba(0,230,118,0)}}
-.hero h1{font-family:var(--head);font-size:clamp(36px,5.5vw,68px);font-weight:800;line-height:1.05;max-width:860px;margin-bottom:20px;letter-spacing:-2px}
+.hero h1{font-family:var(--head);font-size:clamp(34px,5.5vw,68px);font-weight:800;line-height:1.05;max-width:860px;margin-bottom:20px;letter-spacing:0}
 .grad{color:var(--accent)}
 @keyframes shim{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .hero-sub{font-size:18px;color:var(--dim);max-width:560px;line-height:1.6;margin-bottom:40px;font-weight:300}
@@ -69,8 +69,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 @keyframes circleIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 .score-circle .num{font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1}
 .score-circle .of{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
-.score-info h4{font-size:18px;font-weight:700;margin-bottom:4px}
-.score-info p{font-size:12px;color:var(--dim);line-height:1.5}
+.score-info h4{font-size:18px;font-weight:700;margin-bottom:4px;overflow-wrap:anywhere}
+.score-info p{font-size:12px;color:var(--txt2);line-height:1.5;overflow-wrap:anywhere}
 .grade-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;margin-top:6px}
 
 .finding{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;opacity:0;animation:fadeUp .4s ease forwards}
@@ -81,9 +81,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 .sev-HIGH{background:var(--orange)}
 .sev-MEDIUM{background:var(--yellow);color:#000}
 .sev-LOW{background:var(--muted)}
-.finding-text{flex:1}
-.finding-title{font-weight:600;margin-bottom:2px}
-.finding-desc{font-size:11px;color:var(--dim);line-height:1.4}
+.finding-text{flex:1;min-width:0}
+.finding-title{font-weight:600;margin-bottom:2px;overflow-wrap:anywhere}
+.finding-desc{font-size:11px;color:var(--txt2);line-height:1.4;overflow-wrap:anywhere}
 
 .cta-section{margin-top:24px;display:flex;gap:10px;flex-wrap:wrap}
 .cta-btn{flex:1;min-width:200px;padding:14px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;transition:all .3s;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none}
@@ -109,7 +109,26 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,.88
 footer{padding:40px 36px 24px;border-top:1px solid var(--border);text-align:center;position:relative;z-index:1}
 footer p{font-size:12px;color:var(--muted)}
 
-@media(max-width:768px){nav{padding:0 16px}.srow{flex-direction:column}.cta-section{flex-direction:column}.hero{padding:80px 16px 40px}}
+@media(max-width:768px){
+  nav{padding:0 16px;height:56px}
+  .brand{font-size:14px}
+  .hero{padding:76px 16px 40px;justify-content:flex-start;min-height:auto}
+  .eyebrow{font-size:10px;letter-spacing:1.5px;flex-wrap:wrap;justify-content:center}
+  .hero-sub{font-size:16px;color:var(--txt2);margin-bottom:28px}
+  .scan-box{padding:24px 18px;border-radius:10px}
+  .srow{flex-direction:column}
+  .srow input,.sbtn{width:100%}
+  .score-display{align-items:flex-start;padding:16px;gap:14px}
+  .score-circle{width:76px;height:76px}
+  .score-circle .num{font-size:24px}
+  .score-info h4{font-size:16px}
+  .cta-section{flex-direction:column}
+  .cta-btn{min-width:0;width:100%}
+}
+@media(max-width:440px){
+  .score-display{flex-direction:column;align-items:center;text-align:center}
+  .finding{gap:8px}
+}
 </style>
 </head>
 <body>
@@ -118,18 +137,18 @@ footer p{font-size:12px;color:var(--muted)}
 </nav>
 
 <section class="hero">
-  <div class="eyebrow"><span class="dot-pulse"></span> 11 AI AGENTS &bull; REAL-TIME SCAN</div>
+  <div class="eyebrow"><span class="dot-pulse"></span> REAL-TIME EXTERNAL SCAN &bull; DNS &middot; SSL &middot; HEADERS &middot; EMAIL AUTH</div>
   <h1>How Secure Is<br><span class="grad">Your Business?</span></h1>
-  <p class="hero-sub">Enter your domain below. Our AI agents will scan your email security, SSL, open ports, headers, and DNS in real time. Free. No signup required.</p>
+  <p class="hero-sub">Enter your domain below. We check your email authentication, SSL/TLS, exposed services, HTTP headers, and DNS configuration in real time. Free. No signup required.</p>
 
   <div class="scan-box">
-    <h3>Free Security Assessment</h3>
-    <p>Real scan, real results. See exactly what hackers see when they look at your domain.</p>
+    <h3>Free External Security Assessment</h3>
+    <p>Real scan, real results. See what is publicly observable about your domain.</p>
     <div class="srow" id="scanForm">
       <input type="text" id="domainInput" placeholder="yourcompany.com" spellcheck="false" autocomplete="off">
       <button class="sbtn" id="scanBtn" onclick="startScan()">SCAN NOW</button>
     </div>
-    <div class="trust">&#128274; Passive scan only. We check DNS records, SSL certs, and HTTP headers. Nothing intrusive.</div>
+    <div class="trust">&#128274; Passive scan only. DNS records, SSL certs, and HTTP headers. No intrusive testing. Not a penetration test.</div>
 
     <div id="scanProgress">
       <div style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:16px">SCANNING...</div>
@@ -164,21 +183,21 @@ footer p{font-size:12px;color:var(--muted)}
         <input type="email" id="leadEmail" placeholder="Work Email">
         <input type="tel" id="leadPhone" placeholder="Phone (optional)">
         <button class="submit-btn" onclick="submitLead()">SEND MY FULL REPORT</button>
-        <p class="form-note">Free 9-page PDF report emailed to you. No obligation.</p>
+        <p class="form-note">Full PDF report sent to your inbox after the scan completes. No obligation.</p>
       </div>
 
       <div id="leadSuccess">
         <div style="font-size:32px;margin-bottom:12px">&#9989;</div>
         <h4 style="margin-bottom:8px">Report Request Received</h4>
-        <p style="color:var(--dim);font-size:13px">We'll email your full security assessment shortly. In the meantime, <a href="{{ calendly_link }}" target="_blank" style="color:var(--accent)">book a free 15-minute review call</a>.</p>
+        <p style="color:var(--dim);font-size:13px">We'll email your full external security assessment when it's ready (typically within minutes when email is configured). In the meantime, <a href="{{ calendly_link }}" target="_blank" style="color:var(--accent)">book a free 15-minute review call</a>.</p>
       </div>
     </div>
   </div>
 </section>
 
 <footer>
-  <p style="margin-bottom:8px;color:var(--dim)">CyberComply &mdash; 11 AI Agents. Always On. Always Watching.</p>
-  <p>&copy; 2026 CyberComply. All rights reserved.</p>
+  <p style="margin-bottom:8px;color:var(--dim)">CyberComply &mdash; External security scanning, compliance mapping, and policy support for regulated SMBs.</p>
+  <p>&copy; 2026 DigComply Solutions Private Limited (in association with CA4CPA Global LLC). CyberComply is a service of DigComply.</p>
 </footer>
 
 <script>

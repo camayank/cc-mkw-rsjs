@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium Onboarding — CyberComply</title>
+<meta name="description" content="Tell us a little about your company so we can prepare the right plan, named advisor, and proposal.">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#09090b;--surface:#18181b;--surface2:#1e1e22;
+--border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.1);
+--lime:#c8ff00;--lime-dim:rgba(200,255,0,.08);--lime-glow:rgba(200,255,0,.25);
+--red:#ff4757;--orange:#ff6b35;--amber:#fbbf24;--emerald:#34d399;
+--txt:#fafaf9;--txt2:#d4d4d8;--muted:#a1a1aa;--dim:#52525b;
+--head:'Syne',sans-serif;--body:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{font-family:var(--body);background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.6}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(200,255,0,.03) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0}
+
+nav{position:sticky;top:0;background:rgba(9,9,11,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;z-index:10}
+.brand{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--lime);letter-spacing:1.5px}
+
+.wrap{max-width:760px;margin:0 auto;padding:48px 24px 80px;position:relative;z-index:1}
+.eyebrow{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:3px;color:var(--lime);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:'';width:24px;height:1px;background:var(--lime)}
+h1{font-family:var(--head);font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:14px}
+.lede{font-size:16px;color:var(--muted);max-width:580px;margin-bottom:32px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px clamp(20px,3vw,36px);position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent);opacity:.4}
+
+.section-title{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--lime);margin:24px 0 12px;padding-top:18px;border-top:1px solid var(--border)}
+.section-title:first-child{margin-top:0;padding-top:0;border-top:none}
+
+label{display:block;font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:6px}
+.help{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
+.req{color:var(--lime);font-weight:600}
+.field{margin-bottom:18px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+input[type=text],input[type=email],input[type=url],select{
+  width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;
+  padding:12px 14px;color:var(--txt);font-family:var(--body);font-size:14px;outline:none;transition:border .2s
+}
+select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a1a1aa' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+input:focus,select:focus{border-color:var(--lime);box-shadow:0 0 0 3px rgba(200,255,0,.08)}
+
+.checkbox-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;cursor:pointer}
+.checkbox-row input[type=checkbox]{accent-color:var(--lime);width:16px;height:16px;margin-top:3px;flex-shrink:0;cursor:pointer}
+.checkbox-row span{font-size:13px;color:var(--txt2)}
+
+.privacy{margin-top:20px;padding:14px 16px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.14);border-radius:10px;font-size:12px;color:var(--txt2);line-height:1.55}
+.privacy strong{color:var(--emerald)}
+
+.submit{margin-top:24px;width:100%;background:var(--lime);color:var(--bg);border:none;padding:16px;border-radius:10px;font-family:var(--body);font-weight:700;font-size:15px;cursor:pointer;letter-spacing:.3px;transition:all .3s}
+.submit:hover{box-shadow:0 8px 30px var(--lime-glow);transform:translateY(-1px)}
+.submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+#result{display:none;margin-top:24px}
+#result.on{display:block;animation:fadeIn .5s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.result-card{padding:28px;border-radius:14px;border:1px solid var(--border)}
+.result-card.qualified{background:linear-gradient(180deg,rgba(200,255,0,.08),rgba(24,24,27,.96));border-color:rgba(200,255,0,.25)}
+.result-card.review{background:linear-gradient(180deg,rgba(52,211,153,.06),rgba(24,24,27,.96));border-color:rgba(52,211,153,.18)}
+.result-card.waitlist{background:linear-gradient(180deg,rgba(251,191,36,.06),rgba(24,24,27,.96));border-color:rgba(251,191,36,.18)}
+.result-card.disqualified{background:linear-gradient(180deg,rgba(255,107,53,.05),rgba(24,24,27,.96));border-color:rgba(255,107,53,.15)}
+.result-headline{font-family:var(--head);font-size:22px;font-weight:800;margin-bottom:10px;letter-spacing:-.5px}
+.result-message{font-size:14px;color:var(--txt2);line-height:1.7;margin-bottom:16px}
+.result-cta{display:inline-flex;align-items:center;gap:8px;background:var(--lime);color:var(--bg);text-decoration:none;font-weight:700;padding:12px 22px;border-radius:8px;font-size:14px;letter-spacing:.3px;transition:all .3s}
+.result-cta:hover{box-shadow:0 8px 30px var(--lime-glow);transform:translateY(-1px)}
+.result-cta.alt{background:transparent;border:1px solid var(--lime);color:var(--lime)}
+.result-cta.alt:hover{background:var(--lime);color:var(--bg)}
+
+.error{color:var(--red);font-size:12px;margin-top:6px;display:none}
+.error.on{display:block}
+
+footer{padding:32px 24px;text-align:center;font-size:12px;color:var(--dim);border-top:1px solid var(--border);position:relative;z-index:1}
+footer a{color:var(--muted);text-decoration:none;margin:0 12px}
+footer a:hover{color:var(--lime)}
+
+@media(max-width:600px){
+  .row2{grid-template-columns:1fr}
+  nav{padding:0 16px}
+  .wrap{padding:32px 16px 60px}
+  .card{padding:22px 18px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" style="text-decoration:none"><span class="brand">CYBERCOMPLY</span></a>
+  <a href="/scan" style="color:var(--muted);font-size:13px;text-decoration:none">Free scan &rarr;</a>
+</nav>
+
+<div class="wrap">
+  <div class="eyebrow">Premium Onboarding</div>
+  <h1>Tell us about your company</h1>
+  <p class="lede">A few quick questions help us prepare the right plan, match you with a named advisor, and skip the back-and-forth. Takes about 3 minutes.</p>
+
+  <div class="card">
+    <form id="qualifyForm">
+
+      <div class="section-title">About your company</div>
+
+      <div class="field">
+        <label for="legal_name">Company legal name <span class="req">*</span></label>
+        <input type="text" id="legal_name" name="legal_name" required autocomplete="organization">
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="domain">Primary website / domain <span class="req">*</span></label>
+          <input type="text" id="domain" name="domain" placeholder="yourcompany.com" required autocomplete="url">
+        </div>
+        <div class="field">
+          <label for="contact_email">Work email <span class="req">*</span></label>
+          <input type="email" id="contact_email" name="contact_email" required autocomplete="email">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="country">Country of operation <span class="req">*</span></label>
+          <select id="country" name="country" required>
+            <option value="">Select country…</option>
+            <option value="US">United States</option>
+            <option value="CA">Canada</option>
+            <option value="GB">United Kingdom</option>
+            <option value="IE">Ireland</option>
+            <option value="AU">Australia</option>
+            <option value="NZ">New Zealand</option>
+            <option value="SG">Singapore</option>
+            <option value="HK">Hong Kong</option>
+            <option value="DE">Germany</option>
+            <option value="FR">France</option>
+            <option value="NL">Netherlands</option>
+            <option value="ES">Spain</option>
+            <option value="IT">Italy</option>
+            <option value="BE">Belgium</option>
+            <option value="SE">Sweden</option>
+            <option value="DK">Denmark</option>
+            <option value="FI">Finland</option>
+            <option value="PL">Poland</option>
+            <option value="CH">Switzerland</option>
+            <option value="NO">Norway</option>
+            <option value="AE">United Arab Emirates</option>
+            <option value="SA">Saudi Arabia</option>
+            <option value="IL">Israel</option>
+            <option value="IN">India</option>
+            <option value="ZA">South Africa</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="industry">Industry <span class="req">*</span></label>
+          <select id="industry" name="industry" required>
+            <option value="">Select industry…</option>
+            <option value="cpa">Accounting / CPA / Tax</option>
+            <option value="healthcare">Healthcare practice</option>
+            <option value="rcm">RCM / medical billing</option>
+            <option value="legal">Law firm</option>
+            <option value="saas">SaaS / vertical SaaS</option>
+            <option value="fintech">Fintech</option>
+            <option value="wealth_management">Wealth management / RIA</option>
+            <option value="insurance_brokerage">Insurance brokerage</option>
+            <option value="msp">MSP / IT services</option>
+            <option value="real_estate">Real estate / title / escrow</option>
+            <option value="manufacturing">Manufacturing</option>
+            <option value="ecommerce">E-commerce / D2C</option>
+            <option value="education">Education</option>
+            <option value="nonprofit">Nonprofit</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title">Size &amp; revenue</div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="revenue_band">Annual revenue range <span class="req">*</span></label>
+          <select id="revenue_band" name="revenue_band" required>
+            <option value="">Select range…</option>
+            <option value="under_1m">Under $1M</option>
+            <option value="1m_5m">$1M &ndash; $5M</option>
+            <option value="5m_10m">$5M &ndash; $10M</option>
+            <option value="10m_25m">$10M &ndash; $25M</option>
+            <option value="25m_50m">$25M &ndash; $50M</option>
+            <option value="50m_100m">$50M &ndash; $100M</option>
+            <option value="100m_250m">$100M &ndash; $250M</option>
+            <option value="over_250m">Over $250M</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="employee_band">Employee count <span class="req">*</span></label>
+          <select id="employee_band" name="employee_band" required>
+            <option value="">Select range…</option>
+            <option value="under_10">Under 10</option>
+            <option value="10_24">10 &ndash; 24</option>
+            <option value="25_49">25 &ndash; 49</option>
+            <option value="50_99">50 &ndash; 99</option>
+            <option value="100_249">100 &ndash; 249</option>
+            <option value="250_499">250 &ndash; 499</option>
+            <option value="500_plus">500+</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title">Compliance &amp; timeline</div>
+
+      <div class="field">
+        <label for="compliance_driver">What's prompting this? <span class="req">*</span></label>
+        <select id="compliance_driver" name="compliance_driver" required>
+          <option value="">Select what's driving this…</option>
+          <option value="audit_upcoming">Upcoming audit</option>
+          <option value="rfp_requirement">Customer / RFP requirement</option>
+          <option value="insurance_renewal">Cyber insurance renewal</option>
+          <option value="client_due_diligence">Client due-diligence questionnaire</option>
+          <option value="regulatory_deadline">Regulatory deadline</option>
+          <option value="board_mandate">Board / leadership mandate</option>
+          <option value="investor_due_diligence">Investor due diligence</option>
+          <option value="vendor_questionnaire">Vendor security questionnaire</option>
+          <option value="contract_clause">Contract clause / MSA requirement</option>
+          <option value="state_law_deadline">State law deadline</option>
+          <option value="breach_response">Recent incident or breach response</option>
+          <option value="exploring">Just exploring</option>
+        </select>
+        <div class="help">If multiple apply, choose the most pressing one.</div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="framework">Primary framework <span class="req">*</span></label>
+          <select id="framework" name="framework" required>
+            <option value="">Select framework…</option>
+            <option value="soc2">SOC 2</option>
+            <option value="hipaa">HIPAA</option>
+            <option value="ftc_safeguards">FTC Safeguards</option>
+            <option value="irs_4557">IRS 4557 / WISP</option>
+            <option value="nist_csf">NIST CSF</option>
+            <option value="iso_27001">ISO 27001</option>
+            <option value="pci_dss">PCI DSS</option>
+            <option value="nis2">EU NIS2</option>
+            <option value="dora">EU DORA</option>
+            <option value="gdpr">GDPR</option>
+            <option value="uk_gdpr">UK GDPR / DPA 2018</option>
+            <option value="cyber_essentials">UK Cyber Essentials</option>
+            <option value="essential_eight">AU Essential Eight</option>
+            <option value="pdpa">SG PDPA</option>
+            <option value="lgpd">BR LGPD</option>
+            <option value="dpdp">IN DPDP Act</option>
+            <option value="popia">ZA POPIA</option>
+            <option value="ncc_ecc">KSA NCA ECC</option>
+            <option value="other">Other / not sure yet</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="urgency">Timeline <span class="req">*</span></label>
+          <select id="urgency" name="urgency" required>
+            <option value="">Select timeline…</option>
+            <option value="immediate">Immediate (days)</option>
+            <option value="30_days">Within 30 days</option>
+            <option value="90_days">Within 90 days</option>
+            <option value="this_quarter">This quarter</option>
+            <option value="next_6_months">Within 6 months</option>
+            <option value="exploring">Just exploring</option>
+            <option value="no_timeline">No specific timeline</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title">Decision-maker</div>
+
+      <div class="field">
+        <label for="dm_title">Your role <span class="req">*</span></label>
+        <select id="dm_title" name="dm_title" required>
+          <option value="">Select your role…</option>
+          <option value="ceo">CEO / Founder</option>
+          <option value="owner">Owner</option>
+          <option value="managing_partner">Managing Partner</option>
+          <option value="partner">Partner</option>
+          <option value="president">President</option>
+          <option value="cfo">CFO</option>
+          <option value="coo">COO</option>
+          <option value="cto">CTO</option>
+          <option value="ciso">CISO</option>
+          <option value="cio">CIO</option>
+          <option value="general_counsel">General Counsel</option>
+          <option value="vp">VP</option>
+          <option value="head_of">Head of (Compliance / IT / Security / Risk)</option>
+          <option value="director_finance">Director — Finance</option>
+          <option value="director_it">Director — IT</option>
+          <option value="director_compliance">Director — Compliance</option>
+          <option value="director_security">Director — Security</option>
+          <option value="manager">Manager</option>
+          <option value="analyst">Analyst</option>
+          <option value="associate">Associate</option>
+          <option value="consultant_external">External consultant</option>
+          <option value="other">Other</option>
+        </select>
+        <div class="help">We'll use this to make sure the right people are on the kickoff.</div>
+      </div>
+
+      <div class="section-title">Insurance &amp; security posture</div>
+
+      <div class="row2">
+        <div class="field">
+          <label for="insurance_status">Cyber insurance status <span class="req">*</span></label>
+          <select id="insurance_status" name="insurance_status" required>
+            <option value="">Select status…</option>
+            <option value="in_force">In force</option>
+            <option value="renewing_soon">Renewing soon</option>
+            <option value="denied">Recently denied / non-renewed</option>
+            <option value="none">No cyber insurance</option>
+            <option value="unknown">Not sure</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="maturity">Internal security program <span class="req">*</span></label>
+          <select id="maturity" name="maturity" required>
+            <option value="">Select level…</option>
+            <option value="none">No formal program</option>
+            <option value="basic">Basic (IT handles security)</option>
+            <option value="developing">Developing (some policies + tools)</option>
+            <option value="established">Established (dedicated owner)</option>
+            <option value="mature">Mature (in-house team + SOC)</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="checkbox-row">
+        <input type="checkbox" id="has_internal_ciso" name="has_internal_ciso">
+        <span>We have an internal CISO and/or 24/7 SOC team. <span class="help" style="display:block">If yes, we may suggest a partner-channel engagement instead — that's often a better fit for mature security programs.</span></span>
+      </label>
+
+      <div class="section-title">Confirmations</div>
+
+      <label class="checkbox-row">
+        <input type="checkbox" id="domain_ownership_confirmed" name="domain_ownership_confirmed" required>
+        <span>I confirm I'm authorized to engage CyberComply on behalf of this company and to authorize external scanning of the domain above.</span>
+      </label>
+
+      <label class="checkbox-row">
+        <input type="checkbox" id="prohibited_self_attest" name="prohibited_self_attest" required>
+        <span>This company does not operate in adult, gambling, unlicensed cannabis, weapons, surveillance technology, or sanctioned-entity sectors.</span>
+      </label>
+
+      <div class="privacy">
+        <strong>Your data:</strong> We use this only to prepare your proposal and match you with the right advisor. It is not shared, sold, or used for marketing automation. Full details in our privacy policy.
+      </div>
+
+      <button type="submit" class="submit" id="submitBtn">Submit &amp; see next steps</button>
+
+      <p class="error" id="formError">Please complete all required fields.</p>
+    </form>
+
+    <div id="result"></div>
+  </div>
+</div>
+
+<footer>
+  <a href="/">Home</a>
+  <a href="/scan">Free scan</a>
+  <a href="{{ calendly_link }}" target="_blank" rel="noopener">Book a call</a>
+</footer>
+
+<script>
+const calendlyLink = {{ calendly_link | tojson }};
+const refSource = {{ ref | tojson }};
+
+document.getElementById('qualifyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('formError');
+  errEl.classList.remove('on');
+
+  const form = e.target;
+  const data = {};
+  // Text + select fields
+  ['legal_name','domain','contact_email','country','industry','revenue_band',
+   'employee_band','compliance_driver','framework','dm_title','urgency',
+   'insurance_status','maturity'].forEach(k => {
+    data[k] = (form.elements[k]?.value || '').trim();
+  });
+  // Booleans
+  ['has_internal_ciso','domain_ownership_confirmed','prohibited_self_attest'].forEach(k => {
+    data[k] = !!form.elements[k]?.checked;
+  });
+  data.ref = refSource;
+
+  // Required validation (client side)
+  const required = ['legal_name','domain','contact_email','country','industry','revenue_band',
+    'employee_band','compliance_driver','framework','dm_title','urgency','insurance_status','maturity'];
+  for (const k of required) {
+    if (!data[k]) { errEl.classList.add('on'); return; }
+  }
+  if (!data.domain_ownership_confirmed || !data.prohibited_self_attest) {
+    errEl.textContent = 'Please confirm both authorization checkboxes to continue.';
+    errEl.classList.add('on');
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Reviewing…';
+
+  try {
+    const res = await fetch('/api/qualify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    });
+    const out = await res.json();
+    showResult(out);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Submit & see next steps';
+    errEl.textContent = 'Something went wrong on our side. Please try again or email us directly.';
+    errEl.classList.add('on');
+  }
+});
+
+function showResult(out) {
+  document.getElementById('qualifyForm').style.display = 'none';
+  const wrap = document.getElementById('result');
+  const cls = out.status === 'qualified' ? 'qualified'
+            : out.status === 'waitlist' ? 'waitlist'
+            : out.status === 'disqualified' ? 'disqualified'
+            : 'review';
+
+  let cta = '';
+  const link = out.calendly_link || calendlyLink;
+  if (out.next_step === 'proposal' || out.next_step === 'schedule_intro_call') {
+    cta = '<a class="result-cta" href="' + link + '" target="_blank" rel="noopener">Book your kickoff call &rarr;</a>';
+  } else if (out.next_step === 'partner_referral') {
+    cta = '<a class="result-cta alt" href="' + link + '" target="_blank" rel="noopener">Talk to us about a partner intro &rarr;</a>';
+  } else if (out.next_step === 'referral') {
+    cta = '<a class="result-cta alt" href="/">Back to home</a>';
+  } else if (out.next_step === 'return_to_form') {
+    cta = '<a class="result-cta alt" href="/qualify">Return to form</a>';
+  } else {
+    cta = '<a class="result-cta alt" href="' + link + '" target="_blank" rel="noopener">Schedule a brief intro call &rarr;</a>';
+  }
+
+  wrap.innerHTML =
+    '<div class="result-card ' + cls + '">' +
+      '<div class="result-headline">' + escapeHtml(out.headline) + '</div>' +
+      '<div class="result-message">' + escapeHtml(out.message) + '</div>' +
+      cta +
+    '</div>';
+  wrap.classList.add('on');
+  wrap.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>

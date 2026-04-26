@@ -49,6 +49,7 @@ body {
   color: var(--text);
   line-height: 1.6;
   font-size: 15px;
+  overflow-x: hidden;
 }
 
 /* ─── GRID OVERLAY ───────────────────────────── */
@@ -198,7 +199,7 @@ body::before {
   letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--text-dim);
 }
-.meta-value { font-size: 14px; font-weight: 500; color: var(--text); }
+.meta-value { font-size: 14px; font-weight: 500; color: var(--text); overflow-wrap: anywhere; }
 
 /* ─── EXECUTIVE SUMMARY ──────────────────────── */
 .exec-grid {
@@ -248,7 +249,7 @@ body::before {
 /* KPI Cards */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 @media (max-width: 480px) {
@@ -347,14 +348,15 @@ body::before {
 .finding-card.sev-medium { border-left-color: var(--amber); }
 .finding-card.sev-low { border-left-color: var(--blue); }
 .finding-card.sev-info { border-left-color: var(--text-dim); }
-.finding-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
-.finding-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+.finding-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; overflow-wrap: anywhere; }
+.finding-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; overflow-wrap: anywhere; }
 .finding-fix {
   font-size: 13px;
   padding: 10px 14px;
   background: var(--surface-2);
   border-radius: var(--radius-sm);
   color: var(--text-muted);
+  overflow-wrap: anywhere;
 }
 .finding-fix strong { color: var(--emerald); font-weight: 600; }
 .sev-badge {
@@ -483,6 +485,7 @@ body::before {
   border-bottom: 1px solid var(--border);
   color: var(--text-muted);
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 .risk-table tr:hover td { background: var(--surface); }
 .risk-num {
@@ -630,11 +633,12 @@ body::before {
 .deliv-check { font-size: 14px; }
 .deliv-check.done { color: var(--emerald); }
 .deliv-check.pending { color: var(--text-dim); }
-.deliv-label { color: var(--text-muted); }
+.deliv-label { color: var(--text-muted); overflow-wrap: anywhere; }
 .deliv-label.done { color: var(--text); }
 .deliv-file {
   font-family: var(--mono); font-size: 11px;
   color: var(--text-dim);
+  overflow-wrap: anywhere;
 }
 
 /* ─── UPSELL ─────────────────────────────────── */
@@ -668,6 +672,41 @@ body::before {
   gap: 16px;
 }
 @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+@media (max-width: 720px) {
+  .report-nav { padding: 0 12px; }
+  .report-nav-inner { height: auto; min-height: 52px; padding: 8px 0; }
+  .nav-brand { margin-right: 8px; padding-right: 10px; }
+  .report-container { padding: 0 16px; }
+  .report-cover { padding: 48px 0 32px; }
+  .cover-domain { overflow-wrap: anywhere; }
+  .cover-meta { gap: 14px; }
+  .meta-item { min-width: 42%; }
+  .report-section { padding: 44px 0 34px; }
+  .section-title { font-size: 28px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .score-gauge-wrap { padding: 24px 16px; }
+  .finding-card { grid-template-columns: 1fr; padding: 16px; }
+  .finding-meta { flex-wrap: wrap; gap: 8px 12px; }
+  .fw-header { grid-template-columns: 1fr; padding: 18px; }
+  .fw-pct-wrap { align-items: flex-start; }
+  .fw-counts { flex-wrap: wrap; gap: 8px 12px; }
+  .ctrl-row { grid-template-columns: 1fr; gap: 4px; padding: 12px 0; }
+  .risk-table thead { display: none; }
+  .risk-table, .risk-table tbody, .risk-table tr, .risk-table td { display: block; width: 100%; }
+  .risk-table tr { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 10px; overflow: hidden; }
+  .risk-table td { display: grid; grid-template-columns: 92px 1fr; gap: 10px; border-bottom: 1px solid var(--border); }
+  .risk-table td:last-child { border-bottom: none; }
+  .risk-table td::before { content: attr(data-label); font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); }
+  .deliv-row { grid-template-columns: 24px 1fr; }
+  .deliv-file { grid-column: 2; }
+}
+
+@media (max-width: 420px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .meta-item { min-width: 100%; }
+  .risk-table td { grid-template-columns: 1fr; gap: 4px; }
+}
 
 /* ─── PRINT ──────────────────────────────────── */
 @media print {
@@ -810,7 +849,7 @@ body::before {
         Compliance posture is <strong>developing</strong> — the organization meets approximately {{ avg_compliance }}% of applicable regulatory requirements.
         {% endif %}
         {{ findings_count }} security finding(s) were identified, including {{ critical_count }} critical and {{ high_count }} high-severity issues requiring immediate attention.
-        {% if policies_generated > 0 %}{{ policies_generated }} compliance policies have been generated and are ready for CISSP review.{% endif %}
+        {% if policies_generated > 0 %}{{ policies_generated }} policy drafts have been generated and are ready for advisor review.{% endif %}
       </div>
     </div>
   </div>
@@ -819,8 +858,8 @@ body::before {
 <!-- ─── 02 ATTACK SURFACE ────────────────────── -->
 <section class="report-section" id="archer">
   <div class="section-label"><span class="section-num">02</span> External Attack Surface</div>
-  <h2 class="section-title">ARCHER Scan Results</h2>
-  <div class="section-subtitle">Automated reconnaissance of {{ client.domain }} — testing email security, SSL/TLS, HTTP headers, open ports, technology stack, and DNS configuration.</div>
+  <h2 class="section-title">External Scan Results</h2>
+  <div class="section-subtitle">Passive reconnaissance of {{ client.domain }} — checking email authentication, SSL/TLS, HTTP headers, exposed services, technology stack, and DNS configuration. Not an authorized penetration test.</div>
 
   <div class="scan-categories">
     {% for cat in scan_categories %}
@@ -869,8 +908,8 @@ body::before {
 <!-- ─── 03 DARK WEB ──────────────────────────── -->
 <section class="report-section" id="shadow">
   <div class="section-label"><span class="section-num">03</span> Dark Web Exposure</div>
-  <h2 class="section-title">SHADOW Breach Intelligence</h2>
-  <div class="section-subtitle">Checking employee credential exposure across known data breaches and dark web sources.</div>
+  <h2 class="section-title">Breach Intelligence Check</h2>
+  <div class="section-subtitle">Checks employee credentials against known breach corpora when an HIBP API key is configured. Not an exhaustive dark-web sweep.</div>
 
   {% if shadow_status == 'complete' %}
   <div class="kpi-grid" style="margin-bottom: 24px;">
@@ -907,10 +946,9 @@ body::before {
   {% else %}
   <div class="shadow-not-run">
     <div class="shadow-icon">👁‍🗨</div>
-    <div class="shadow-title">Dark Web Scan Not Yet Executed</div>
+    <div class="shadow-title">Pending setup &middot; HIBP key not connected</div>
     <div class="shadow-desc">
-      Employee credential breach monitoring requires the HIBP API integration.
-      This scan checks employee emails against all known data breaches and dark web credential dumps.
+      Employee credential breach checks require an HIBP API key. When connected, this check compares employee emails against the HaveIBeenPwned breach corpus on a daily schedule.
       <br><br>
       <strong>Data types at risk for {{ client.company_name }}:</strong><br>
       {% for dt in client.data_types %}{{ dt }}{% if not loop.last %}, {% endif %}{% endfor %}
@@ -981,9 +1019,9 @@ body::before {
       <tbody>
         {% for risk in risk_items %}
         <tr>
-          <td class="risk-num">{{ loop.index }}</td>
-          <td>{{ risk.finding }}</td>
-          <td><span class="sev-badge {{ risk.severity | lower }}">{{ risk.severity }}</span></td>
+          <td class="risk-num" data-label="#">{{ loop.index }}</td>
+          <td data-label="Risk">{{ risk.finding }}</td>
+          <td data-label="Severity"><span class="sev-badge {{ risk.severity | lower }}">{{ risk.severity }}</span></td>
         </tr>
         {% endfor %}
       </tbody>
@@ -1035,45 +1073,58 @@ body::before {
 
   <div class="pricing-grid">
     <div class="price-card">
-      <div class="price-tier">Option A</div>
-      <div class="price-name">Security Assessment</div>
-      <div class="price-amount">$2,500</div>
+      <div class="price-tier">Diagnostic</div>
+      <div class="price-name">Paid Readiness Review</div>
+      <div class="price-amount">$5,000&ndash;$10,000</div>
       <div class="price-period">One-time engagement</div>
       <ul class="price-features">
-        <li>Full security assessment report</li>
-        <li>Risk register & prioritization</li>
+        <li>External readiness scan</li>
+        <li>Compliance gap snapshot mapped to your framework</li>
         <li>90-day remediation roadmap</li>
-        <li>Executive summary presentation</li>
-        <li>Dark web breach scan</li>
-      </ul>
-      <a href="{{ calendly_link }}" class="price-cta" target="_blank">Schedule Call</a>
-    </div>
-    <div class="price-card featured">
-      <div class="price-tier">Option B — Recommended</div>
-      <div class="price-name">Assessment + Policies</div>
-      <div class="price-amount">$5,000</div>
-      <div class="price-period">One-time engagement</div>
-      <ul class="price-features">
-        <li>Everything in Option A</li>
-        <li>WISP + 8 policy documents</li>
-        <li>Compliance framework mapping</li>
-        <li>CISSP advisor review</li>
-        <li>Cyber insurance readiness letter</li>
+        <li>Executive summary with named advisor sign-off</li>
+        <li>Audit-ready PDF + ZIP hand-off</li>
       </ul>
       <a href="{{ calendly_link }}" class="price-cta" target="_blank">Schedule Call</a>
     </div>
     <div class="price-card">
-      <div class="price-tier">Option C</div>
-      <div class="price-name">vCISO Retainer</div>
-      <div class="price-amount">$3,000</div>
-      <div class="price-period">Per month</div>
+      <div class="price-tier">Essentials</div>
+      <div class="price-name">Annual Managed</div>
+      <div class="price-amount">$24,000 / yr</div>
+      <div class="price-period">Annual prepaid</div>
       <ul class="price-features">
-        <li>Everything in Option B</li>
-        <li>Monthly security re-scanning</li>
-        <li>Quarterly phishing tests</li>
-        <li>Policy updates & compliance tracking</li>
-        <li>Named vCISO + executive reporting</li>
-        <li>Incident response coordination</li>
+        <li>Customer portal with score, tasks, and evidence</li>
+        <li>Monthly advisor-reviewed external scan + report</li>
+        <li>Weekly dark-web check (with HIBP key)</li>
+        <li>WISP + 8 supporting policies, refreshed annually</li>
+        <li>30-minute monthly advisor review call</li>
+      </ul>
+      <a href="{{ calendly_link }}" class="price-cta" target="_blank">Schedule Call</a>
+    </div>
+    <div class="price-card featured">
+      <div class="price-tier">Professional &mdash; Recommended</div>
+      <div class="price-name">Annual Managed +</div>
+      <div class="price-amount">$48,000 / yr</div>
+      <div class="price-period">Annual prepaid</div>
+      <ul class="price-features">
+        <li>Everything in Essentials</li>
+        <li>Daily dark-web monitoring (with HIBP key)</li>
+        <li>Quarterly authorized active security validation (signed scope)</li>
+        <li>Quarterly phishing simulation (GoPhish required)</li>
+        <li>60-minute monthly advisor review + quarterly board report</li>
+      </ul>
+      <a href="{{ calendly_link }}" class="price-cta" target="_blank">Schedule Call</a>
+    </div>
+    <div class="price-card">
+      <div class="price-tier">Enterprise+</div>
+      <div class="price-name">Custom Annual</div>
+      <div class="price-amount">From $96,000 / yr</div>
+      <div class="price-period">Annual prepaid &middot; custom scope</div>
+      <ul class="price-features">
+        <li>Everything in Professional</li>
+        <li>Multi-framework continuous compliance</li>
+        <li>Unlimited authorized active validation within agreed scope</li>
+        <li>Dedicated named advisor &middot; 4-hour response SLA</li>
+        <li>Data residency, BYOK, SAML/OIDC SSO, branded trust center</li>
       </ul>
       <a href="{{ calendly_link }}" class="price-cta" target="_blank">Schedule Call</a>
     </div>
@@ -1098,12 +1149,12 @@ body::before {
   <div class="report-footer">
     <div class="footer-brand">CYBERCOMPLY</div>
     <div class="footer-disclaimer">
-      This report was generated by CyberComply's automated security assessment platform.
-      Findings are based on external reconnaissance and self-reported questionnaire data.
-      AI-generated policy documents require review by a qualified CISSP before client delivery.
-      This report does not constitute legal advice or guarantee regulatory compliance.
+      Issued by DigComply Solutions Private Limited (in association with CA4CPA Global LLC), delivered through the CyberComply platform.
+      Findings are based on passive external reconnaissance and self-reported questionnaire data.
+      AI-generated policy drafts require named advisor review before client delivery.
+      This report is not a penetration test, legal advice, or a guarantee of regulatory compliance or breach prevention.
       <br><br>
-      © {{ current_year }} CyberComply. All rights reserved.
+      © {{ current_year }} DigComply Solutions Private Limited. All rights reserved.
     </div>
   </div>
 </div>

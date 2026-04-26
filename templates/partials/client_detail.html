@@ -1,4 +1,16 @@
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<style>
+.client-detail-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.client-detail-grid a,.client-detail-grid button,.client-detail-grid span,.client-detail-grid div{overflow-wrap:anywhere}
+.score-line{display:grid;grid-template-columns:140px minmax(0,1fr) 48px;align-items:center;gap:8px;margin-bottom:4px;font-size:12px}
+.finding-detail{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+@media(max-width:768px){
+  .client-detail-grid{grid-template-columns:1fr;gap:18px}
+  .score-line{grid-template-columns:1fr;gap:4px;margin-bottom:10px}
+  .finding-detail{align-items:flex-start}
+  #invoiceModal>div{width:calc(100% - 24px)!important;padding:20px!important}
+}
+</style>
+<div class="client-detail-grid">
   <!-- Left: Score & Findings -->
   <div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
@@ -14,7 +26,7 @@
     <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">SCORE BREAKDOWN</div>
     {% if scan.archer and scan.archer.score and scan.archer.score.breakdown %}
     {% for cat, info in scan.archer.score.breakdown.items() %}
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px">
+    <div class="score-line">
       <span style="width:140px;color:var(--dim)">{{ cat | replace('_', ' ') | title }}</span>
       <div style="flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:{{ (info.score / info.max * 100) if info.max else 0 }}%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px"></div>
@@ -27,7 +39,7 @@
     <div style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:1px">ALL FINDINGS</div>
     {% if scan.archer and scan.archer.findings %}
     {% for f in scan.archer.findings %}
-    <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px">
+    <div class="finding-detail">
       <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:8px;color:#fff;font-weight:700;flex-shrink:0;background:{% if f.severity == 'CRITICAL' %}var(--red){% elif f.severity == 'HIGH' %}var(--orange){% elif f.severity == 'MEDIUM' %}var(--yellow){% else %}var(--muted){% endif %}">!</span>
       <div>
         <span style="font-weight:600">{{ f.title }}</span>
@@ -87,14 +99,14 @@
     <div style="display:flex;flex-direction:column;gap:6px">
       {% if not has_policies %}
       <button onclick="triggerAction(this, '/api/clients/{{ dir_name }}/generate-policies')" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;cursor:pointer;border:1px solid var(--accent2);color:var(--accent2);background:transparent">
-        Generate 9 Core Policies (AI)
+        Generate 9 Policy Drafts (AI key required)
       </button>
       {% endif %}
       <button onclick="triggerAction(this, '/api/clients/{{ dir_name }}/generate-emails')" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;cursor:pointer;border:1px solid var(--accent2);color:var(--accent2);background:transparent">
-        Generate Email Sequence (AI)
+        Generate Email Sequence (AI key required)
       </button>
       <button onclick="openInvoiceModal('{{ dir_name }}')" class="action-btn" style="padding:10px 14px;justify-content:flex-start;font-size:12px;cursor:pointer;border:1px solid var(--green);color:var(--green);background:transparent">
-        Send Stripe Invoice
+        Send Stripe Invoice (Stripe key required)
       </button>
     </div>
 

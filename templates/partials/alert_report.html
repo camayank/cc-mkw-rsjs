@@ -1,0 +1,62 @@
+{# Latest monthly report card. Autoescape applies to every {{ }}. #}
+<div class="alert-report-card">
+  {% if not present %}
+  <p class="alert-report-empty">No monthly reports yet. Your first report will be delivered after the next scheduled cycle.</p>
+  {% else %}
+  <div class="alert-report-row">
+    <div>
+      <span class="alert-report-score">{{ score }}</span>
+      <span class="alert-report-grade">/ {{ grade }}</span>
+      {% if delta > 0 %}<span class="alert-report-delta-up">&#x25b2; +{{ delta }}</span>
+      {% elif delta < 0 %}<span class="alert-report-delta-down">&#x25bc; {{ delta }}</span>
+      {% else %}<span class="alert-report-delta-flat">&#x2192; No change</span>{% endif %}
+    </div>
+    <div class="alert-report-counts">
+      Findings: {{ total_findings }} total &middot; {{ resolved_findings }} resolved &middot;
+      {% if critical_findings > 0 %}<span class="alert-report-critical">{{ critical_findings }} critical</span>
+      {% else %}<span class="alert-report-zero-crit">0 critical</span>{% endif %}
+    </div>
+    {% if signed_off %}
+    <span class="alert-report-pill alert-report-pill-ok">&#x2713; {{ reviewed_by }}{% if reviewer_credential %}, {{ reviewer_credential }}{% endif %} &middot; {{ reviewed_on[:10] }}</span>
+    {% else %}
+    <span class="alert-report-pill alert-report-pill-pending">Review pending</span>
+    {% endif %}
+  </div>
+
+  {% if industry_avg %}
+  <div class="alert-report-bench">
+    Industry avg: {{ industry_avg }} &mdash;
+    {% if score >= industry_avg %}<span class="alert-report-above">above benchmark</span>
+    {% else %}<span class="alert-report-below">below benchmark</span>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if client_facing_recommendation %}
+  <div class="alert-report-recommendation">{{ client_facing_recommendation }}</div>
+  {% endif %}
+
+  <div class="alert-report-narrative">{{ narrative }}</div>
+  {% endif %}
+</div>
+
+<style>
+.alert-report-card{padding:14px 0;font-size:13.5px}
+.alert-report-empty{color:var(--muted);padding:16px 0;font-size:13px}
+.alert-report-row{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-bottom:12px}
+.alert-report-score{font-family:var(--serif);font-size:32px;font-weight:800;color:var(--lime)}
+.alert-report-grade{color:var(--muted);font-size:14px;margin-left:4px}
+.alert-report-delta-up{color:var(--emerald);margin-left:8px;font-weight:600}
+.alert-report-delta-down{color:var(--red);margin-left:8px;font-weight:600}
+.alert-report-delta-flat{color:var(--muted);margin-left:8px}
+.alert-report-counts{color:var(--muted);font-size:12.5px}
+.alert-report-critical{color:var(--red);font-weight:600;margin-left:4px}
+.alert-report-zero-crit{color:var(--emerald);margin-left:4px}
+.alert-report-pill{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:4px 10px;border-radius:5px}
+.alert-report-pill-ok{background:var(--emerald-soft);color:var(--emerald);border:1px solid rgba(52,211,153,.15)}
+.alert-report-pill-pending{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(251,191,36,.18)}
+.alert-report-bench{font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:8px}
+.alert-report-above{color:var(--emerald)}
+.alert-report-below{color:var(--orange)}
+.alert-report-recommendation{font-size:13px;color:var(--lime);font-weight:600;padding:10px 12px;background:var(--lime-soft);border-radius:8px;margin-bottom:10px}
+.alert-report-narrative{color:var(--txt-2);font-size:13px;line-height:1.65;white-space:pre-wrap}
+</style>

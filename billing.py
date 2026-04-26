@@ -130,21 +130,50 @@ def handle_webhook(payload: bytes, sig_header: str) -> dict:
     }
 
     if event_type in ("customer.subscription.created", "customer.subscription.updated"):
-        # Determine tier from subscription amount (in cents)
+        # Determine tier from annual subscription amount (in cents).
+        # Flagship clients are annual prepaid only — interval=year is required.
         items = data.get("items", {}).get("data", [])
-        total_cents = sum(item.get("price", {}).get("unit_amount", 0) for item in items)
-        if total_cents >= 500000:  # $5,000+
-            new_tier = "pro"
-        elif total_cents >= 200000:  # $2,000+
-            new_tier = "basic"
+        total_cents = 0
+        for item in items:
+            price = item.get("price") or {}
+            unit_amount = price.get("unit_amount", 0) or 0
+            recurring = price.get("recurring") or {}
+            interval = recurring.get("interval", "")
+            interval_count = recurring.get("interval_count", 1) or 1
+            # Normalize to annual cents.
+            if interval == "year":
+                annual = unit_amount * interval_count
+            elif interval == "month":
+                # Monthly subscriptions are not a supported tier model for
+                # flagship clients — extrapolate to annual for tier mapping
+                # but flag this for operator review.
+                annual = unit_amount * 12 * interval_count
+                result.setdefault("warnings", []).append(
+                    "monthly_billing_not_supported_for_flagship_tier"
+                )
+            else:
+                annual = unit_amount
+            total_cents += annual
+
+        # Tier thresholds match commercial tiers.
+        if total_cents >= 9_600_000:        # $96,000+/yr
+            new_tier = "enterprise_plus"
+        elif total_cents >= 4_800_000:      # $48,000+/yr
+            new_tier = "professional"
+        elif total_cents >= 2_400_000:      # $24,000+/yr
+            new_tier = "essentials"
         else:
-            new_tier = "assessment"
+            # Below the lowest retainer floor — keep prior tier untouched.
+            # Operator should review; do not silently demote to a paid tier.
+            new_tier = "diagnostic"
         result["action"] = "update_tier"
-        result["details"] = {"tier": new_tier, "amount_cents": total_cents}
+        result["details"] = {"tier": new_tier, "annual_cents": total_cents}
 
     elif event_type == "customer.subscription.deleted":
+        # Subscription ended — drop back to diagnostic (one-time engagement
+        # state). Portal access is gated server-side based on tier config.
         result["action"] = "downgrade_tier"
-        result["details"] = {"tier": "assessment"}
+        result["details"] = {"tier": "diagnostic"}
 
     elif event_type == "invoice.paid":
         # Only update payment status, NOT tier
